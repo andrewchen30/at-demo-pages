@@ -36,7 +36,7 @@
 
     .container {
       display: grid;
-      grid-template-columns: 350px 1fr;
+      grid-template-columns: 350px 1fr 300px;
       height: 100vh;
       gap: 1px;
       background: var(--border);
@@ -582,14 +582,122 @@
       background: var(--accent);
     }
 
+    /* 右側側邊欄 */
+    .right-sidebar {
+      background: var(--panel);
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    .sidebar-header {
+      padding: 20px;
+      border-bottom: 1px solid var(--border);
+      background: #ffffff;
+    }
+
+    .sidebar-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+
+    .sidebar-subtitle {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .sidebar-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+    }
+
+    .empty-sidebar {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .empty-sidebar-icon {
+      font-size: 32px;
+      margin-bottom: 12px;
+    }
+
+    .empty-sidebar-text {
+      font-size: 14px;
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+
+    .empty-sidebar-subtext {
+      font-size: 12px;
+    }
+
+    .system-message {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .system-message-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .system-message-icon {
+      width: 24px;
+      height: 24px;
+      background: #a855f7;
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .system-message-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .system-message-content {
+      font-size: 13px;
+      line-height: 1.5;
+      color: var(--text);
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+
     /* 響應式設計 */
     @media (max-width: 768px) {
       .container {
         grid-template-columns: 1fr;
-        grid-template-rows: auto 1fr;
+        grid-template-rows: auto 1fr auto;
       }
 
       .left-panel {
+        max-height: 200px;
+        overflow-y: auto;
+      }
+
+      .right-sidebar {
         max-height: 200px;
         overflow-y: auto;
       }
@@ -713,7 +821,7 @@
       </div>
     </div>
 
-    <!-- 右側聊天室 -->
+    <!-- 中間聊天室 -->
     <div class="chat-container">
       <div class="chat-header">
         <div class="chat-title">AI 互動介面</div>
@@ -737,6 +845,21 @@
         <div class="chat-input-wrapper">
           <textarea id="chatInput" class="chat-input" placeholder="輸入您的訊息... (按發送按鈕送出)" rows="1"></textarea>
           <button id="sendBtn" class="send-btn">發送</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 右側側邊欄 -->
+    <div class="right-sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-title" id="sidebarTitle">模擬體驗課 part-1</div>
+        <div class="sidebar-subtitle" id="sidebarSubtitle">目標：建立學生與老師的初步互動</div>
+      </div>
+      <div class="sidebar-content" id="sidebarContent">
+        <div class="empty-sidebar">
+          <div class="empty-sidebar-icon">📝</div>
+          <div class="empty-sidebar-text">等待編劇產生系統訊息</div>
+          <div class="empty-sidebar-subtext">點擊「創建新的學生角色」開始</div>
         </div>
       </div>
     </div>
@@ -769,6 +892,36 @@
         this.currentBot = 'student'; // 預設使用學生bot
         this.workflowStep = 'idle'; // idle, scriptwriter, student, coach
         this.chatHistory = [];
+
+        // 章節目標資料
+        // 1 釐清需求：讓學生更清楚自己想學什麼、為什麼要學
+        // 2 程度分析：幫學生看清楚「現在的程度」與「想要達到的程度」
+        // 3 示範教學：讓學生體驗「問題能被解決」
+        // 4 學習計畫：讓學生知道可以怎麼開始、可能多久會有效果
+        // 5 解決疑慮：幫助學生放心做下一步決定
+        this.chapterGoals = {
+          1: {
+            title: '體驗課 part-1 釐清需求',
+            goal: '讓學生更清楚自己想學什麼、為什麼要學'
+          },
+          2: {
+            title: '體驗課 part-2 程度分析',
+            goal: '幫學生看清楚「現在的程度」與「想要達到的程度」'
+          },
+          3: {
+            title: '體驗課 part-3 示範教學',
+            goal: '讓學生體驗「問題能被解決」'
+          },
+          4: {
+            title: '體驗課 part-4 學習計畫',
+            goal: '讓學生知道可以怎麼開始、可能多久會有效果'
+          },
+          5: {
+            title: '體驗課 part-5 解決疑慮',
+            goal: '幫助學生放心做下一步決定'
+          }
+        };
+
         this.initializeElements();
         this.initializeEventListeners();
         this.loadSettings();
@@ -778,6 +931,7 @@
         this.checkAndLoadScriptwriterResponse();
 
         this.updateSummaryButton();
+        this.updateSidebarInfo();
       }
 
       initializeElements() {
@@ -814,12 +968,17 @@
           summaryBtn: document.getElementById('summaryBtn'),
           summaryBtnText: document.getElementById('summaryBtnText'),
 
-          // 右側聊天室
+          // 中間聊天室
           chatMessages: document.getElementById('chatMessages'),
           chatInput: document.getElementById('chatInput'),
           sendBtn: document.getElementById('sendBtn'),
           statusDot: document.getElementById('statusDot'),
-          statusText: document.getElementById('statusText')
+          statusText: document.getElementById('statusText'),
+
+          // 右側側邊欄
+          sidebarContent: document.getElementById('sidebarContent'),
+          sidebarTitle: document.getElementById('sidebarTitle'),
+          sidebarSubtitle: document.getElementById('sidebarSubtitle')
         };
       }
 
@@ -935,8 +1094,8 @@
           this.elements.scriptwriterStatus.textContent = '已完成';
           this.elements.scriptwriterStatus.className = 'bot-status scriptwriter';
 
-          // 加入系統訊息
-          this.addMessage('提示:\n' + getTeacherHintText(scriptResponse, this.getChapterNumber()), 'system');
+          // 將系統訊息顯示在右側側邊欄
+          this.addSystemMessage(getTeacherHintText(scriptResponse, this.getChapterNumber()));
         }
       }
 
@@ -976,12 +1135,25 @@
         const selectedValue = clickedBtn.dataset.value;
         localStorage.setItem('selectedNumber', selectedValue);
 
+        // 更新側邊欄資訊
+        this.updateSidebarInfo();
+
         // 更新章節後重新載入系統提示
         this.reloadSystemPrompt();
       }
 
       getChapterNumber() {
         return parseInt(localStorage.getItem('selectedNumber') || '1');
+      }
+
+      updateSidebarInfo() {
+        const chapterNumber = this.getChapterNumber();
+        const chapterInfo = this.chapterGoals[chapterNumber];
+
+        if (chapterInfo) {
+          this.elements.sidebarTitle.textContent = chapterInfo.title;
+          this.elements.sidebarSubtitle.textContent = `目標：${chapterInfo.goal}`;
+        }
       }
 
       reloadSystemPrompt() {
@@ -1001,8 +1173,8 @@
           this.elements.scriptwriterStatus.textContent = '已完成';
           this.elements.scriptwriterStatus.className = 'bot-status scriptwriter';
 
-          // 重新加入系統提示訊息
-          this.addMessage('提示:\n' + getTeacherHintText(scriptResponse, this.getChapterNumber()), 'system');
+          // 將系統提示訊息顯示在右側側邊欄
+          this.addSystemMessage(getTeacherHintText(scriptResponse, this.getChapterNumber()));
 
           // 更新總結按鈕狀態
           this.updateSummaryButton();
@@ -1154,7 +1326,7 @@
           this.elements.scriptwriterStatus.textContent = '已完成';
           this.elements.scriptwriterStatus.className = 'bot-status scriptwriter';
 
-          this.addMessage('提示:\n' + getTeacherHintText(getScript(), this.getChapterNumber()), 'system');
+          this.addSystemMessage(getTeacherHintText(getScript(), this.getChapterNumber()));
           this.updateSummaryButton();
 
         } catch (error) {
@@ -1254,6 +1426,46 @@
 
         // 滾動到底部
         this.elements.chatMessages.scrollTop = this.elements.chatMessages.scrollHeight;
+      }
+
+      addSystemMessage(content) {
+        // 清除所有現有的系統訊息
+        const existingMessages = this.elements.sidebarContent.querySelectorAll('.system-message');
+        existingMessages.forEach(message => message.remove());
+
+        // 移除空狀態
+        const emptySidebar = this.elements.sidebarContent.querySelector('.empty-sidebar');
+        if (emptySidebar) {
+          emptySidebar.remove();
+        }
+
+        const systemMessageDiv = document.createElement('div');
+        systemMessageDiv.className = 'system-message';
+
+        const headerDiv = document.createElement('div');
+        headerDiv.className = 'system-message-header';
+
+        const iconDiv = document.createElement('div');
+        iconDiv.className = 'system-message-icon';
+        iconDiv.textContent = 'S';
+
+        const titleDiv = document.createElement('div');
+        titleDiv.className = 'system-message-title';
+        titleDiv.textContent = '系統提示';
+
+        headerDiv.appendChild(iconDiv);
+        headerDiv.appendChild(titleDiv);
+
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'system-message-content';
+        contentDiv.textContent = content;
+
+        systemMessageDiv.appendChild(headerDiv);
+        systemMessageDiv.appendChild(contentDiv);
+        this.elements.sidebarContent.appendChild(systemMessageDiv);
+
+        // 滾動到底部
+        this.elements.sidebarContent.scrollTop = this.elements.sidebarContent.scrollHeight;
       }
 
       addThinkingIndicator() {
@@ -1506,6 +1718,15 @@
           </div>
         `;
         this.updateStatus('disconnected');
+
+        // 清除右側側邊欄
+        this.elements.sidebarContent.innerHTML = `
+          <div class="empty-sidebar">
+            <div class="empty-sidebar-icon">📝</div>
+            <div class="empty-sidebar-text">等待編劇產生系統訊息</div>
+            <div class="empty-sidebar-subtext">點擊「創建新的學生角色」開始</div>
+          </div>
+        `;
 
         // 重置工作流程
         this.workflowStep = 'idle';
