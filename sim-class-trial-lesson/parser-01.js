@@ -112,14 +112,15 @@ function getAIParams(input, part_n) {
   };
 }
 
-function getTeacherHint(input, part_n) {
-  if (!input) return {};
-  return {
-    userBrief: getUserBrief(input, part_n),
-    dialog: getDialog(input, part_n),
-    check_list: getCheckList(part_n),
-  };
-}
+// keep it since it's from Jacky's code
+// function getTeacherHint(input, part_n) {
+//   if (!input) return {};
+//   return {
+//     userBrief: getUserBrief(input, part_n),
+//     dialog: getDialog(input, part_n),
+//     check_list: getCheckList(part_n),
+//   };
+// }
 
 function getTeacherHintText(input, part_n) {
   return `【背景資訊】\n${getUserBrief(input, part_n)}\n\n【對話內容】\n${getDialog(

@@ -1078,7 +1078,6 @@
           apiKey: document.getElementById('apiKey'),
 
           // 控制按鈕
-          startScriptwriterBtn: document.getElementById('startScriptwriterBtn'),
           createNewStudentBtn: document.getElementById('createNewStudentBtn'),
           clearChatBtn: document.getElementById('clearChatBtn'),
           summaryBtn: document.getElementById('summaryBtn'),
@@ -1141,11 +1140,6 @@
           }
         });
 
-        // Variables 變更時儲存
-        const variableInputs = document.querySelectorAll('.student-var-key, .student-var-value, .coach-var-key, .coach-var-value');
-        variableInputs.forEach(input => {
-          input.addEventListener('input', () => this.saveSettings());
-        });
 
         // 切換章節按鈕
         this.elements.chapterSwitchBtn.addEventListener('click', () => this.showChapterDialog());
@@ -1175,35 +1169,19 @@
         // 學生 Bot 設定
         this.elements.studentBotId.value = settings.studentBotId || '';
         this.elements.studentVersion.value = settings.studentVersion || '';
-        this.loadVariables('student', settings.studentVariables);
 
         // 教練 Bot 設定
         this.elements.coachBotId.value = settings.coachBotId || '';
         this.elements.coachVersion.value = settings.coachVersion || '';
-        this.loadVariables('coach', settings.coachVariables);
 
         // API 設定
         this.elements.apiKey.value = settings.apiKey || '';
 
-        // 載入編劇回應（如果存在）
-        this.loadScriptwriterResponse();
 
         // 更新所有 Bot 標題顯示版本
         this.updateBotTitles();
       }
 
-      loadScriptwriterResponse() {
-        const storedResponse = localStorage.getItem('scriptwriterResponse');
-        if (storedResponse) {
-          try {
-            const response = JSON.parse(storedResponse);
-            window.scriptwriterResponse = response;
-            this.displayJsonResponse(response);
-          } catch (error) {
-            console.error('載入編劇回應時發生錯誤:', error);
-          }
-        }
-      }
 
       checkAndLoadScriptwriterResponse() {
         const scriptResponse = getScript();
@@ -1360,32 +1338,6 @@
       }
 
 
-      loadVariables(botType, variables) {
-        if (!variables) return;
-
-        let keyInputs, valueInputs;
-
-        switch (botType) {
-          case 'student':
-            keyInputs = document.querySelectorAll('#studentVariablesSection .student-var-key');
-            valueInputs = document.querySelectorAll('#studentVariablesSection .student-var-value');
-            break;
-          case 'coach':
-            keyInputs = document.querySelectorAll('#coachVariablesSection .coach-var-key');
-            valueInputs = document.querySelectorAll('#coachVariablesSection .coach-var-value');
-            break;
-          default:
-            return;
-        }
-
-        const entries = Object.entries(variables);
-        entries.forEach(([key, value], index) => {
-          if (keyInputs[index] && valueInputs[index]) {
-            keyInputs[index].value = key;
-            valueInputs[index].value = value;
-          }
-        });
-      }
 
       saveSettings() {
         const settings = {
@@ -1396,12 +1348,10 @@
           // 學生 Bot 設定
           studentBotId: this.elements.studentBotId.value,
           studentVersion: this.elements.studentVersion.value,
-          studentVariables: this.getVariables('student'),
 
           // 教練 Bot 設定
           coachBotId: this.elements.coachBotId.value,
           coachVersion: this.elements.coachVersion.value,
-          coachVariables: this.getVariables('coach'),
 
           // API 設定
           apiKey: this.elements.apiKey.value
@@ -1509,7 +1459,6 @@
           const summary = await this.callOpenAI('coach');
 
           this.addMessage(`📋 **教練總結**\n\n${summary}`, 'coach');
-          this.workflowStep = 'coach';
           this.elements.coachStatus.textContent = '已完成';
           this.elements.coachStatus.className = 'bot-status coach';
 
@@ -1524,13 +1473,11 @@
       // 更新總結按鈕狀態
       updateSummaryButton() {
         const hasChatHistory = this.chatHistory.length > 0;
-        const canSummarize = this.workflowStep === 'student' && hasChatHistory;
+        const canSummarize = hasChatHistory;
 
         this.elements.summaryBtn.disabled = !canSummarize;
 
-        if (this.workflowStep === 'coach') {
-          this.elements.summaryBtnText.textContent = '已總結';
-        } else if (canSummarize) {
+        if (canSummarize) {
           this.elements.summaryBtnText.textContent = '教練總結';
         } else {
           this.elements.summaryBtnText.textContent = '教練總結';
