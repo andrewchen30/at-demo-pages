@@ -712,6 +712,15 @@
       overflow: hidden;
     }
 
+    /* Prompt History Dialog 放大 1.5 倍 */
+    #promptHistoryDialogOverlay .chapter-dialog {
+      max-width: 750px;
+      /* 500px * 1.5 */
+      width: 90%;
+      max-height: 90vh;
+      /* 80vh * 1.125 稍微增加高度 */
+    }
+
     .chapter-dialog-header {
       padding: 20px;
       border-bottom: 1px solid var(--border);
@@ -788,6 +797,75 @@
       line-height: 1.4;
     }
 
+    /* Prompt History 樣式 */
+    .prompt-history-content {
+      max-height: 60vh;
+      overflow-y: auto;
+    }
+
+    .prompt-history-item {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 12px;
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .prompt-history-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .prompt-history-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .prompt-history-time {
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .prompt-history-bot {
+      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: var(--accent);
+      color: white;
+      font-weight: 500;
+    }
+
+    .prompt-history-bot.scriptwriter {
+      background: #a855f7;
+    }
+
+    .prompt-history-bot.student {
+      background: var(--accent);
+    }
+
+    .prompt-history-bot.coach {
+      background: #3b82f6;
+    }
+
+    .prompt-history-json {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 8px;
+      margin-top: 8px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
     /* 響應式設計 */
     @media (max-width: 768px) {
       .container {
@@ -812,6 +890,15 @@
   <div class="container">
     <!-- 左側面板 -->
     <div class="left-panel">
+      <!-- Prompt History 按鈕 -->
+      <div class="section">
+        <div class="section-content">
+          <button id="promptHistoryBtn" class="btn"
+            style="background: #f1f5f9; border-color: #e2e8f0; color: #64748b; margin-bottom: 16px;">
+            📝 Prompt History
+          </button>
+        </div>
+      </div>
 
       <!-- 編劇 Bot -->
       <div class="section collapsed" id="scriptwriterSection">
@@ -982,6 +1069,30 @@
       </div>
     </div>
 
+    <!-- Prompt History Dialog -->
+    <div class="chapter-dialog-overlay" id="promptHistoryDialogOverlay">
+      <div class="chapter-dialog">
+        <div class="chapter-dialog-header">
+          <h3 class="chapter-dialog-title">Prompt History</h3>
+          <button class="chapter-dialog-close" id="promptHistoryDialogClose">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+        <div class="chapter-dialog-content">
+          <div class="prompt-history-content" id="promptHistoryContent">
+            <div class="empty-sidebar">
+              <div class="empty-sidebar-icon">📝</div>
+              <div class="empty-sidebar-text">尚無 Prompt 記錄</div>
+              <div class="empty-sidebar-subtext">開始使用 AI 功能後會顯示記錄</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 
   <script>
@@ -1010,6 +1121,7 @@
         this.currentBot = 'student'; // 預設使用學生bot
         this.workflowStep = 'idle'; // idle, scriptwriter, student, coach
         this.chatHistory = [];
+        this.promptHistory = []; // 儲存 prompt 記錄
 
         // 章節目標資料
         // 1 釐清需求：讓學生更清楚自己想學什麼、為什麼要學
@@ -1082,6 +1194,7 @@
           clearChatBtn: document.getElementById('clearChatBtn'),
           summaryBtn: document.getElementById('summaryBtn'),
           summaryBtnText: document.getElementById('summaryBtnText'),
+          promptHistoryBtn: document.getElementById('promptHistoryBtn'),
 
           // 中間聊天室
           chatMessages: document.getElementById('chatMessages'),
@@ -1097,7 +1210,12 @@
           chapterSwitchBtn: document.getElementById('chapterSwitchBtn'),
           chapterDialogOverlay: document.getElementById('chapterDialogOverlay'),
           chapterDialogClose: document.getElementById('chapterDialogClose'),
-          chapterOptions: document.getElementById('chapterOptions')
+          chapterOptions: document.getElementById('chapterOptions'),
+
+          // Prompt History Dialog
+          promptHistoryDialogOverlay: document.getElementById('promptHistoryDialogOverlay'),
+          promptHistoryDialogClose: document.getElementById('promptHistoryDialogClose'),
+          promptHistoryContent: document.getElementById('promptHistoryContent')
         };
       }
 
@@ -1120,6 +1238,9 @@
 
         // 清除對話
         this.elements.clearChatBtn.addEventListener('click', () => this.clearChat());
+
+        // Prompt History 按鈕
+        this.elements.promptHistoryBtn.addEventListener('click', () => this.showPromptHistoryDialog());
 
 
         // 設定變更時儲存
@@ -1149,6 +1270,14 @@
         this.elements.chapterDialogOverlay.addEventListener('click', (e) => {
           if (e.target === this.elements.chapterDialogOverlay) {
             this.hideChapterDialog();
+          }
+        });
+
+        // 關閉 Prompt History dialog
+        this.elements.promptHistoryDialogClose.addEventListener('click', () => this.hidePromptHistoryDialog());
+        this.elements.promptHistoryDialogOverlay.addEventListener('click', (e) => {
+          if (e.target === this.elements.promptHistoryDialogOverlay) {
+            this.hidePromptHistoryDialog();
           }
         });
       }
@@ -1743,6 +1872,9 @@
           input
         };
 
+        // 記錄 API 呼叫（在發送前）
+        this.recordPromptHistory(botType, url, body);
+
         const response = await fetch(url, {
           method: 'POST',
           headers: {
@@ -1759,7 +1891,14 @@
 
         const data = await response.json();
         // responses API 的回應格式與 chat completions 不同
-        return (data.output || []).find(item => item.status === 'completed')?.content[0]?.text;
+        const result = (data.output || []).find(item => item.status === 'completed')?.content[0]?.text;
+
+        // 更新最後一筆記錄的回應
+        if (this.promptHistory.length > 0) {
+          this.promptHistory[this.promptHistory.length - 1].response = data;
+        }
+
+        return result;
       }
 
       displayJsonResponse(jsonResponse) {
@@ -1847,6 +1986,92 @@
         this.elements.createNewStudentBtn.disabled = false;
         this.elements.createNewStudentBtn.textContent = '創建新的學生角色';
         this.updateSummaryButton();
+
+        // 清除 prompt 歷史記錄
+        this.promptHistory = [];
+      }
+
+      // 顯示 Prompt History 對話框
+      showPromptHistoryDialog() {
+        this.generatePromptHistoryContent();
+        this.elements.promptHistoryDialogOverlay.classList.add('show');
+      }
+
+      // 隱藏 Prompt History 對話框
+      hidePromptHistoryDialog() {
+        this.elements.promptHistoryDialogOverlay.classList.remove('show');
+      }
+
+      // 生成 Prompt History 內容
+      generatePromptHistoryContent() {
+        if (this.promptHistory.length === 0) {
+          this.elements.promptHistoryContent.innerHTML = `
+            <div class="empty-sidebar">
+              <div class="empty-sidebar-icon">📝</div>
+              <div class="empty-sidebar-text">尚無 Prompt 記錄</div>
+              <div class="empty-sidebar-subtext">開始使用 AI 功能後會顯示記錄</div>
+            </div>
+          `;
+          return;
+        }
+
+        // 按時間從舊到新排序
+        const sortedHistory = [...this.promptHistory].sort((a, b) => a.timestamp - b.timestamp);
+
+        this.elements.promptHistoryContent.innerHTML = sortedHistory.map(record => {
+          const timeStr = new Date(record.timestamp).toLocaleString('zh-TW');
+          const botName = this.getBotDisplayName(record.botType);
+
+          return `
+            <div class="prompt-history-item">
+              <div class="prompt-history-header">
+                <span class="prompt-history-time">${timeStr}</span>
+                <span class="prompt-history-bot ${record.botType}">${botName}</span>
+              </div>
+              <div class="prompt-history-json">${this.formatPromptRecord(record)}</div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      // 獲取 Bot 顯示名稱
+      getBotDisplayName(botType) {
+        switch (botType) {
+          case 'scriptwriter':
+            return 'to: 編劇';
+          case 'student':
+            return 'to: 學生';
+          case 'coach':
+            return 'to: 教練';
+          default:
+            return botType;
+        }
+      }
+
+      // 格式化 Prompt 記錄
+      formatPromptRecord(record) {
+        const formatted = {
+          timestamp: new Date(record.timestamp).toLocaleString('zh-TW'),
+          botType: record.botType,
+          url: record.url,
+          requestBody: record.requestBody,
+          response: record.response || null
+        };
+
+        return `// ${record.botType} Bot API 呼叫記錄\n// 時間: ${formatted.timestamp}\n${JSON.stringify(formatted, null, 2)}`;
+      }
+
+      // 記錄 Prompt 歷史
+      recordPromptHistory(botType, url, requestBody, response = null) {
+        const record = {
+          timestamp: Date.now(),
+          botType: botType,
+          url: url,
+          requestBody: requestBody,
+          response: response
+        };
+
+        this.promptHistory.push(record);
       }
     }
 
