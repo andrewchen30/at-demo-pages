@@ -1,4 +1,4 @@
-const CHECK_LIST = [
+const CHECK_LIST_FOR_TEACHER = [
   [
     '我有確認學生想學什麼類型的英文嗎？',
     '我有確認學生會在哪些場景、和哪些對象使用英文嗎？',
@@ -38,6 +38,48 @@ const CHECK_LIST = [
   ],
 ];
 
+const CHECK_LIST_FOR_AI = [
+  [
+    '老師有詢問學生最想加強哪一項英文能力嗎？（聽、說、讀、寫）',
+    '老師有詢問學生有沒有考過英文檢定或自評程度嗎？',
+    '老師有用簡短測驗或對話來了解學生程度嗎？',
+    '老師有用明確數字或指標說明學生程度或目標嗎？（如分數、等級）',
+    '老師有指出學生目前最需要加強的能力或弱點嗎？',
+    '老師有說明學生目前的問題或給改善方向嗎？',
+    '老師有說明學生以前的學習方法為什麼沒效果嗎？',
+  ],
+  [
+    '老師有詢問學生最想加強哪一項英文能力嗎？',
+    '老師有詢問學生是否考過檢定或自評程度嗎？',
+    '老師有用簡短測驗或對話了解學生程度嗎？',
+    '老師有用數字或指標說明學生的程度或目標嗎？',
+    '老師有指出學生目前最需要加強的能力或弱點嗎？',
+    '老師有說明學生的問題或提供改善方向嗎？',
+    '老師有說明學生以前的學習方法為何沒效果嗎？',
+  ],
+  [
+    '老師有提供教材或教學方式讓學生實際參與嗎？',
+    '老師有鼓勵學生練習或回答問題嗎？',
+    '老師有解釋教材或教學方式為何適合學生嗎？',
+    '老師有詢問學生對教材或活動的感受嗎？',
+    '老師有給學生具體的學習回饋嗎？',
+    '老師有說明未來的學習方向或如何持續進步嗎？',
+  ],
+  [
+    '老師有分享教學經驗或學生案例來建立信任或展現專業嗎？（非必要）',
+    '老師有說明學習計畫如何對應學生的需求與目標嗎？',
+    '老師有與學生討論長期學習目標或完成時間嗎？',
+    '老師有將長期目標拆解成短期任務並與學生討論嗎？',
+  ],
+  [
+    '老師有主動詢問學生是否有顧慮或需要調整嗎？',
+    '老師有正面回應學生的顧慮並提供具體解法嗎？',
+    '老師有提醒學生課後可使用的學習資源嗎？',
+    '老師有提醒學生平台優惠或折扣資訊嗎？',
+    '老師有回應或建議學生課堂包的選擇嗎？（非必要）',
+  ],
+];
+
 const BRIEF_TEMPLATE = [
   ['1. 基本資料：{identity}', '2. 科目：{subject}、{usage_scenario}'],
   ['1. 基本資料：{identity}、{usage_context}', '2. 學習動機：{extrinsic_motivation}'],
@@ -62,8 +104,13 @@ const BRIEF_TEMPLATE = [
   ],
 ];
 
-function getCheckList(part_n) {
-  const list = CHECK_LIST[part_n - 1];
+function getCheckListForTeacher(part_n) {
+  const list = CHECK_LIST_FOR_TEACHER[part_n - 1];
+  return list.join('\n');
+}
+
+function getCheckListForAI(part_n) {
+  const list = CHECK_LIST_FOR_AI[part_n - 1];
   return list.join('\n');
 }
 
@@ -102,29 +149,22 @@ function getUserBrief(input, part_n) {
   return BRIEF_TEMPLATE[part_n - 1].map((p) => fillTemplate(p, personaPart)).join('\n');
 }
 
-// part_n = 1 ~ 5
-function getAIParams(input, part_n) {
-  if (!input) return {};
+function getStudentAIParams(input, part_n) {
   return {
     persona: getPersona(input, part_n),
     dialog: getDialog(input, part_n),
-    check_list: getCheckList(part_n),
   };
 }
 
-// keep it since it's from Jacky's code
-// function getTeacherHint(input, part_n) {
-//   if (!input) return {};
-//   return {
-//     userBrief: getUserBrief(input, part_n),
-//     dialog: getDialog(input, part_n),
-//     check_list: getCheckList(part_n),
-//   };
-// }
+function getCoachAIParams(input, part_n) {
+  return {
+    persona: getPersona(input, part_n),
+  };
+}
 
 function getTeacherHintText(input, part_n) {
   return `【背景資訊】\n${getUserBrief(input, part_n)}\n\n【對話內容】\n${getDialog(
     input,
     part_n
-  )}\n\n【檢查重點】\n${getCheckList(part_n)}`;
+  )}\n\n【檢查重點】\n${getCheckListForTeacher(part_n)}`;
 }

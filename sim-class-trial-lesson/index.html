@@ -1522,19 +1522,17 @@
 
       getVariables(botType = 'student') {
         const selectedNumber = this.getChapterNumber();
-        const variables = getAIParams(getScript(), selectedNumber)
 
         switch (botType) {
           case 'student':
             return {
-              persona: variables.persona,
-              dialog: variables.dialog,
+              ...getStudentAIParams(getScript(), selectedNumber),
               native_language: "zh-tw",
               learning_language: "en-us"
             }
           case 'coach':
             return {
-              check_list: variables.check_list,
+              ...getCoachAIParams(getScript(), selectedNumber),
               chat_history: this.getChatMessagesText()
             }
           default:
