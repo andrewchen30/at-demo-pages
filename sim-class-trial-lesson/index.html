@@ -1502,16 +1502,20 @@
 
         switch (botType) {
           case 'student':
-            delete variables.check_list
-            break;
+            return {
+              persona: variables.persona,
+              dialog: variables.dialog,
+              native_language: "zh-tw",
+              learning_language: "en-us"
+            }
           case 'coach':
-            delete variables.dialog
-            break;
+            return {
+              check_list: variables.check_list,
+              chat_history: this.getChatMessagesText()
+            }
           default:
             return {}
         }
-
-        return variables;
       }
 
       // 啟動編劇 Bot
@@ -1755,7 +1759,7 @@
         this.elements.sendBtn.disabled = true;
 
         try {
-          const response = await this.callOpenAI(this.currentBot);
+          const response = await this.callOpenAI(this.currentBot, this.getChatMessages());
           this.removeThinkingIndicator();
 
           // 添加 AI 回應到聊天記錄
@@ -1819,7 +1823,15 @@
         return messages;
       }
 
-      async callOpenAI(botType = 'student', input = this.getChatMessages()) {
+      getChatMessagesText() {
+        return this.chatHistory
+          .filter(msg => msg.role === 'user' || msg.role === 'assistant')
+          .filter(msg => msg.content.includes('教練總結'))
+          .map(msg => `${msg.role === 'user' ? '老師' : '學生'}: ${msg.content}`)
+          .join('\n');
+      }
+
+      async callOpenAI(botType = 'student', input) {
         const variables = this.getVariables(botType);
 
         // 根據 bot 類型獲取對應的設定
