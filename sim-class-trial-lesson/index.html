@@ -1826,7 +1826,7 @@
       getChatMessagesText() {
         return this.chatHistory
           .filter(msg => msg.role === 'user' || msg.role === 'assistant')
-          .filter(msg => msg.content.includes('教練總結'))
+          .filter(msg => !msg.content.includes('教練總結'))
           .map(msg => `${msg.role === 'user' ? '老師' : '學生'}: ${msg.content}`)
           .join('\n');
       }
