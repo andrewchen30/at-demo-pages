@@ -1641,7 +1641,14 @@
 
         const avatar = document.createElement('div');
         avatar.className = 'message-avatar';
-        avatar.textContent = role === 'user' ? 'U' : 'AI';
+        // 根據不同的 role 顯示不同的文字
+        if (role === 'user') {
+          avatar.textContent = '你';
+        } else if (role === 'coach') {
+          avatar.textContent = '教練';
+        } else {
+          avatar.textContent = '學生';
+        }
 
         const contentDiv = document.createElement('div');
         contentDiv.className = 'message-content';
@@ -1702,7 +1709,7 @@
 
         const avatar = document.createElement('div');
         avatar.className = 'message-avatar';
-        avatar.textContent = 'AI';
+        avatar.textContent = '學生';
 
         const thinkingContent = document.createElement('div');
         thinkingContent.className = 'thinking-indicator';
