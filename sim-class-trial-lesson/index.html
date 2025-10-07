@@ -894,9 +894,21 @@
       <div class="section">
         <div class="section-content">
           <button id="promptHistoryBtn" class="btn"
-            style="background: #f1f5f9; border-color: #e2e8f0; color: #64748b; margin-bottom: 16px;">
+            style="background: #f1f5f9; border-color: #e2e8f0; color: #64748b; margin-bottom: 8px;">
             📝 Prompt History
           </button>
+          <button id="exportConfigBtn" class="btn"
+            style="background: #f1f5f9; border-color: #e2e8f0; color: #64748b; margin-bottom: 8px;">
+            💾 Export Config
+          </button>
+          <button id="importConfigBtn" class="btn"
+            style="background: #f1f5f9; border-color: #e2e8f0; color: #64748b; margin-bottom: 8px;">
+            📂 Import Config
+          </button>
+          <input type="file" id="importConfigFile" accept=".json" style="display: none;">
+          <div id="importedFileName" style="font-size: 12px; color: var(--muted); margin-top: 8px; display: none;">
+            已匯入: <span id="fileNameText"></span>
+          </div>
         </div>
       </div>
 
@@ -1195,6 +1207,11 @@
           summaryBtn: document.getElementById('summaryBtn'),
           summaryBtnText: document.getElementById('summaryBtnText'),
           promptHistoryBtn: document.getElementById('promptHistoryBtn'),
+          exportConfigBtn: document.getElementById('exportConfigBtn'),
+          importConfigBtn: document.getElementById('importConfigBtn'),
+          importConfigFile: document.getElementById('importConfigFile'),
+          importedFileName: document.getElementById('importedFileName'),
+          fileNameText: document.getElementById('fileNameText'),
 
           // 中間聊天室
           chatMessages: document.getElementById('chatMessages'),
@@ -1241,6 +1258,13 @@
 
         // Prompt History 按鈕
         this.elements.promptHistoryBtn.addEventListener('click', () => this.showPromptHistoryDialog());
+
+        // Export Config 按鈕
+        this.elements.exportConfigBtn.addEventListener('click', () => this.exportConfig());
+
+        // Import Config 按鈕
+        this.elements.importConfigBtn.addEventListener('click', () => this.elements.importConfigFile.click());
+        this.elements.importConfigFile.addEventListener('change', (e) => this.importConfig(e));
 
 
         // 設定變更時儲存
@@ -2091,6 +2115,109 @@
         };
 
         this.promptHistory.push(record);
+      }
+
+      // 匯出配置
+      exportConfig() {
+        const config = {
+          scriptwriter: {
+            botId: this.elements.scriptwriterBotId.value,
+            version: this.elements.scriptwriterVersion.value
+          },
+          student: {
+            botId: this.elements.studentBotId.value,
+            version: this.elements.studentVersion.value
+          },
+          coach: {
+            botId: this.elements.coachBotId.value,
+            version: this.elements.coachVersion.value
+          },
+          apiKey: this.elements.apiKey.value
+        };
+
+        // 建立下載連結
+        const dataStr = JSON.stringify(config, null, 2);
+        const dataBlob = new Blob([dataStr], { type: 'application/json' });
+        const url = URL.createObjectURL(dataBlob);
+
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `ai-chat-config-${new Date().toISOString().slice(0, 10)}.json`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }
+
+      // 匯入配置
+      importConfig(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          try {
+            const config = JSON.parse(e.target.result);
+
+            // 載入配置
+            if (config.scriptwriter) {
+              this.elements.scriptwriterBotId.value = config.scriptwriter.botId || '';
+              this.elements.scriptwriterVersion.value = config.scriptwriter.version || '';
+            }
+
+            if (config.student) {
+              this.elements.studentBotId.value = config.student.botId || '';
+              this.elements.studentVersion.value = config.student.version || '';
+            }
+
+            if (config.coach) {
+              this.elements.coachBotId.value = config.coach.botId || '';
+              this.elements.coachVersion.value = config.coach.version || '';
+            }
+
+            if (config.apiKey) {
+              this.elements.apiKey.value = config.apiKey;
+            }
+
+            // 儲存設定
+            this.saveSettings();
+            this.updateBotTitles();
+
+            // 顯示檔案名稱
+            this.elements.fileNameText.textContent = file.name;
+            this.elements.importedFileName.style.display = 'block';
+
+            // 顯示成功訊息
+            this.showSuccessMessage('配置已成功匯入');
+
+          } catch (error) {
+            this.showError(`匯入配置失敗: ${error.message}`);
+          }
+        };
+
+        reader.readAsText(file);
+
+        // 重置 file input
+        event.target.value = '';
+      }
+
+      // 顯示成功訊息
+      showSuccessMessage(message) {
+        const successDiv = document.createElement('div');
+        successDiv.className = 'error-message';
+        successDiv.style.background = 'rgba(34, 197, 94, 0.1)';
+        successDiv.style.borderColor = 'rgba(34, 197, 94, 0.3)';
+        successDiv.style.color = 'var(--accent)';
+        successDiv.textContent = message;
+
+        this.elements.chatMessages.appendChild(successDiv);
+
+        // 3秒後自動移除訊息
+        setTimeout(() => {
+          if (successDiv.parentNode) {
+            successDiv.remove();
+          }
+        }, 3000);
       }
     }
 
