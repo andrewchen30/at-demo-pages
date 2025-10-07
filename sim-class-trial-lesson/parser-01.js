@@ -51,7 +51,7 @@ const BRIEF_TEMPLATE = [
     '1. 基本資料：{identity}、{usage_context}',
     '2. 學習動機：{extrinsic_motivation}、{intrinsic_motivation}',
     '3. 目前程度：{current_performance}、{strengths}、{biggest_gap}',
-    '4. 學習目標：{target_level}、{long_term_outcome}',
+    '4. 學習目標：{target_level}',
   ],
   [
     '1. 基本資料：{identity}、{usage_context}',
