@@ -158,7 +158,7 @@ function getStudentAIParams(input, part_n) {
 
 function getCoachAIParams(input, part_n) {
   return {
-    persona: getPersona(input, part_n),
+    check_list: getCheckListForAI(part_n),
   };
 }
 
