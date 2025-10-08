@@ -76,6 +76,10 @@ function replacePlaceholders(str, dataMap, aliases = ALIASES) {
   });
 }
 
+function getTemplate() {
+  return [...templates];
+}
+
 // Fill every line of every script in the templates
 export function getScripts(persona) {
   const dataMap = buildPersonaMap(persona);
@@ -86,8 +90,4 @@ export function getScripts(persona) {
   return {
     scripts: data,
   };
-}
-
-export function getTemplate() {
-  return [...templates];
 }

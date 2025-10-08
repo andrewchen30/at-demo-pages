@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
 
-import { getStudentRoleCount } from '@/lib/server/studentRoles';
+import { directorRole } from '@/lib/aiRole';
 
 export async function GET() {
   try {
-    const total = await getStudentRoleCount();
+    const total = await directorRole.getStudentRoleCount();
     return NextResponse.json({ total });
   } catch (error) {
     const message = error instanceof Error ? error.message : '取得學生角色數量失敗。';

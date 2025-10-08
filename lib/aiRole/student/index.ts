@@ -1,7 +1,7 @@
 import { createRoleAsk } from '../utils/createRoleAsk';
 import type { AIRole } from '../types';
 
-type StudentVariables = {
+export type StudentVariables = Record<string, unknown> & {
   persona: string;
   dialog?: string;
 };

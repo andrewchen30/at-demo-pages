@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server';
 
-import { getRandomStudentRole, StudentRoleStoreEmptyError } from '@/lib/server/studentRoles';
+import { directorRole } from '@/lib/aiRole';
 
 export async function GET() {
   try {
-    const role = await getRandomStudentRole();
+    const role = await directorRole.getRandomStudentRole();
     return NextResponse.json(role);
   } catch (error) {
-    if (error instanceof StudentRoleStoreEmptyError) {
+    if (error instanceof directorRole.StudentRoleStoreEmptyError) {
       return NextResponse.json({ error: { message: error.message } }, { status: 404 });
     }
 

@@ -1,11 +1,11 @@
 import 'server-only';
 
 import { randomUUID } from 'crypto';
-import { promises as fs } from 'fs';
 import path from 'path';
-
-import { directorRole, scriptWriterRole } from '@/lib/aiRole';
-import { getScripts } from './getScript';
+import { DIRECTOR_PROMPTS } from './prompts';
+import { getScripts } from '../utils/getScript';
+import { FileCache } from './fileCache';
+import { createRoleAsk } from '@/lib/aiRole/utils/createRoleAsk';
 
 export class StudentRoleStoreEmptyError extends Error {
   constructor(message: string = '目前沒有可用的學生角色，請先產生角色。') {
@@ -27,21 +27,6 @@ type StoredRole = {
   createdAt: string;
 };
 
-type StudentRolesStore = {
-  useMemoryStore: boolean;
-  roles: StoredRole[];
-};
-
-declare global {
-  // eslint-disable-next-line no-var
-  var __studentRolesStore: StudentRolesStore | undefined;
-}
-
-const store: StudentRolesStore = (globalThis.__studentRolesStore ??= {
-  useMemoryStore: false,
-  roles: [],
-});
-
 type RandomRoleResponse = {
   role: string;
   total: number;
@@ -49,146 +34,40 @@ type RandomRoleResponse = {
 };
 
 const DATA_DIR = path.join(process.cwd(), '.data');
-const DATA_FILE = path.join(DATA_DIR, 'student_roles.json');
 const DEFAULT_BATCH_SIZE = 10;
 
 const SCRIPTWRITER_PROMPT = '以下是腳本內容，請用 JSON 格式回覆我：';
 
-function isReadOnlyFileSystemError(error: unknown): error is NodeJS.ErrnoException {
-  if (!error || typeof error !== 'object') {
-    return false;
-  }
-  const code = (error as NodeJS.ErrnoException).code;
-  return code === 'EACCES' || code === 'EPERM' || code === 'EROFS';
-}
+// 創建 ask 函數來避免循環依賴
+const directorAsk = createRoleAsk({
+  botIdEnvVar: 'OPENAI_DIRECTOR_BOT_ID',
+  fallbackBotIdEnvVar: 'OPENAI_SCRIPTWRITER_BOT_ID',
+});
 
-function useMemoryStore() {
-  if (!store.useMemoryStore) {
-    store.useMemoryStore = true;
-  }
-}
+const scriptWriterAsk = createRoleAsk({
+  botIdEnvVar: 'OPENAI_SCRIPTWRITER_BOT_ID',
+});
 
-async function writeRolesToFile(roles: StoredRole[]): Promise<boolean> {
-  if (store.useMemoryStore) {
-    store.roles = roles;
-    return true;
-  }
-
-  try {
-    await fs.writeFile(DATA_FILE, JSON.stringify(roles, null, 2), 'utf-8');
-    return true;
-  } catch (error) {
-    if (isReadOnlyFileSystemError(error)) {
-      useMemoryStore();
-      store.roles = roles;
-      return false;
-    }
-    throw error;
-  }
-}
-
-async function ensureDataFile() {
-  if (store.useMemoryStore) {
-    return;
-  }
-
-  try {
-    await fs.mkdir(DATA_DIR, { recursive: true });
-  } catch (error) {
-    if (isReadOnlyFileSystemError(error)) {
-      useMemoryStore();
-      return;
-    }
-    throw error;
-  }
-
-  try {
-    await fs.access(DATA_FILE);
-  } catch (error) {
-    if (isReadOnlyFileSystemError(error)) {
-      useMemoryStore();
-      return;
-    }
-
-    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
-      throw error;
-    }
-
-    await writeRolesToFile([]);
-  }
-}
+// 創建 FileCache 實例來管理學生角色數據
+const rolesCache = new FileCache<StoredRole[]>({
+  dataDir: DATA_DIR,
+  fileName: 'student_roles.json',
+  defaultValue: [],
+});
 
 async function readRoles(): Promise<StoredRole[]> {
-  if (store.useMemoryStore) {
-    return store.roles;
-  }
-
-  await ensureDataFile();
-  if (store.useMemoryStore) {
-    return store.roles;
-  }
-
-  let content: string;
-  try {
-    content = await fs.readFile(DATA_FILE, 'utf-8');
-  } catch (error) {
-    if (isReadOnlyFileSystemError(error)) {
-      useMemoryStore();
-      return store.roles;
-    }
-    throw error;
-  }
-
-  try {
-    const parsed = JSON.parse(content);
-    if (Array.isArray(parsed)) {
-      store.roles = parsed as StoredRole[];
-      return store.roles;
-    }
-    store.roles = [];
-    await writeRolesToFile(store.roles);
-    return store.roles;
-  } catch {
-    // 如果檔案損毀，重置為空陣列
-    store.roles = [];
-    await writeRolesToFile(store.roles);
-    return store.roles;
-  }
+  const roles = await rolesCache.read();
+  // 確保返回的是陣列
+  return Array.isArray(roles) ? roles : [];
 }
 
-async function writeRoles(roles: StoredRole[]) {
-  store.roles = roles;
-
-  if (store.useMemoryStore) {
-    return;
-  }
-
-  await ensureDataFile();
-  if (store.useMemoryStore) {
-    return;
-  }
-
-  await writeRolesToFile(store.roles);
+async function writeRoles(roles: StoredRole[]): Promise<void> {
+  await rolesCache.write(roles);
 }
-
-const DIRECTOR_PROMPTS: readonly string[] = [
-  '請給我一個成人上班族，想要學習旅遊英文，用JSON格式回覆我',
-  '請給我一個成人上班族，想要學習工作英文，用JSON格式回覆我',
-  '請給我一個成人上班族，想要學習生活英文，用JSON格式回覆我',
-  '請給我一個大學學生，想要學習旅遊英文，用JSON格式回覆我',
-  '請給我一個大學學生，想要學習檢定英文，用JSON格式回覆我',
-  '請給我一個大學學生，想要學習生活英文，用JSON格式回覆我',
-  '請給我一個沒有在工作的成人，想要學習旅遊英文，用JSON格式回覆我',
-  '請給我一個沒有在工作的成人，想要學習生活英文，用JSON格式回覆我',
-];
 
 async function requestDirectorRole(): Promise<string> {
   try {
-    const { result } = await directorRole.ask(
-      DIRECTOR_PROMPTS[Math.floor(Math.random() * DIRECTOR_PROMPTS.length)],
-      {},
-      []
-    );
+    const { result } = await directorAsk(DIRECTOR_PROMPTS[Math.floor(Math.random() * DIRECTOR_PROMPTS.length)], {}, []);
     const trimmed = typeof result === 'string' ? result.trim() : '';
 
     if (!trimmed) {
@@ -212,7 +91,7 @@ async function requestScriptwriterRole(directorOutput: string): Promise<string> 
   console.log('message: ', message);
 
   try {
-    const { result } = await scriptWriterRole.ask(message, {}, []);
+    const { result } = await scriptWriterAsk(message, {}, []);
     const trimmed = typeof result === 'string' ? result.trim() : '';
 
     if (!trimmed) {

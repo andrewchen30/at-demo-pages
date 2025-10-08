@@ -1,5 +1,5 @@
-import { createRoleAsk } from './utils/createRoleAsk';
-import type { AIRole } from './types';
+import { createRoleAsk } from '../utils/createRoleAsk';
+import type { AIRole } from '../types';
 
 export const scriptWriterRole: AIRole = {
   name: 'scriptWriter',

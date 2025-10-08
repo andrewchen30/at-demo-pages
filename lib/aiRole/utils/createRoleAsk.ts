@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { extractResponseText } from '@/lib/server/openaiResponse';
+import { extractAIResponseText } from '@/lib/aiRole/utils/extractResponseText';
 
 import type { AskFunction, AskResult } from '../types';
 
@@ -59,11 +59,7 @@ async function callOpenAI(apiKey: string, payload: Record<string, unknown>): Pro
 export function createRoleAsk<Variables extends Record<string, unknown> = Record<string, unknown>>(
   options: RoleOptions
 ): AskFunction<Variables> {
-  return async function ask(
-    textMessage: string,
-    variables: Variables = {} as Variables,
-    chatHistory: unknown[] = []
-  ) {
+  return async function ask(textMessage: string, variables: Variables = {} as Variables, chatHistory: unknown[] = []) {
     const botId = resolveBotId(options);
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
@@ -101,7 +97,7 @@ export function createRoleAsk<Variables extends Record<string, unknown> = Record
     };
 
     const raw = await callOpenAI(apiKey, payload);
-    const result = extractResponseText(raw);
+    const result = extractAIResponseText(raw);
 
     return { result, raw };
   };

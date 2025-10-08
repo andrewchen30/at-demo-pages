@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { studentRole } from '@/lib/aiRole';
+import type { StudentVariables } from '@/lib/aiRole/student';
 
 type ChatRequestBody = {
   textMessage?: unknown;
@@ -36,10 +37,10 @@ export async function POST(request: Request) {
   const chatHistory = ensureArray(body?.chatHistory);
 
   // 確保 variables 符合 StudentVariables 類型，使用 snake_case 傳遞給 OpenAI
-  const variables = {
-    persona: (rawVariables.persona as string) || '',
-    dialog: rawVariables.dialog,
+  const variables: StudentVariables = {
     ...rawVariables,
+    persona: typeof rawVariables.persona === 'string' ? rawVariables.persona : '',
+    dialog: typeof rawVariables.dialog === 'string' ? rawVariables.dialog : undefined,
   };
 
   try {

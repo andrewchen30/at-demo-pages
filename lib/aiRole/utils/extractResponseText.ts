@@ -1,4 +1,4 @@
-export function extractResponseText(data: any): string {
+export function extractAIResponseText(data: any): string {
   if (!data) {
     return '';
   }

@@ -1,7 +1,7 @@
 'use client';
 
-import { getCoachAIParams, getStudentAIParams, getTeacherHintText } from '@/lib/utils/student-role-utils';
-import type { DirectorInput } from '@/lib/types/student-role';
+import { getCoachAIParams, getStudentAIParams, getTeacherHintText } from '@/lib/aiRole/director/utils';
+import type { DirectorInput } from '@/lib/aiRole/student/types';
 
 type BotType = 'director' | 'scriptwriter' | 'student' | 'coach' | 'teacher' | 'judge';
 type WorkflowStep = 'idle' | 'scriptwriter' | 'student';

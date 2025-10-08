@@ -1,9 +1,6 @@
 import { NextResponse } from 'next/server';
 
-import {
-  appendStudentRoles,
-  StudentRoleInvalidCountError,
-} from '@/lib/server/studentRoles';
+import { directorRole } from '@/lib/aiRole';
 
 function normalizeCount(value: unknown): number | undefined {
   if (typeof value === 'undefined') {
@@ -38,10 +35,10 @@ export async function POST(request: Request) {
   const count = normalizeCount(rawCount);
 
   try {
-    const result = await appendStudentRoles(count);
+    const result = await directorRole.appendStudentRoles(count);
     return NextResponse.json(result);
   } catch (error) {
-    if (error instanceof StudentRoleInvalidCountError) {
+    if (error instanceof directorRole.StudentRoleInvalidCountError) {
       return NextResponse.json({ error: { message: error.message } }, { status: 400 });
     }
 

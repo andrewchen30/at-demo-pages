@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
 
-import { clearStudentRoles } from '@/lib/server/studentRoles';
+import { directorRole } from '@/lib/aiRole';
 
 export async function POST() {
   try {
-    const result = await clearStudentRoles();
+    const result = await directorRole.clearStudentRoles();
     return NextResponse.json(result);
   } catch (error) {
     const message = error instanceof Error ? error.message : '清除學生角色失敗。';
