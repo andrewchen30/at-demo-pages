@@ -168,12 +168,10 @@ async function writeRoles(roles: StoredRole[]) {
 async function requestScriptwriterRole(): Promise<string> {
   const apiKey = getEnvVariable('OPENAI_API_KEY');
   const botId = getEnvVariable('OPENAI_SCRIPTWRITER_BOT_ID');
-  const version = getEnvVariable('OPENAI_SCRIPTWRITER_BOT_VERSION');
 
   const payload = {
     prompt: {
       id: botId,
-      version,
       variables: {},
     },
     input: [
@@ -255,6 +253,11 @@ export async function appendStudentRoles(count: number = DEFAULT_BATCH_SIZE) {
     added: newRoles.length,
     total: updatedRoles.length,
   };
+}
+
+export async function clearStudentRoles() {
+  await writeRoles([]);
+  return { total: 0 };
 }
 
 export async function getStudentRoleCount() {

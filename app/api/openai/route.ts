@@ -6,23 +6,19 @@ type BotType = 'scriptwriter' | 'student' | 'coach';
 
 type OpenAIRequestBody = {
   botType: BotType;
-  version?: string;
   variables?: Record<string, unknown>;
   input: unknown;
 };
 
-const BOT_CONFIG: Record<BotType, { id?: string; version?: string }> = {
+const BOT_CONFIG: Record<BotType, { id?: string }> = {
   scriptwriter: {
     id: process.env.OPENAI_SCRIPTWRITER_BOT_ID,
-    version: process.env.OPENAI_SCRIPTWRITER_BOT_VERSION,
   },
   student: {
     id: process.env.OPENAI_STUDENT_BOT_ID,
-    version: process.env.OPENAI_STUDENT_BOT_VERSION,
   },
   coach: {
     id: process.env.OPENAI_COACH_BOT_ID,
-    version: process.env.OPENAI_COACH_BOT_VERSION,
   },
 };
 
@@ -45,7 +41,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const { botType, version, variables = {}, input } = body;
+  const { botType, variables = {}, input } = body;
   if (!botType || !['scriptwriter', 'student', 'coach'].includes(botType)) {
     return NextResponse.json(
       { error: { message: 'Invalid bot type provided.' } },
@@ -61,18 +57,9 @@ export async function POST(request: Request) {
     );
   }
 
-  const resolvedVersion = version?.trim() || config.version;
-  if (!resolvedVersion) {
-    return NextResponse.json(
-      { error: { message: `Bot version for ${botType} is not configured.` } },
-      { status: 500 }
-    );
-  }
-
   const payload = {
     prompt: {
       id: config.id,
-      version: resolvedVersion,
       variables,
     },
     input,
