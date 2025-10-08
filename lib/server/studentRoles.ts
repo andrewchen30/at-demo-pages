@@ -4,7 +4,8 @@ import { randomUUID } from 'crypto';
 import { promises as fs } from 'fs';
 import path from 'path';
 
-import { extractResponseText } from './openaiResponse';
+import { directorRole, scriptWriterRole } from '@/lib/aiRole';
+import { getScripts } from './getScript';
 
 export class StudentRoleStoreEmptyError extends Error {
   constructor(message: string = '目前沒有可用的學生角色，請先產生角色。') {
@@ -36,10 +37,10 @@ declare global {
   var __studentRolesStore: StudentRolesStore | undefined;
 }
 
-const store: StudentRolesStore = globalThis.__studentRolesStore ??= {
+const store: StudentRolesStore = (globalThis.__studentRolesStore ??= {
   useMemoryStore: false,
   roles: [],
-};
+});
 
 type RandomRoleResponse = {
   role: string;
@@ -51,8 +52,7 @@ const DATA_DIR = path.join(process.cwd(), '.data');
 const DATA_FILE = path.join(DATA_DIR, 'student_roles.json');
 const DEFAULT_BATCH_SIZE = 10;
 
-const OPENAI_ENDPOINT = 'https://api.openai.com/v1/responses';
-const SCRIPTWRITER_PROMPT = 'Please provide json response with premise information';
+const SCRIPTWRITER_PROMPT = '以下是腳本內容，請用 JSON 格式回覆我：';
 
 function isReadOnlyFileSystemError(error: unknown): error is NodeJS.ErrnoException {
   if (!error || typeof error !== 'object') {
@@ -85,15 +85,6 @@ async function writeRolesToFile(roles: StoredRole[]): Promise<boolean> {
     }
     throw error;
   }
-}
-
-function getEnvVariable(name: string, fallbackName?: string) {
-  const value = process.env[name] ?? (fallbackName ? process.env[fallbackName] : undefined);
-  if (!value) {
-    const displayName = fallbackName ? `${name} 或 ${fallbackName}` : name;
-    throw new Error(`環境變數 ${displayName} 未設定，無法建立學生角色。`);
-  }
-  return value;
 }
 
 async function ensureDataFile() {
@@ -180,52 +171,62 @@ async function writeRoles(roles: StoredRole[]) {
   await writeRolesToFile(store.roles);
 }
 
-async function requestScriptwriterRole(): Promise<string> {
-  const apiKey = getEnvVariable('OPENAI_API_KEY');
-  const botId = getEnvVariable('OPENAI_SCRIPTWRITER_BOT_ID', 'OPENAI_SCRIPTWRITER01_BOT_ID');
+const DIRECTOR_PROMPTS: readonly string[] = [
+  '請給我一個成人上班族，想要學習旅遊英文，用JSON格式回覆我',
+  '請給我一個成人上班族，想要學習工作英文，用JSON格式回覆我',
+  '請給我一個成人上班族，想要學習生活英文，用JSON格式回覆我',
+  '請給我一個大學學生，想要學習旅遊英文，用JSON格式回覆我',
+  '請給我一個大學學生，想要學習檢定英文，用JSON格式回覆我',
+  '請給我一個大學學生，想要學習生活英文，用JSON格式回覆我',
+  '請給我一個沒有在工作的成人，想要學習旅遊英文，用JSON格式回覆我',
+  '請給我一個沒有在工作的成人，想要學習生活英文，用JSON格式回覆我',
+];
 
-  const payload = {
-    prompt: {
-      id: botId,
-      variables: {},
-    },
-    input: [
-      {
-        role: 'user',
-        content: [
-          {
-            type: 'input_text',
-            text: SCRIPTWRITER_PROMPT,
-          },
-        ],
-      },
-    ],
-  };
+async function requestDirectorRole(): Promise<string> {
+  try {
+    const { result } = await directorRole.ask(
+      DIRECTOR_PROMPTS[Math.floor(Math.random() * DIRECTOR_PROMPTS.length)],
+      {},
+      []
+    );
+    const trimmed = typeof result === 'string' ? result.trim() : '';
 
-  const response = await fetch(OPENAI_ENDPOINT, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify(payload),
-  });
+    if (!trimmed) {
+      throw new Error('OpenAI 導演回傳內容為空，無法建立學生角色。');
+    }
 
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    const message =
-      (errorData && (errorData.error?.message || errorData.message)) || response.statusText;
-    throw new Error(`OpenAI 回傳錯誤：${message}`);
+    return trimmed;
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('導演回傳內容為空')) {
+      throw error;
+    }
+    const message = error instanceof Error ? error.message : '未知錯誤';
+    throw new Error(`OpenAI 導演回傳錯誤：${message}`);
   }
+}
 
-  const data = await response.json();
-  const result = extractResponseText(data);
+async function requestScriptwriterRole(directorOutput: string): Promise<string> {
+  const script = getScripts(JSON.parse(directorOutput).persona);
+  const message = `${SCRIPTWRITER_PROMPT}\n${JSON.stringify(script)}`;
 
-  if (!result) {
-    throw new Error('OpenAI 回傳內容為空，無法建立學生角色。');
+  console.log('message: ', message);
+
+  try {
+    const { result } = await scriptWriterRole.ask(message, {}, []);
+    const trimmed = typeof result === 'string' ? result.trim() : '';
+
+    if (!trimmed) {
+      throw new Error('OpenAI 編劇回傳內容為空，無法建立學生角色。');
+    }
+
+    return trimmed;
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('編劇回傳內容為空')) {
+      throw error;
+    }
+    const message = error instanceof Error ? error.message : '未知錯誤';
+    throw new Error(`OpenAI 編劇回傳錯誤：${message}`);
   }
-
-  return result;
 }
 
 export async function getRandomStudentRole(): Promise<RandomRoleResponse> {
@@ -253,10 +254,27 @@ export async function appendStudentRoles(count: number = DEFAULT_BATCH_SIZE) {
   const newRoles: StoredRole[] = [];
 
   for (let i = 0; i < count; i += 1) {
-    const raw = await requestScriptwriterRole();
+    const directorOutput = await requestDirectorRole();
+    const scriptwriterOutput = await requestScriptwriterRole(directorOutput);
+
+    console.log('scriptwriterOutput: ', scriptwriterOutput);
+    console.log('directorOutput: ', directorOutput);
+
+    // 請將兩個 output 都 JSON.parse 後再合併
+    let raw;
+    try {
+      raw = {
+        ...JSON.parse(directorOutput),
+        ...JSON.parse(scriptwriterOutput),
+      };
+    } catch (error) {
+      console.log('Failed to parse outputs:', error);
+      throw new Error(`解析角色資料失敗：${error instanceof Error ? error.message : '未知錯誤'}`);
+    }
+
     newRoles.push({
       id: randomUUID(),
-      raw,
+      raw: JSON.stringify(raw),
       createdAt: new Date().toISOString(),
     });
   }

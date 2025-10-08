@@ -133,7 +133,7 @@ function getPersona(input: DirectorInput, partN: number): string {
 
 function getDialog(input: DirectorInput, partN: number): string {
   const scriptObj = (input.scripts || []).find((s) => s.index === partN - 1);
-  const dialogPart = scriptObj ? scriptObj.scripts.join('\n') : '';
+  const dialogPart = scriptObj ? scriptObj.script.join('\n') : '';
   return dialogPart;
 }
 

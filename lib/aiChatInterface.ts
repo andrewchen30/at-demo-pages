@@ -628,6 +628,8 @@ class AIChatInterface {
         parsedRole = role as DirectorInput;
       }
 
+      console.log('parsedRole: ', parsedRole);
+
       // 驗證資料完整性
       if (!parsedRole.persona || !parsedRole.scripts) {
         throw new Error('劇本資料不完整，缺少必要欄位');
@@ -657,6 +659,7 @@ class AIChatInterface {
       this.showSuccessMessage(`已載入新的學生角色`);
     } catch (error) {
       const message = error instanceof Error ? error.message : '未知錯誤';
+      console.log('error: ', error);
       this.showError(`載入學生角色失敗: ${message}`);
       this.elements.scriptwriterStatus.textContent = '錯誤';
       this.elements.scriptwriterStatus.className = 'bot-status';

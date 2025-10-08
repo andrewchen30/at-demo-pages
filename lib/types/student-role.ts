@@ -7,7 +7,7 @@ export interface PersonaEntry {
 
 export interface ScriptEntry {
   index: number;
-  scripts: string[];
+  script: string[];
 }
 
 export interface DirectorInput {

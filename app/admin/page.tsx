@@ -15,7 +15,7 @@ export default function AdminPage() {
   useEffect(() => {
     const fetchTotal = async () => {
       try {
-        const response = await fetch('/api/ai/student/roles/count');
+        const response = await fetch('/api/students/count');
         if (response.ok) {
           const data = await response.json();
           setTotal(data.total);
@@ -32,11 +32,12 @@ export default function AdminPage() {
     setAlert(null);
 
     try {
-      const response = await fetch('/api/ai/student/roles/refresh', {
+      const response = await fetch('/api/students/generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        body: JSON.stringify({ count: 1 }), // TODO: change to 10
       });
 
       if (!response.ok) {
@@ -68,7 +69,7 @@ export default function AdminPage() {
     setAlert(null);
 
     try {
-      const response = await fetch('/api/ai/student/roles/clear', {
+      const response = await fetch('/api/students/clear', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -77,8 +78,7 @@ export default function AdminPage() {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        const errMsg =
-          errorData?.error?.message || response.statusText || '清除學生角色快取失敗';
+        const errMsg = errorData?.error?.message || response.statusText || '清除學生角色快取失敗';
         throw new Error(errMsg);
       }
 
@@ -93,8 +93,7 @@ export default function AdminPage() {
         text: '已清除學生角色快取。',
       });
     } catch (error) {
-      const errMsg =
-        error instanceof Error ? error.message : '清除學生角色快取失敗';
+      const errMsg = error instanceof Error ? error.message : '清除學生角色快取失敗';
       setClearState('error');
       setAlert({ type: 'error', text: errMsg });
     }
