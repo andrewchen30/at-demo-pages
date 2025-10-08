@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 
+import { extractResponseText } from '@/lib/server/openaiResponse';
+
 type BotType = 'scriptwriter' | 'student' | 'coach';
 
 type OpenAIRequestBody = {
@@ -94,8 +96,7 @@ export async function POST(request: Request) {
     }
 
     const data = await response.json();
-    const result =
-      (data.output || []).find((item: any) => item.status === 'completed')?.content?.[0]?.text || '';
+    const result = extractResponseText(data);
 
     return NextResponse.json({ result, raw: data });
   } catch (error) {
