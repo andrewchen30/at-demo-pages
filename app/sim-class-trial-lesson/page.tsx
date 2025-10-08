@@ -91,7 +91,7 @@ export default function SimClassTrialLessonPage() {
                   marginBottom: '8px',
                 }}
               >
-                取得新的學生角色
+                🎲 新的學生角色
               </button>
               <button
                 id="summaryBtn"
@@ -165,7 +165,7 @@ export default function SimClassTrialLessonPage() {
             <div className="empty-sidebar">
               <div className="empty-sidebar-icon">📝</div>
               <div className="empty-sidebar-text">等待編劇產生系統訊息</div>
-              <div className="empty-sidebar-subtext">點擊「取得新的學生角色」開始</div>
+              <div className="empty-sidebar-subtext">點擊「🎲 新的學生角色」開始</div>
             </div>
           </div>
         </div>
