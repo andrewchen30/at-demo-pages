@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 
 type RefreshState = 'idle' | 'loading' | 'success' | 'error';
 
+const DEFAULT_BATCH_SIZE = 10;
+
 export default function AdminPage() {
   const [refreshState, setRefreshState] = useState<RefreshState>('idle');
   const [clearState, setClearState] = useState<RefreshState>('idle');
@@ -37,7 +39,7 @@ export default function AdminPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ count: 1 }), // TODO: change to 10
+        body: JSON.stringify({ count: DEFAULT_BATCH_SIZE }),
       });
 
       if (!response.ok) {
@@ -48,7 +50,7 @@ export default function AdminPage() {
 
       const data = await response.json();
       const refreshedTotal = typeof data.total === 'number' ? data.total : null;
-      const addedCount = typeof data.added === 'number' ? data.added : 10;
+      const addedCount = typeof data.added === 'number' ? data.added : DEFAULT_BATCH_SIZE;
 
       setTotal(refreshedTotal);
       setRefreshState('success');
