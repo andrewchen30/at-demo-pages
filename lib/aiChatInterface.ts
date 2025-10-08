@@ -1,33 +1,140 @@
 'use client';
 
-import { getCoachAIParams, getStudentAIParams, getTeacherHintText } from './parser-01';
+import { getCoachAIParams, getStudentAIParams, getTeacherHintText } from '@/lib/utils/student-role-utils';
+import type { DirectorInput } from '@/lib/types/student-role';
 
-let aiChatInstance = null;
+type BotType = 'director' | 'scriptwriter' | 'student' | 'coach' | 'teacher' | 'judge';
+type WorkflowStep = 'idle' | 'scriptwriter' | 'student';
+type MessageRole = 'user' | 'assistant';
+type DisplayRole = MessageRole | 'coach';
+type ConnectionStatus = 'connected' | 'disconnected' | 'thinking';
+
+interface ChapterGoal {
+  title: string;
+  goal: string;
+}
+
+type ChapterGoalsMap = Record<number, ChapterGoal>;
+
+interface OpenAIMessageContent {
+  type: 'input_text' | 'output_text';
+  text: string;
+}
+
+interface OpenAIChatMessage {
+  role: MessageRole;
+  content: OpenAIMessageContent[];
+}
+
+interface ChatHistoryEntry {
+  role: MessageRole;
+  content: string;
+}
+
+interface PromptHistoryRecord {
+  timestamp: number;
+  botType: BotType | string;
+  url: string;
+  requestBody: unknown;
+  response: unknown;
+}
+
+interface ElementRefs {
+  scriptwriterStatus: HTMLElement;
+  scriptwriterTitle: HTMLElement;
+  premiseInfo: HTMLElement;
+  studentStatus: HTMLElement;
+  studentTitle: HTMLElement;
+  coachStatus: HTMLElement;
+  coachTitle: HTMLElement;
+  createNewStudentBtn: HTMLButtonElement;
+  clearChatBtn: HTMLButtonElement;
+  summaryBtn: HTMLButtonElement;
+  summaryBtnText: HTMLElement;
+  promptHistoryBtn: HTMLButtonElement;
+  exportConfigBtn: HTMLButtonElement;
+  importConfigBtn: HTMLButtonElement;
+  importConfigFile: HTMLInputElement;
+  importedFileName: HTMLElement;
+  fileNameText: HTMLElement;
+  chatMessages: HTMLElement;
+  chatInput: HTMLTextAreaElement;
+  sendBtn: HTMLButtonElement;
+  statusDot: HTMLElement;
+  statusText: HTMLElement;
+  sidebarContent: HTMLElement;
+  sidebarTitle: HTMLElement;
+  sidebarSubtitle: HTMLElement;
+  chapterSwitchBtn: HTMLButtonElement;
+  chapterDialogOverlay: HTMLElement;
+  chapterDialogClose: HTMLElement;
+  chapterOptions: HTMLElement;
+  promptHistoryDialogOverlay: HTMLElement;
+  promptHistoryDialogClose: HTMLElement;
+  promptHistoryContent: HTMLElement;
+}
+
+interface EventHandlers {
+  sendMessage: () => void;
+  autoResize: () => void;
+  startScriptwriter: () => void;
+  generateSummary: () => void;
+  clearChat: () => void;
+  showPromptHistory: () => void;
+  exportConfig: () => void;
+  importConfigClick: () => void;
+  importConfig: (event: Event) => void;
+  showChapterDialog: () => void;
+  hideChapterDialog: () => void;
+  hideChapterDialogOverlay: (event: Event) => void;
+  hidePromptHistoryDialog: () => void;
+  hidePromptHistoryDialogOverlay: (event: Event) => void;
+}
+
+declare global {
+  interface Window {
+    toggleSection?: (sectionId: string) => void;
+    toggleJsonDisplay?: () => void;
+    /**
+     * 由編劇 API 回傳的最新角色資料，若尚未載入則為 null。
+     */
+    scriptwriterResponse?: DirectorInput | null;
+  }
+}
+
+let aiChatInstance: AIChatInterface | null = null;
 
 // 全域函數：切換區塊收合
-function toggleSection(sectionId) {
+function toggleSection(sectionId: string): void {
   const section = document.getElementById(sectionId);
+  if (!section) {
+    return;
+  }
   section.classList.toggle('collapsed');
 }
 
 // 全域函數：切換 JSON 顯示收合
-function toggleJsonDisplay() {
+function toggleJsonDisplay(): void {
   const jsonContent = document.getElementById('jsonContent');
-  const toggleBtn = document.querySelector('.json-toggle');
+  const toggleBtn = document.querySelector<HTMLButtonElement>('.json-toggle');
 
-  if (jsonContent) {
+  if (jsonContent && toggleBtn) {
     jsonContent.classList.toggle('collapsed');
     toggleBtn.textContent = jsonContent.classList.contains('collapsed') ? '展開' : '收合';
   }
 }
 
 class AIChatInterface {
-  constructor() {
-    this.currentBot = 'student'; // 預設使用學生bot
-    this.workflowStep = 'idle'; // idle, scriptwriter, student, coach
-    this.chatHistory = [];
-    this.promptHistory = []; // 儲存 prompt 記錄
+  private currentBot: 'student' = 'student'; // 預設使用學生bot
+  private workflowStep: WorkflowStep = 'idle'; // idle, scriptwriter, student, coach
+  private chatHistory: ChatHistoryEntry[] = [];
+  private promptHistory: PromptHistoryRecord[] = []; // 儲存 prompt 記錄
+  private chapterGoals: ChapterGoalsMap;
+  private elements!: ElementRefs;
+  private handlers!: EventHandlers;
+  private adminMode = false;
 
+  constructor() {
     // 章節目標資料
     // 1 釐清需求：讓學生更清楚自己想學什麼、為什麼要學
     // 2 程度分析：幫學生看清楚「現在的程度」與「想要達到的程度」
@@ -76,57 +183,57 @@ class AIChatInterface {
     }
   }
 
-  initializeElements() {
+  private initializeElements(): void {
     this.elements = {
       // 左側面板 - 編劇 Bot
-      scriptwriterStatus: document.getElementById('scriptwriterStatus'),
-      scriptwriterTitle: document.getElementById('scriptwriterTitle'),
-      premiseInfo: document.getElementById('premiseInfo'),
+      scriptwriterStatus: document.getElementById('scriptwriterStatus') as HTMLElement,
+      scriptwriterTitle: document.getElementById('scriptwriterTitle') as HTMLElement,
+      premiseInfo: document.getElementById('premiseInfo') as HTMLElement,
 
       // 左側面板 - 學生 Bot
-      studentStatus: document.getElementById('studentStatus'),
-      studentTitle: document.getElementById('studentTitle'),
+      studentStatus: document.getElementById('studentStatus') as HTMLElement,
+      studentTitle: document.getElementById('studentTitle') as HTMLElement,
 
       // 左側面板 - 教練 Bot
-      coachStatus: document.getElementById('coachStatus'),
-      coachTitle: document.getElementById('coachTitle'),
+      coachStatus: document.getElementById('coachStatus') as HTMLElement,
+      coachTitle: document.getElementById('coachTitle') as HTMLElement,
 
       // 控制按鈕
-      createNewStudentBtn: document.getElementById('createNewStudentBtn'),
-      clearChatBtn: document.getElementById('clearChatBtn'),
-      summaryBtn: document.getElementById('summaryBtn'),
-      summaryBtnText: document.getElementById('summaryBtnText'),
-      promptHistoryBtn: document.getElementById('promptHistoryBtn'),
-      exportConfigBtn: document.getElementById('exportConfigBtn'),
-      importConfigBtn: document.getElementById('importConfigBtn'),
-      importConfigFile: document.getElementById('importConfigFile'),
-      importedFileName: document.getElementById('importedFileName'),
-      fileNameText: document.getElementById('fileNameText'),
+      createNewStudentBtn: document.getElementById('createNewStudentBtn') as HTMLButtonElement,
+      clearChatBtn: document.getElementById('clearChatBtn') as HTMLButtonElement,
+      summaryBtn: document.getElementById('summaryBtn') as HTMLButtonElement,
+      summaryBtnText: document.getElementById('summaryBtnText') as HTMLElement,
+      promptHistoryBtn: document.getElementById('promptHistoryBtn') as HTMLButtonElement,
+      exportConfigBtn: document.getElementById('exportConfigBtn') as HTMLButtonElement,
+      importConfigBtn: document.getElementById('importConfigBtn') as HTMLButtonElement,
+      importConfigFile: document.getElementById('importConfigFile') as HTMLInputElement,
+      importedFileName: document.getElementById('importedFileName') as HTMLElement,
+      fileNameText: document.getElementById('fileNameText') as HTMLElement,
 
       // 中間聊天室
-      chatMessages: document.getElementById('chatMessages'),
-      chatInput: document.getElementById('chatInput'),
-      sendBtn: document.getElementById('sendBtn'),
-      statusDot: document.getElementById('statusDot'),
-      statusText: document.getElementById('statusText'),
+      chatMessages: document.getElementById('chatMessages') as HTMLElement,
+      chatInput: document.getElementById('chatInput') as HTMLTextAreaElement,
+      sendBtn: document.getElementById('sendBtn') as HTMLButtonElement,
+      statusDot: document.getElementById('statusDot') as HTMLElement,
+      statusText: document.getElementById('statusText') as HTMLElement,
 
       // 右側側邊欄
-      sidebarContent: document.getElementById('sidebarContent'),
-      sidebarTitle: document.getElementById('sidebarTitle'),
-      sidebarSubtitle: document.getElementById('sidebarSubtitle'),
-      chapterSwitchBtn: document.getElementById('chapterSwitchBtn'),
-      chapterDialogOverlay: document.getElementById('chapterDialogOverlay'),
-      chapterDialogClose: document.getElementById('chapterDialogClose'),
-      chapterOptions: document.getElementById('chapterOptions'),
+      sidebarContent: document.getElementById('sidebarContent') as HTMLElement,
+      sidebarTitle: document.getElementById('sidebarTitle') as HTMLElement,
+      sidebarSubtitle: document.getElementById('sidebarSubtitle') as HTMLElement,
+      chapterSwitchBtn: document.getElementById('chapterSwitchBtn') as HTMLButtonElement,
+      chapterDialogOverlay: document.getElementById('chapterDialogOverlay') as HTMLElement,
+      chapterDialogClose: document.getElementById('chapterDialogClose') as HTMLElement,
+      chapterOptions: document.getElementById('chapterOptions') as HTMLElement,
 
       // Prompt History Dialog
-      promptHistoryDialogOverlay: document.getElementById('promptHistoryDialogOverlay'),
-      promptHistoryDialogClose: document.getElementById('promptHistoryDialogClose'),
-      promptHistoryContent: document.getElementById('promptHistoryContent'),
+      promptHistoryDialogOverlay: document.getElementById('promptHistoryDialogOverlay') as HTMLElement,
+      promptHistoryDialogClose: document.getElementById('promptHistoryDialogClose') as HTMLElement,
+      promptHistoryContent: document.getElementById('promptHistoryContent') as HTMLElement,
     };
   }
 
-  checkAdminMode() {
+  private checkAdminMode(): boolean {
     if (typeof window === 'undefined') {
       return false;
     }
@@ -135,7 +242,7 @@ class AIChatInterface {
     return params.get('admin') === 'true';
   }
 
-  updateAdminControlsVisibility() {
+  private updateAdminControlsVisibility(): void {
     const shouldShowAdminControls = this.adminMode;
     const adminControls = [
       this.elements.promptHistoryBtn,
@@ -152,7 +259,7 @@ class AIChatInterface {
     });
   }
 
-  initializeEventListeners() {
+  private initializeEventListeners(): void {
     // 儲存事件處理器的引用，以便稍後清理
     this.handlers = {
       sendMessage: () => this.sendMessage(),
@@ -163,16 +270,16 @@ class AIChatInterface {
       showPromptHistory: () => this.showPromptHistoryDialog(),
       exportConfig: () => this.exportConfig(),
       importConfigClick: () => this.elements.importConfigFile.click(),
-      importConfig: (e) => this.importConfig(e),
+      importConfig: (e: Event) => this.importConfig(e),
       showChapterDialog: () => this.showChapterDialog(),
       hideChapterDialog: () => this.hideChapterDialog(),
-      hideChapterDialogOverlay: (e) => {
+      hideChapterDialogOverlay: (e: Event) => {
         if (e.target === this.elements.chapterDialogOverlay) {
           this.hideChapterDialog();
         }
       },
       hidePromptHistoryDialog: () => this.hidePromptHistoryDialog(),
-      hidePromptHistoryDialogOverlay: (e) => {
+      hidePromptHistoryDialogOverlay: (e: Event) => {
         if (e.target === this.elements.promptHistoryDialogOverlay) {
           this.hidePromptHistoryDialog();
         }
@@ -216,7 +323,7 @@ class AIChatInterface {
     this.elements.promptHistoryDialogOverlay.addEventListener('click', this.handlers.hidePromptHistoryDialogOverlay);
   }
 
-  cleanup() {
+  cleanup(): void {
     // 移除所有事件監聽器
     if (this.handlers) {
       this.elements.sendBtn?.removeEventListener('click', this.handlers.sendMessage);
@@ -239,20 +346,20 @@ class AIChatInterface {
     }
   }
 
-  autoResizeTextarea() {
+  autoResizeTextarea(): void {
     const textarea = this.elements.chatInput;
     textarea.style.height = 'auto';
     textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
   }
 
-  loadSettings() {
+  loadSettings(): void {
     if (localStorage.getItem('aiChatSettings')) {
       localStorage.removeItem('aiChatSettings');
     }
     this.updateBotTitles();
   }
 
-  checkAndLoadScriptwriterResponse() {
+  checkAndLoadScriptwriterResponse(): void {
     const scriptResponse = getScript();
     if (scriptResponse && Object.keys(scriptResponse).length > 0) {
       // 如果有 scriptwriterResponse，設定為 student 階段並加入系統訊息
@@ -270,13 +377,13 @@ class AIChatInterface {
     }
   }
 
-  updateBotTitles() {
+  private updateBotTitles(): void {
     this.elements.scriptwriterTitle.textContent = '編劇 Bot';
     this.elements.studentTitle.textContent = '學生 Bot';
     this.elements.coachTitle.textContent = '教練 Bot';
   }
 
-  syncChapterSelection() {
+  private syncChapterSelection(): boolean {
     const chapterFromQuery = this.getChapterFromQuery();
     if (chapterFromQuery !== null) {
       localStorage.setItem('selectedNumber', chapterFromQuery.toString());
@@ -298,11 +405,11 @@ class AIChatInterface {
     return false;
   }
 
-  isValidChapterNumber(chapterNumber) {
+  private isValidChapterNumber(chapterNumber: number): boolean {
     return Number.isInteger(chapterNumber) && this.chapterGoals[chapterNumber] !== undefined;
   }
 
-  getChapterFromQuery() {
+  private getChapterFromQuery(): number | null {
     if (typeof window === 'undefined') {
       return null;
     }
@@ -318,7 +425,7 @@ class AIChatInterface {
     return this.isValidChapterNumber(parsed) ? parsed : null;
   }
 
-  updateChapterQueryParam(chapterNumber) {
+  private updateChapterQueryParam(chapterNumber: number): void {
     if (typeof window === 'undefined') {
       return;
     }
@@ -329,7 +436,7 @@ class AIChatInterface {
     window.history.replaceState(currentState, '', `${url.pathname}${url.search}${url.hash}`);
   }
 
-  clearChapterQueryParam() {
+  private clearChapterQueryParam(): void {
     if (typeof window === 'undefined') {
       return;
     }
@@ -340,7 +447,7 @@ class AIChatInterface {
     window.history.replaceState(currentState, '', `${url.pathname}${url.search}${url.hash}`);
   }
 
-  selectChapterNumber(chapterNumber) {
+  private selectChapterNumber(chapterNumber: number): void {
     if (!this.isValidChapterNumber(chapterNumber)) {
       return;
     }
@@ -356,7 +463,7 @@ class AIChatInterface {
     this.reloadSystemPrompt();
   }
 
-  getChapterNumber() {
+  private getChapterNumber(): number {
     const chapterFromQuery = this.getChapterFromQuery();
     if (chapterFromQuery !== null) {
       return chapterFromQuery;
@@ -366,7 +473,7 @@ class AIChatInterface {
     return this.isValidChapterNumber(storedValue) ? storedValue : 1;
   }
 
-  updateSidebarInfo() {
+  private updateSidebarInfo(): void {
     const chapterNumber = this.getChapterNumber();
     const chapterInfo = this.chapterGoals[chapterNumber];
 
@@ -376,7 +483,7 @@ class AIChatInterface {
     }
   }
 
-  showChapterDialog() {
+  private showChapterDialog(): void {
     // 生成章節選項
     this.generateChapterOptions();
 
@@ -384,11 +491,11 @@ class AIChatInterface {
     this.elements.chapterDialogOverlay.classList.add('show');
   }
 
-  hideChapterDialog() {
+  private hideChapterDialog(): void {
     this.elements.chapterDialogOverlay.classList.remove('show');
   }
 
-  generateChapterOptions() {
+  private generateChapterOptions(): void {
     const currentChapter = this.getChapterNumber();
 
     // 清空現有選項
@@ -414,7 +521,7 @@ class AIChatInterface {
     });
   }
 
-  selectChapterFromDialog(chapterNumber) {
+  private selectChapterFromDialog(chapterNumber: number): void {
     // 直接調用 selectChapterNumber
     this.selectChapterNumber(chapterNumber);
 
@@ -422,7 +529,7 @@ class AIChatInterface {
     this.hideChapterDialog();
   }
 
-  reloadSystemPrompt() {
+  private reloadSystemPrompt(): void {
     // 檢查是否有 scriptwriterResponse
     const scriptResponse = getScript();
     if (scriptResponse && Object.keys(scriptResponse).length > 0) {
@@ -447,7 +554,7 @@ class AIChatInterface {
     }
   }
 
-  clearChatMessages() {
+  private clearChatMessages(): void {
     // 清除聊天記錄
     this.chatHistory = [];
 
@@ -464,19 +571,20 @@ class AIChatInterface {
     this.updateStatus('disconnected');
   }
 
-  getVariables(botType = 'student') {
+  private getVariables(botType: BotType = 'student'): Record<string, unknown> {
     const selectedNumber = this.getChapterNumber();
+    const script: DirectorInput = getScript() ?? {};
 
     switch (botType) {
       case 'student':
         return {
-          ...getStudentAIParams(getScript(), selectedNumber),
+          ...getStudentAIParams(script, selectedNumber),
           native_language: 'zh-tw,繁體中文,中文',
           learning_language: '英文,美式英文',
         };
       case 'coach':
         return {
-          ...getCoachAIParams(getScript(), selectedNumber),
+          ...getCoachAIParams(script, selectedNumber),
           chat_history: this.getChatMessagesText(),
         };
       default:
@@ -485,7 +593,7 @@ class AIChatInterface {
   }
 
   // 啟動編劇 Bot
-  async startScriptwriter() {
+  async startScriptwriter(): Promise<void> {
     this.workflowStep = 'scriptwriter';
     this.elements.createNewStudentBtn.disabled = true;
     this.elements.createNewStudentBtn.textContent = '載入學生角色中...';
@@ -493,7 +601,8 @@ class AIChatInterface {
     this.elements.scriptwriterStatus.className = 'bot-status scriptwriter';
 
     try {
-      const response = await fetch('/api/student-roles/random');
+      const response = await fetch('/api/students/random');
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         const message = errorData?.error?.message || response.statusText || '無法取得學生角色';
@@ -507,30 +616,29 @@ class AIChatInterface {
         throw new Error('伺服器沒有提供學生角色資料');
       }
 
-      let parsedRole;
+      // 解析 role（可能是字串或物件）
+      let parsedRole: DirectorInput;
       if (typeof role === 'string') {
         try {
-          parsedRole = JSON.parse(role);
+          parsedRole = JSON.parse(role) as DirectorInput;
         } catch (error) {
           throw new Error(`伺服器角色資料解析失敗：${error instanceof Error ? error.message : '未知錯誤'}`);
         }
       } else {
-        parsedRole = role;
+        parsedRole = role as DirectorInput;
       }
 
-      const rawRole = typeof role === 'string' ? role : JSON.stringify(role);
+      // 驗證資料完整性
+      if (!parsedRole.persona || !parsedRole.scripts) {
+        throw new Error('劇本資料不完整，缺少必要欄位');
+      }
 
       // 儲存到 localStorage
       window.scriptwriterResponse = parsedRole;
       localStorage.setItem('scriptwriterResponse', JSON.stringify(parsedRole));
 
-      // 記錄快取取得的紀錄
-      this.recordPromptHistory(
-        'scriptwriter',
-        '/api/student-roles/random',
-        { cached: true },
-        { ...data, role: rawRole }
-      );
+      // 記錄 API 呼叫記錄
+      this.recordPromptHistory('scriptwriter', '/api/students/random', { method: 'GET' }, data);
 
       // 處理 JSON 回應顯示
       this.displayJsonResponse(parsedRole);
@@ -559,7 +667,7 @@ class AIChatInterface {
   }
 
   // 生成總結
-  async generateSummary() {
+  async generateSummary(): Promise<void> {
     if (this.chatHistory.length === 0) {
       this.showError('沒有對話記錄可以總結');
       return;
@@ -574,8 +682,9 @@ class AIChatInterface {
       this.addMessage(`📋 **教練總結**\n\n${summary}`, 'coach');
       this.elements.coachStatus.textContent = '已完成';
       this.elements.coachStatus.className = 'bot-status coach';
-    } catch (error) {
-      this.showError(`教練 Bot 錯誤: ${error.message}`);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : '未知錯誤';
+      this.showError(`教練 Bot 錯誤: ${message}`);
     } finally {
       this.elements.summaryBtn.disabled = false;
       this.elements.summaryBtnText.textContent = '教練總結';
@@ -583,7 +692,7 @@ class AIChatInterface {
   }
 
   // 更新總結按鈕狀態
-  updateSummaryButton() {
+  private updateSummaryButton(): void {
     const hasChatHistory = this.chatHistory.length > 0;
     const canSummarize = hasChatHistory;
 
@@ -596,19 +705,19 @@ class AIChatInterface {
     }
   }
 
-  updateStatus(status) {
-    const statusMap = {
+  private updateStatus(status: ConnectionStatus): void {
+    const statusMap: Record<ConnectionStatus, { text: string; class: string }> = {
       connected: { text: '已連接', class: 'connected' },
       disconnected: { text: '未連接', class: '' },
       thinking: { text: '思考中...', class: '' },
     };
 
-    const statusInfo = statusMap[status] || statusMap['disconnected'];
+    const statusInfo = statusMap[status] || statusMap.disconnected;
     this.elements.statusText.textContent = statusInfo.text;
     this.elements.statusDot.className = `status-dot ${statusInfo.class}`;
   }
 
-  addMessage(content, role = 'user') {
+  private addMessage(content: string, role: DisplayRole = 'user'): void {
     // 移除空狀態
     const emptyState = this.elements.chatMessages.querySelector('.empty-state');
     if (emptyState) {
@@ -641,7 +750,7 @@ class AIChatInterface {
     this.elements.chatMessages.scrollTop = this.elements.chatMessages.scrollHeight;
   }
 
-  addSystemMessage(content) {
+  private addSystemMessage(content: string): void {
     // 清除所有現有的系統訊息
     const existingMessages = this.elements.sidebarContent.querySelectorAll('.system-message');
     existingMessages.forEach((message) => message.remove());
@@ -681,7 +790,7 @@ class AIChatInterface {
     this.elements.sidebarContent.scrollTop = this.elements.sidebarContent.scrollHeight;
   }
 
-  addThinkingIndicator() {
+  private addThinkingIndicator(): void {
     const thinkingDiv = document.createElement('div');
     thinkingDiv.className = 'message assistant';
     thinkingDiv.id = 'thinkingIndicator';
@@ -709,16 +818,18 @@ class AIChatInterface {
     this.elements.chatMessages.scrollTop = this.elements.chatMessages.scrollHeight;
   }
 
-  removeThinkingIndicator() {
+  private removeThinkingIndicator(): void {
     const thinkingIndicator = document.getElementById('thinkingIndicator');
     if (thinkingIndicator) {
       thinkingIndicator.remove();
     }
   }
 
-  async sendMessage() {
+  async sendMessage(): Promise<void> {
     const message = this.elements.chatInput.value.trim();
-    if (!message) return;
+    if (!message) {
+      return;
+    }
 
     // 添加用戶訊息到聊天記錄
     this.chatHistory.push({ role: 'user', content: message });
@@ -742,19 +853,20 @@ class AIChatInterface {
 
       // 更新總結按鈕狀態
       this.updateSummaryButton();
-    } catch (error) {
+    } catch (error: unknown) {
       this.removeThinkingIndicator();
-      this.addMessage(`錯誤: ${error.message}`, 'assistant');
+      const messageText = error instanceof Error ? error.message : '未知錯誤';
+      this.addMessage(`錯誤: ${messageText}`, 'assistant');
       this.updateStatus('disconnected');
     } finally {
       this.elements.sendBtn.disabled = false;
     }
   }
 
-  getChatMessages() {
+  private getChatMessages(): OpenAIChatMessage[] {
     const messages = this.chatHistory
       .filter((msg) => msg.role === 'user' || msg.role === 'assistant')
-      .map((msg) => ({
+      .map<OpenAIChatMessage>((msg) => ({
         role: msg.role,
         content: [
           {
@@ -769,43 +881,50 @@ class AIChatInterface {
     return messages;
   }
 
-  getChatMessagesText() {
+  private getChatMessagesText(): string {
     console.log('chatHistory: ', this.chatHistory);
     return this.chatHistory
-      .filter((msg) => !msg.content[0]?.text?.includes('教練總結'))
+      .filter((msg) => !msg.content.includes('教練總結'))
       .map((msg) => `${msg.role === 'user' ? '老師' : '學生'}: ${msg.content}`)
       .join('\n');
   }
 
-  async callOpenAI(botType = 'student', input) {
-    const supportedBots = ['scriptwriter', 'student', 'coach'];
-    if (!supportedBots.includes(botType)) {
+  private async callOpenAI(botType: BotType = 'student', input?: string | OpenAIChatMessage[]): Promise<string> {
+    const botEndpointMap: Record<'student' | 'coach', string> = {
+      student: '/api/students/chat',
+      coach: '/api/coaches/feedback',
+    };
+
+    const url = botEndpointMap[botType];
+    if (!url) {
       throw new Error('未知的 bot 類型');
     }
 
     const variables = this.getVariables(botType);
 
+    let preparedInput: OpenAIChatMessage[];
+
     if (!input) {
-      input = [
+      preparedInput = [
         {
           role: 'user',
           content: [{ type: 'input_text', text: '' }],
         },
       ];
     } else if (typeof input === 'string') {
-      input = [
+      preparedInput = [
         {
           role: 'user',
           content: [{ type: 'input_text', text: input }],
         },
       ];
+    } else {
+      preparedInput = input;
     }
 
-    const url = `/api/openai`;
     const body = {
-      botType,
       variables,
-      input,
+      input: preparedInput,
     };
 
     // 記錄 API 呼叫（在發送前）
@@ -836,7 +955,7 @@ class AIChatInterface {
     return result;
   }
 
-  displayJsonResponse(jsonResponse) {
+  private displayJsonResponse(jsonResponse: unknown): void {
     // 檢查 premiseInfo 元素是否存在
     if (!this.elements.premiseInfo) {
       console.warn('premiseInfo 元素不存在，跳過顯示 JSON 回應');
@@ -845,7 +964,7 @@ class AIChatInterface {
 
     try {
       // 嘗試解析 JSON
-      const jsonObj = typeof jsonResponse === 'string' ? JSON.parse(jsonResponse) : jsonResponse;
+      const jsonObj = typeof jsonResponse === 'string' ? JSON.parse(jsonResponse) : (jsonResponse as object);
       const formattedJson = JSON.stringify(jsonObj, null, 2);
 
       // 更新前情提要顯示
@@ -861,12 +980,12 @@ class AIChatInterface {
       this.elements.premiseInfo.className = 'premise-info has-content';
     } catch (error) {
       // 如果不是有效的 JSON，顯示原始回應
-      this.elements.premiseInfo.textContent = jsonResponse;
+      this.elements.premiseInfo.textContent = String(jsonResponse);
       this.elements.premiseInfo.className = 'premise-info has-content';
     }
   }
 
-  showError(message) {
+  private showError(message: string): void {
     const errorDiv = document.createElement('div');
     errorDiv.className = 'error-message';
     errorDiv.textContent = message;
@@ -881,7 +1000,7 @@ class AIChatInterface {
     }, 3000);
   }
 
-  clearChat() {
+  clearChat(): void {
     this.elements.chatMessages.innerHTML = `
       <div class="empty-state">
         <div class="empty-state-icon">🤖</div>
@@ -933,18 +1052,18 @@ class AIChatInterface {
   }
 
   // 顯示 Prompt History 對話框
-  showPromptHistoryDialog() {
+  private showPromptHistoryDialog(): void {
     this.generatePromptHistoryContent();
     this.elements.promptHistoryDialogOverlay.classList.add('show');
   }
 
   // 隱藏 Prompt History 對話框
-  hidePromptHistoryDialog() {
+  private hidePromptHistoryDialog(): void {
     this.elements.promptHistoryDialogOverlay.classList.remove('show');
   }
 
   // 生成 Prompt History 內容
-  generatePromptHistoryContent() {
+  private generatePromptHistoryContent(): void {
     if (this.promptHistory.length === 0) {
       this.elements.promptHistoryContent.innerHTML = `
         <div class="empty-sidebar">
@@ -978,21 +1097,22 @@ class AIChatInterface {
   }
 
   // 獲取 Bot 顯示名稱
-  getBotDisplayName(botType) {
-    switch (botType) {
-      case 'scriptwriter':
-        return 'to: 編劇';
-      case 'student':
-        return 'to: 學生';
-      case 'coach':
-        return 'to: 教練';
-      default:
-        return botType;
-    }
+  private getBotDisplayName(botType: BotType | string): string {
+    const labelMap: Record<string, string> = {
+      director: '導演',
+      scriptwriter: '編劇',
+      student: '學生',
+      coach: '教練',
+      teacher: '老師',
+      judge: '評審',
+    };
+
+    const label = labelMap[botType] ?? botType;
+    return label.startsWith('to:') ? label : `to: ${label}`;
   }
 
   // 格式化 Prompt 記錄
-  formatPromptRecord(record) {
+  private formatPromptRecord(record: PromptHistoryRecord): string {
     const formatted = {
       timestamp: new Date(record.timestamp).toLocaleString('zh-TW'),
       botType: record.botType,
@@ -1009,20 +1129,25 @@ class AIChatInterface {
   }
 
   // 記錄 Prompt 歷史
-  recordPromptHistory(botType, url, requestBody, response = null) {
-    const record = {
+  private recordPromptHistory(
+    botType: BotType | string,
+    url: string,
+    requestBody: unknown,
+    response: unknown = null
+  ): void {
+    const record: PromptHistoryRecord = {
       timestamp: Date.now(),
-      botType: botType,
-      url: url,
-      requestBody: requestBody,
-      response: response,
+      botType,
+      url,
+      requestBody,
+      response,
     };
 
     this.promptHistory.push(record);
   }
 
   // 匯出配置
-  exportConfig() {
+  exportConfig(): void {
     const config = {
       chapter: this.getChapterNumber(),
     };
@@ -1042,14 +1167,22 @@ class AIChatInterface {
   }
 
   // 匯入配置
-  importConfig(event) {
-    const file = event.target.files[0];
-    if (!file) return;
+  importConfig(event: Event): void {
+    const input = event.target instanceof HTMLInputElement ? event.target : null;
+    const file = input?.files?.[0];
+    if (!file) {
+      return;
+    }
 
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = (e: ProgressEvent<FileReader>) => {
       try {
-        const config = JSON.parse(e.target.result);
+        const fileContent = e.target?.result;
+        if (typeof fileContent !== 'string') {
+          this.showError('匯入配置失敗: 檔案內容無法解析');
+          return;
+        }
+        const config = JSON.parse(fileContent) as { chapter?: number };
 
         // 載入章節設定（若提供）
         if (typeof config.chapter === 'number') {
@@ -1062,19 +1195,22 @@ class AIChatInterface {
 
         // 顯示成功訊息
         this.showSuccessMessage('配置已成功匯入');
-      } catch (error) {
-        this.showError(`匯入配置失敗: ${error.message}`);
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : '未知錯誤';
+        this.showError(`匯入配置失敗: ${message}`);
       }
     };
 
     reader.readAsText(file);
 
     // 重置 file input
-    event.target.value = '';
+    if (input) {
+      input.value = '';
+    }
   }
 
   // 顯示成功訊息
-  showSuccessMessage(message) {
+  private showSuccessMessage(message: string): void {
     const successDiv = document.createElement('div');
     successDiv.className = 'error-message';
     successDiv.style.background = 'rgba(34, 197, 94, 0.1)';
@@ -1094,26 +1230,34 @@ class AIChatInterface {
 }
 
 // 頁面載入時立即從 localStorage 載入 scriptwriterResponse
-function getScript() {
+function getScript(): DirectorInput | null {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
   const storedResponse = localStorage.getItem('scriptwriterResponse');
   if (storedResponse) {
     try {
-      let response = JSON.parse(storedResponse);
+      let response: unknown = JSON.parse(storedResponse);
       // 檢查如果還是字串就再次 parse
       if (typeof response === 'string') {
-        response = JSON.parse(response);
+        response = JSON.parse(response) as unknown;
       }
-      return response;
+      return response as DirectorInput;
     } catch (error) {
       console.error('載入 scriptwriterResponse 時發生錯誤:', error);
-      return {};
+      return null;
     }
   }
+
+  return window.scriptwriterResponse ?? null;
 }
 
-export function initializeAIChatInterface() {
+export function initializeAIChatInterface(): () => void {
   if (typeof window === 'undefined') {
-    return () => {};
+    return () => {
+      // no-op on server
+    };
   }
 
   window.toggleSection = toggleSection;

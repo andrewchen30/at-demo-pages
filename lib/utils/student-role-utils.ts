@@ -1,4 +1,15 @@
-export const CHECK_LIST_FOR_TEACHER = [
+import type { DirectorInput, PersonaEntry } from '../types/student-role';
+
+export interface StudentAIParams {
+  persona: string;
+  dialog: string;
+}
+
+export interface CoachAIParams {
+  check_list: string;
+}
+
+const CHECK_LIST_FOR_TEACHER: readonly string[][] = [
   [
     '我有確認學生想學什麼類型的英文嗎？',
     '我有確認學生會在哪些場景、和哪些對象使用英文嗎？',
@@ -38,47 +49,47 @@ export const CHECK_LIST_FOR_TEACHER = [
   ],
 ];
 
-export const CHECK_LIST_FOR_AI = [
+export const CHECK_LIST_FOR_AI: readonly string[][] = [
   [
-    '老師有詢問學生想學的英文用途嗎？（旅遊、工作、考試等）',
-    '老師有詢問學生英文會用在什麼情境嗎？（餐廳、公司、朋友等）',
-    '老師有詢問學生希望英文達到什麼程度嗎？（流利溝通、考試分數）',
-    '老師有詢問學生過去學英文的方式嗎？（有效或沒效的方法）',
-    '老師有詢問學生為什麼想學英文嗎？（期望改變或動機）',
+    '對話中有提到學生想學英文的用途嗎？（如旅遊、工作、考試等）',
+    '對話中有提到學生英文會用在什麼情境嗎？（如餐廳、公司、朋友間等）',
+    '對話中有提到學生希望英文達到什麼程度嗎？（如能流利溝通、達到特定考試分數）',
+    '對話中有提到學生過去學英文的方式或經驗嗎？（如有效或沒效的方法）',
+    '對話中有提到學生學英文的原因或動機嗎？（如為了升職、出國、興趣、改變現況等）',
   ],
   [
-    '老師有詢問學生最想加強哪一項英文能力嗎？（聽、說、讀、寫）',
-    '老師有詢問學生有沒有考過英文檢定或自評程度嗎？',
-    '老師有用簡短測驗或對話來了解學生程度嗎？',
-    '老師有用明確數字或指標說明學生程度或目標嗎？（如分數、等級）',
-    '老師有指出學生目前最需要加強的能力或弱點嗎？',
-    '老師有說明學生目前的問題或給改善方向嗎？',
-    '老師有說明學生以前的學習方法為什麼沒效果嗎？',
+    '對話中有提到學生最想加強哪一項英文能力嗎？（聽、說、讀、寫）',
+    '對話中有提到學生是否考過英文檢定或自評程度嗎？（如多益分數、CEFR 等級、自認程度）',
+    '對話中有出現簡短測驗、對話練習或其他方式評估學生程度的內容嗎？',
+    '對話中有提到明確數字或指標說明學生程度嗎？（如分數、等級、可量化描述）',
+    '對話中有提到學生目前最需要加強的能力或弱點嗎？（無論是老師指出或學生自述）',
+    '對話中有說明學生目前的問題或提供改善方向嗎？（無論是老師建議或學生自我反思）',
+    '對話中有討論學生以往學習方法為什麼沒效果嗎？（如缺乏練習、太無聊、沒持續等）',
   ],
   [
-    '老師有提供教材或教學方式讓學生實際參與嗎？',
-    '老師有鼓勵學生練習或回答問題嗎？',
-    '老師有解釋教材或教學方式為何適合學生嗎？',
-    '老師有詢問學生對教材或活動的感受嗎？',
-    '老師有給學生具體的學習回饋嗎？',
-    '老師有說明未來的學習方向或如何持續進步嗎？',
+    '對話中有提供教材或教學方式讓學生參與或了解嗎？（老師展示、提到教材、或學生描述嘗試內容皆可）',
+    '對話中有鼓勵或邀請學生嘗試練習、回答問題或參與活動嗎？',
+    '對話中有解釋教材或教學方式為什麼適合學生嗎？（老師說明或學生回饋皆可）',
+    '對話中有提到學生對教材、練習或活動的感受嗎？（覺得有幫助、太難、太快等）',
+    '對話中有提供具體的學習回饋嗎？（包含老師給或學生自評都可）',
+    '對話中有提到未來的學習方向或如何持續進步嗎？（包含老師規劃或學生期望）',
   ],
   [
-    '老師有分享教學經驗或學生案例來建立信任或展現專業嗎？（非必要）',
-    '老師有說明學習計畫如何對應學生的需求與目標嗎？',
-    '老師有與生討論長期學習目標或完成時間嗎？',
-    '老師有將長期目標拆解成短期任務並與學生討論嗎？',
+    '對話中有出現老師分享教學經驗或學生案例來建立信任或展示專業的內容嗎？（非必要）',
+    '對話中有提到學習計畫如何對應學生的需求與目標嗎？',
+    '對話中有討論長期學習目標或預期完成時間嗎？（如幾個月內達成、多久能提升）',
+    '對話中有將長期目標拆解成短期任務或階段性安排嗎？（老師提或學生認同皆可）',
   ],
   [
-    '老師有主動詢問學生是否有顧慮或需要調整嗎？',
-    '老師有正面回應學生的顧慮並提供具體解法嗎？',
-    '老師有提醒學生課後可使用的學習資源嗎？',
-    '老師有提醒學生平台優惠或折扣資訊嗎？',
-    '老師有回應或建議學生課堂包的選擇嗎？（非必要）',
+    '對話中有出現學生表達顧慮或老師主動詢問學生是否有顧慮或需要調整嗎？',
+    '對話中有正面回應學生的顧慮或提供具體解法嗎？（如課程節奏、教材難度、費用問題等）',
+    '對話中有提到課後可使用的學習資源嗎？（平台功能、練習工具、影片教材等）',
+    '對話中有提到平台優惠、折扣或課堂包資訊嗎？（老師提醒或學生詢問皆可）',
+    '對話中有討論課堂包選擇、上課頻率或購課方案嗎？（非必要，但若提到則計入）',
   ],
 ];
 
-const BRIEF_TEMPLATE = [
+const BRIEF_TEMPLATE: readonly string[][] = [
   ['1. 基本資料：{identity}', '2. 科目：{subject}、{usage_scenario}'],
   ['1. 基本資料：{identity}、{usage_context}', '2. 學習動機：{extrinsic_motivation}'],
   [
@@ -102,17 +113,17 @@ const BRIEF_TEMPLATE = [
   ],
 ];
 
-export function getCheckListForTeacher(partN) {
+export function getCheckListForTeacher(partN: number): string {
   const list = CHECK_LIST_FOR_TEACHER[partN - 1] || [];
   return list.join('\n');
 }
 
-export function getCheckListForAI(partN) {
+export function getCheckListForAI(partN: number): string {
   const list = CHECK_LIST_FOR_AI[partN - 1] || [];
   return list.join('\n');
 }
 
-export function getPersona(input, partN) {
+function getPersona(input: DirectorInput, partN: number): string {
   const personaPart = (input.persona || [])
     .filter((p) => p.index >= 0 && p.index < partN)
     .map((p) => `${p.information_title}: ${p.information}`)
@@ -120,14 +131,14 @@ export function getPersona(input, partN) {
   return personaPart;
 }
 
-export function getDialog(input, partN) {
+function getDialog(input: DirectorInput, partN: number): string {
   const scriptObj = (input.scripts || []).find((s) => s.index === partN - 1);
   const dialogPart = scriptObj ? scriptObj.scripts.join('\n') : '';
   return dialogPart;
 }
 
-function fillTemplate(template, persona) {
-  const lookup = {};
+function fillTemplate(template: string, persona: PersonaEntry[]): string {
+  const lookup: Record<string, string> = {};
   persona.forEach((p) => {
     lookup[p.information_key] = p.information;
   });
@@ -137,27 +148,27 @@ function fillTemplate(template, persona) {
   });
 }
 
-export function getUserBrief(input, partN) {
+function getUserBrief(input: DirectorInput, partN: number): string {
   const personaPart = (input.persona || []).filter((p) => p.index >= 0 && p.index < partN);
 
   const template = BRIEF_TEMPLATE[partN - 1] || [];
   return template.map((p) => fillTemplate(p, personaPart)).join('\n');
 }
 
-export function getStudentAIParams(input, partN) {
+export function getStudentAIParams(input: DirectorInput, partN: number): StudentAIParams {
   return {
     persona: getPersona(input, partN),
     dialog: getDialog(input, partN),
   };
 }
 
-export function getCoachAIParams(input, partN) {
+export function getCoachAIParams(input: DirectorInput, partN: number): CoachAIParams {
   return {
     check_list: getCheckListForAI(partN),
   };
 }
 
-export function getTeacherHintText(input, partN) {
+export function getTeacherHintText(input: DirectorInput, partN: number): string {
   return `【背景資訊】\n${getUserBrief(input, partN)}\n\n【對話內容】\n${getDialog(
     input,
     partN

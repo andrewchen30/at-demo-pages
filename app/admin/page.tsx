@@ -15,7 +15,7 @@ export default function AdminPage() {
   useEffect(() => {
     const fetchTotal = async () => {
       try {
-        const response = await fetch('/api/student-roles/count');
+        const response = await fetch('/api/ai/student/roles/count');
         if (response.ok) {
           const data = await response.json();
           setTotal(data.total);
@@ -32,7 +32,7 @@ export default function AdminPage() {
     setAlert(null);
 
     try {
-      const response = await fetch('/api/student-roles/refresh', {
+      const response = await fetch('/api/ai/student/roles/refresh', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -68,7 +68,7 @@ export default function AdminPage() {
     setAlert(null);
 
     try {
-      const response = await fetch('/api/student-roles/clear', {
+      const response = await fetch('/api/ai/student/roles/clear', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

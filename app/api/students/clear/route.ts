@@ -5,9 +5,9 @@ import { clearStudentRoles } from '@/lib/server/studentRoles';
 export async function POST() {
   try {
     const result = await clearStudentRoles();
-    return NextResponse.json({ cleared: true, total: result.total });
+    return NextResponse.json(result);
   } catch (error) {
-    const message = error instanceof Error ? error.message : '清除學生角色快取時發生未知錯誤';
+    const message = error instanceof Error ? error.message : '清除學生角色失敗。';
     return NextResponse.json({ error: { message } }, { status: 500 });
   }
 }

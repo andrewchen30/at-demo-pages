@@ -6,6 +6,20 @@ import path from 'path';
 
 import { extractResponseText } from './openaiResponse';
 
+export class StudentRoleStoreEmptyError extends Error {
+  constructor(message: string = '目前沒有可用的學生角色，請先產生角色。') {
+    super(message);
+    this.name = 'StudentRoleStoreEmptyError';
+  }
+}
+
+export class StudentRoleInvalidCountError extends Error {
+  constructor(message: string = '新增學生角色的數量必須大於 0。') {
+    super(message);
+    this.name = 'StudentRoleInvalidCountError';
+  }
+}
+
 type StoredRole = {
   id: string;
   raw: string;
@@ -73,10 +87,11 @@ async function writeRolesToFile(roles: StoredRole[]): Promise<boolean> {
   }
 }
 
-function getEnvVariable(name: string) {
-  const value = process.env[name];
+function getEnvVariable(name: string, fallbackName?: string) {
+  const value = process.env[name] ?? (fallbackName ? process.env[fallbackName] : undefined);
   if (!value) {
-    throw new Error(`環境變數 ${name} 未設定，無法建立學生角色。`);
+    const displayName = fallbackName ? `${name} 或 ${fallbackName}` : name;
+    throw new Error(`環境變數 ${displayName} 未設定，無法建立學生角色。`);
   }
   return value;
 }
@@ -167,7 +182,7 @@ async function writeRoles(roles: StoredRole[]) {
 
 async function requestScriptwriterRole(): Promise<string> {
   const apiKey = getEnvVariable('OPENAI_API_KEY');
-  const botId = getEnvVariable('OPENAI_SCRIPTWRITER_BOT_ID');
+  const botId = getEnvVariable('OPENAI_SCRIPTWRITER_BOT_ID', 'OPENAI_SCRIPTWRITER01_BOT_ID');
 
   const payload = {
     prompt: {
@@ -216,7 +231,7 @@ async function requestScriptwriterRole(): Promise<string> {
 export async function getRandomStudentRole(): Promise<RandomRoleResponse> {
   const roles = await readRoles();
   if (roles.length === 0) {
-    throw new Error('目前沒有可用的學生角色，請先在 /admin 產生角色。');
+    throw new StudentRoleStoreEmptyError();
   }
 
   const randomIndex = Math.floor(Math.random() * roles.length);
@@ -231,7 +246,7 @@ export async function getRandomStudentRole(): Promise<RandomRoleResponse> {
 
 export async function appendStudentRoles(count: number = DEFAULT_BATCH_SIZE) {
   if (count <= 0) {
-    throw new Error('新增學生角色的數量必須大於 0。');
+    throw new StudentRoleInvalidCountError();
   }
 
   const roles = await readRoles();
