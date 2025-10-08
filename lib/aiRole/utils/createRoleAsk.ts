@@ -9,6 +9,38 @@ type RoleOptions = {
   fallbackBotIdEnvVar?: string;
 };
 
+// 美化 console.log 的輔助函數
+const colors = {
+  reset: '\x1b[0m',
+  bright: '\x1b[1m',
+  cyan: '\x1b[36m',
+  yellow: '\x1b[33m',
+  green: '\x1b[32m',
+  magenta: '\x1b[35m',
+  red: '\x1b[31m',
+  blue: '\x1b[34m',
+};
+
+function formatLog(title: string, data: unknown, color: string) {
+  const timestamp = new Date().toISOString();
+  console.log(`\n${color}${'='.repeat(80)}${colors.reset}`);
+  console.log(`${color}${colors.bright}🤖 ${title}${colors.reset} ${colors.cyan}[${timestamp}]${colors.reset}`);
+  console.log(`${color}${'='.repeat(80)}${colors.reset}`);
+
+  if (typeof data === 'string') {
+    console.log(data);
+  } else {
+    console.log(JSON.stringify(data, null, 2));
+  }
+
+  console.log(`${color}${'='.repeat(80)}${colors.reset}\n`);
+}
+
+function truncateText(text: string, maxLength: number = 200): string {
+  if (text.length <= maxLength) return text;
+  return text.substring(0, maxLength) + '... (已截斷)';
+}
+
 function resolveBotId({ botIdEnvVar, fallbackBotIdEnvVar }: RoleOptions) {
   const primary = process.env[botIdEnvVar];
   if (primary && primary.length > 0) {
@@ -69,6 +101,19 @@ export function createRoleAsk<Variables extends Record<string, unknown> = Record
     const sanitizedVariables = ensurePlainObject(variables);
     const sanitizedHistory = ensureArray(chatHistory);
 
+    // 📥 LOG 1: 輸入參數
+    formatLog(
+      'AI INPUT - 輸入參數',
+      {
+        botId: botId,
+        messagePreview: truncateText(textMessage),
+        messageLength: textMessage.length,
+        variables: sanitizedVariables,
+        historyLength: chatHistory.length,
+      },
+      colors.blue
+    );
+
     const trimmedMessage = typeof textMessage === 'string' ? textMessage.trim() : '';
 
     const inputHistory = sanitizedHistory.map((entry) => entry);
@@ -96,8 +141,42 @@ export function createRoleAsk<Variables extends Record<string, unknown> = Record
             ],
     };
 
+    // 📤 LOG 2: 發送給 OpenAI 的 Payload
+    formatLog(
+      'AI REQUEST - 發送給 OpenAI 的 Payload',
+      {
+        botId: payload.prompt.id,
+        variables: payload.prompt.variables,
+        inputHistoryLength: payload.input.length,
+        lastInput: payload.input[payload.input.length - 1],
+      },
+      colors.yellow
+    );
+
     const raw = await callOpenAI(apiKey, payload);
+
+    // 📨 LOG 3: 從 OpenAI 收到的原始回應
+    formatLog(
+      'AI RESPONSE - OpenAI 原始回應',
+      {
+        hasResponse: !!raw,
+        responseKeys: raw ? Object.keys(raw) : [],
+        responsePreview: raw ? JSON.stringify(raw).substring(0, 300) + '...' : null,
+      },
+      colors.magenta
+    );
+
     const result = extractAIResponseText(raw);
+
+    // ✅ LOG 4: 提取後的最終結果
+    formatLog(
+      'AI OUTPUT - 最終結果',
+      {
+        resultPreview: truncateText(result, 300),
+        resultLength: result.length,
+      },
+      colors.green
+    );
 
     return { result, raw };
   };
