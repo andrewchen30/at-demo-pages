@@ -3,20 +3,6 @@
 import { useEffect } from 'react';
 import { initializeAIChatInterface } from '@/lib/aiChatInterface';
 
-declare global {
-  interface Window {
-    toggleSection?: (sectionId: string) => void;
-  }
-}
-
-function handleToggle(sectionId: string) {
-  if (typeof window !== 'undefined' && typeof window.toggleSection === 'function') {
-    window.toggleSection(sectionId);
-  }
-}
-
-const serverManagedMessage = '由伺服器安全管理';
-
 export default function SimClassTrialLessonPage() {
   useEffect(() => {
     const cleanup = initializeAIChatInterface();
@@ -63,80 +49,37 @@ export default function SimClassTrialLessonPage() {
             </div>
           </div>
 
-          <div className="section collapsed" id="scriptwriterSection">
-            <div className="section-header" onClick={() => handleToggle('scriptwriterSection')}>
-              <div className="section-title">
-                <span id="scriptwriterTitle">編劇 Bot</span>
-                <span className="bot-status scriptwriter" id="scriptwriterStatus">
-                  待機中
-                </span>
-              </div>
-              <div className="collapse-icon">▼</div>
+          <div className="workflow-status">
+            <div className="workflow-status-header">AI Bot 狀態</div>
+            <div className="workflow-status-item">
+              <span className="workflow-status-name" id="scriptwriterTitle">
+                編劇 Bot
+              </span>
+              <span className="bot-status scriptwriter" id="scriptwriterStatus">
+                待機中
+              </span>
             </div>
-            <div className="section-content">
-              <div className="form-group">
-                <label className="label">Bot ID</label>
-                <div className="readonly-field">{serverManagedMessage}</div>
-              </div>
-              <div className="form-group">
-                <label className="label" htmlFor="scriptwriterVersion">
-                  Version
-                </label>
-                <input type="text" id="scriptwriterVersion" className="input" placeholder="輸入版本號" />
-              </div>
-              <div className="premise-info" id="premiseInfo">
-                前情提要資訊將在此顯示...
-              </div>
+            <div className="workflow-status-item">
+              <span className="workflow-status-name" id="studentTitle">
+                學生 Bot
+              </span>
+              <span className="bot-status active" id="studentStatus">
+                使用中
+              </span>
             </div>
-          </div>
-
-          <div className="section collapsed" id="studentSection">
-            <div className="section-header" onClick={() => handleToggle('studentSection')}>
-              <div className="section-title">
-                <span id="studentTitle">學生 Bot</span>
-                <span className="bot-status active" id="studentStatus">
-                  使用中
-                </span>
-              </div>
-              <div className="collapse-icon">▼</div>
-            </div>
-            <div className="section-content">
-              <div className="form-group">
-                <label className="label">Bot ID</label>
-                <div className="readonly-field">{serverManagedMessage}</div>
-              </div>
-              <div className="form-group">
-                <label className="label" htmlFor="studentVersion">
-                  Version
-                </label>
-                <input type="text" id="studentVersion" className="input" placeholder="輸入版本號" />
-              </div>
+            <div className="workflow-status-item">
+              <span className="workflow-status-name" id="coachTitle">
+                教練 Bot
+              </span>
+              <span className="bot-status coach" id="coachStatus">
+                待機中
+              </span>
             </div>
           </div>
 
-          <div className="section collapsed" id="coachSection">
-            <div className="section-header" onClick={() => handleToggle('coachSection')}>
-              <div className="section-title">
-                <span id="coachTitle">教練 Bot</span>
-                <span className="bot-status coach" id="coachStatus">
-                  待機中
-                </span>
-              </div>
-              <div className="collapse-icon">▼</div>
-            </div>
-            <div className="section-content">
-              <div className="form-group">
-                <label className="label">Bot ID</label>
-                <div className="readonly-field">{serverManagedMessage}</div>
-              </div>
-              <div className="form-group">
-                <label className="label" htmlFor="coachVersion">
-                  Version
-                </label>
-                <input type="text" id="coachVersion" className="input" placeholder="輸入版本號" />
-              </div>
-            </div>
-          </div>
+          <input type="hidden" id="scriptwriterVersion" />
+          <input type="hidden" id="studentVersion" />
+          <input type="hidden" id="coachVersion" />
 
           <div className="section">
             <div className="section-content">
