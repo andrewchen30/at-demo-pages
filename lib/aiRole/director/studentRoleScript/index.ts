@@ -31,6 +31,7 @@ type RandomRoleResponse = {
   role: string;
   total: number;
   createdAt: string;
+  index: number;
 };
 
 const DATA_DIR = path.join(process.cwd(), '.data');
@@ -119,6 +120,7 @@ export async function getRandomStudentRole(): Promise<RandomRoleResponse> {
     role: role.raw,
     total: roles.length,
     createdAt: role.createdAt,
+    index: randomIndex,
   };
 }
 

@@ -41,6 +41,7 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
   const [isThinking, setIsThinking] = useState(false);
   const [isCreatingStudent, setIsCreatingStudent] = useState(false);
   const [isSummarizing, setIsSummarizing] = useState(false);
+  const [isLastMessageCoach, setIsLastMessageCoach] = useState(false);
 
   const [flash, setFlash] = useState<FlashMessage | null>(null);
   const [importedFileName, setImportedFileName] = useState('');
@@ -109,6 +110,11 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
     }
   }, []);
 
+
+  useEffect(() => {
+    setIsLastMessageCoach(getIsLastMessageCoach())
+  }, [chatHistory]);
+
   const chapterInfo = CHAPTER_GOALS[chapterNumber];
 
   const statusText = useMemo(() => {
@@ -117,7 +123,7 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
     return '未連接';
   }, [connectionStatus]);
 
-  const canSummarize = chatHistory.length > 0;
+  const canSummarize = chatHistory.length > 0 && !isLastMessageCoach;
 
   const chapterOptions = useMemo(
     () =>
@@ -182,6 +188,16 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
       .map((m) => `${m.role === 'user' ? '老師' : '學生'}: ${m.content}`)
       .join('\n');
   }, [chatHistory]);
+
+
+  const getIsLastMessageCoach = useCallback((): boolean => {
+    const lastMessage = chatHistory.at(-1);
+    if (!lastMessage || !lastMessage.content) {
+      return false 
+    }
+    
+    return lastMessage.content.includes('教練總結')
+  }, [chatHistory])
 
   const getVariables = useCallback(
     (botType: BotType = 'student'): Record<string, unknown> => {
