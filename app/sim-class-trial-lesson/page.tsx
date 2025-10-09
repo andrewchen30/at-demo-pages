@@ -126,7 +126,7 @@ function SimClassTrialLessonContent() {
                   marginBottom: '8px',
                 }}
                 onClick={startScriptwriter}
-                disabled={isCreatingStudent}
+                disabled={isCreatingStudent || isSummarizing || isThinking}
               >
                 {isCreatingStudent ? '載入學生角色中...' : '🎲 新的學生角色'}
               </button>
@@ -134,11 +134,11 @@ function SimClassTrialLessonContent() {
                 className="btn"
                 style={{ background: 'linear-gradient(180deg, #3b82f6, #2563eb)', marginBottom: '8px' }}
                 onClick={generateSummary}
-                disabled={!canSummarize || isSummarizing}
+                disabled={!canSummarize || isCreatingStudent || isSummarizing || isThinking}
               >
                 {isSummarizing ? '教練總結中...' : '教練總結'}
               </button>
-              <button className="btn secondary" onClick={clearChat} disabled={isThinking}>
+              <button className="btn secondary" onClick={clearChat} disabled={isCreatingStudent || isSummarizing || isThinking}>
                 清除對話
               </button>
             </div>
@@ -209,9 +209,9 @@ function SimClassTrialLessonContent() {
                 placeholder="輸入您的訊息... (按發送按鈕送出)"
                 rows={1}
                 onInput={autoResizeTextarea}
-                disabled={isThinking || workflowStep === 'idle'}
+                disabled={isCreatingStudent || isSummarizing || isThinking || workflowStep === 'idle'}
               />
-              <button className="send-btn" type="submit" disabled={isThinking || workflowStep === 'idle'}>
+              <button className="send-btn" type="submit" disabled={isCreatingStudent || isSummarizing || isThinking || workflowStep === 'idle'}>
                 {isThinking ? '發送中...' : '發送'}
               </button>
             </div>
@@ -224,12 +224,12 @@ function SimClassTrialLessonContent() {
               <div className="sidebar-title">{chapterInfo?.title ?? `章節 ${chapterNumber}`}</div>
               <div className="sidebar-subtitle">目標：{chapterInfo?.goal ?? '尚未選擇章節'}</div>
             </div>
-            <button className="chapter-switch-btn" title="切換章節" onClick={openChapterDialog}>
+            {/* <button className="chapter-switch-btn" title="切換章節" onClick={openChapterDialog}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M12 20h9"></path>
                 <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
               </svg>
-            </button>
+            </button> */}
           </div>
           <div className="sidebar-content">
             {!systemMessage ? (
