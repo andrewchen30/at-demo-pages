@@ -3,25 +3,30 @@ import { getCheckListForTeacher } from './getCheckListForTeacher';
 
 const BRIEF_TEMPLATE: readonly string[][] = [
   [
-      '基本資料：{job}', '科目：{subject}、{usage_scenario_tag}'
+    '姓名：{name}',
+    '基本資料：{job}', '科目：{subject}、{usage_scenario_tag}'
   ],
   [
-      '基本資料：{job}、{usage_context}、{past_experience}', 
-      '學習動機：{extrinsic_motivation}'
+    '姓名：{name}',
+    '基本資料：{job}、{usage_context}、{past_experience}', 
+    '學習動機：{extrinsic_motivation}'
   ],
   [
+    '姓名：{name}',
     '基本資料：{job}、{usage_context}',
     '學習動機：{extrinsic_motivation}',
     '目前程度：{current_performance}、{strengths}、{biggest_gap}',
     '學習痛點：{learning_blindspots}',
   ],
   [
+    '姓名：{name}',
     '基本資料：{job}、{usage_context}',
     '學習動機：{extrinsic_motivation}、{intrinsic_motivation}',
     '目前程度：{current_performance}、{strengths}、{biggest_gap}',
     '學習目標：{target_level}',
   ],
   [
+    '姓名：{name}',
     '基本資料：{job}、{usage_context}',
     '學習動機：{extrinsic_motivation}、{intrinsic_motivation}',
     '目前程度：{current_performance}、{strengths}、{biggest_gap}',

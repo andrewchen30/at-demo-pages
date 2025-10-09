@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, Suspense } from 'react';
+import { FormEvent, Suspense, useEffect } from 'react';
 
 import { useTrialLessonChat } from './aiChatInterface';
 
@@ -49,6 +49,10 @@ function SimClassTrialLessonContent() {
     toggleJsonCollapsed,
     dismissFlash,
   } = useTrialLessonChat();
+
+  useEffect(() => {
+    startScriptwriter();
+  }, []);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
