@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 
 type RefreshState = 'idle' | 'loading' | 'success' | 'error';
 
-const DEFAULT_BATCH_SIZE = 10;
+const DEFAULT_BATCH_SIZE = 20;
 
 export default function AdminPage() {
   const [refreshState, setRefreshState] = useState<RefreshState>('idle');
@@ -117,7 +117,7 @@ export default function AdminPage() {
                 disabled={isPending}
                 style={{ background: 'linear-gradient(180deg, #0ea5e9, #0284c7)' }}
               >
-                {refreshState === 'loading' ? '生成中...' : '新增 10 個學生角色'}
+                {refreshState === 'loading' ? '生成中...' : `新增 ${DEFAULT_BATCH_SIZE} 個學生角色`}
               </button>
               <button
                 className="btn"
