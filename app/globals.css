@@ -749,6 +749,11 @@ a {
   line-height: 1.6;
   color: var(--text);
   white-space: pre-wrap;
+  padding: 8px 24px;
+}
+
+.system-message-content li {
+  margin: 4px 0px;
 }
 
 .chapter-switch-btn {

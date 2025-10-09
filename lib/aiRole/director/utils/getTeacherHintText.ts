@@ -2,26 +2,31 @@ import type { DirectorInput, PersonaEntry } from '../../student/types';
 import { getCheckListForTeacher } from './getCheckListForTeacher';
 
 const BRIEF_TEMPLATE: readonly string[][] = [
-  ['1. 基本資料：{job}', '2. 科目：{subject}、{usage_scenario_tag}'],
-  ['1. 基本資料：{job}、{usage_context}、{past_experience}', '2. 學習動機：{extrinsic_motivation}'],
   [
-    '1. 基本資料：{job}、{usage_context}',
-    '2. 學習動機：{extrinsic_motivation}',
-    '3. 目前程度：{current_performance}、{strengths}、{biggest_gap}',
-    '4. 學習痛點：{learning_blindspots}',
+      '基本資料：{job}', '科目：{subject}、{usage_scenario_tag}'
   ],
   [
-    '1. 基本資料：{job}、{usage_context}',
-    '2. 學習動機：{extrinsic_motivation}、{intrinsic_motivation}',
-    '3. 目前程度：{current_performance}、{strengths}、{biggest_gap}',
-    '4. 學習目標：{target_level}',
+      '基本資料：{job}、{usage_context}、{past_experience}', 
+      '學習動機：{extrinsic_motivation}'
   ],
   [
-    '1. 基本資料：{job}、{usage_context}',
-    '2. 學習動機：{extrinsic_motivation}、{intrinsic_motivation}',
-    '3. 目前程度：{current_performance}、{strengths}、{biggest_gap}',
-    '4. 學習目標：{target_level}、{short_term_goal}、{long_term_goal}、{long_term_outcome}',
-    '5. 學習痛點：{learning_blindspots}',
+    '基本資料：{job}、{usage_context}',
+    '學習動機：{extrinsic_motivation}',
+    '目前程度：{current_performance}、{strengths}、{biggest_gap}',
+    '學習痛點：{learning_blindspots}',
+  ],
+  [
+    '基本資料：{job}、{usage_context}',
+    '學習動機：{extrinsic_motivation}、{intrinsic_motivation}',
+    '目前程度：{current_performance}、{strengths}、{biggest_gap}',
+    '學習目標：{target_level}',
+  ],
+  [
+    '基本資料：{job}、{usage_context}',
+    '學習動機：{extrinsic_motivation}、{intrinsic_motivation}',
+    '目前程度：{current_performance}、{strengths}、{biggest_gap}',
+    '學習目標：{target_level}、{short_term_goal}、{long_term_goal}、{long_term_outcome}',
+    '學習痛點：{learning_blindspots}',
   ],
 ];
 
@@ -40,14 +45,14 @@ function fillTemplate(template: string, persona: PersonaEntry[]): string {
   });
 }
 
-function getUserBrief(input: DirectorInput, partN: number): string {
+export function getUserBrief(input: DirectorInput, partN: number): string {
   const personaPart = (input.persona || []).filter((p) => p.index >= 0 && p.index < partN);
 
   const template = BRIEF_TEMPLATE[partN - 1] || [];
   return template.map((p) => fillTemplate(p, personaPart)).join('\n');
 }
 
-function getDialog(input: DirectorInput, partN: number): string {
+export function getDialog(input: DirectorInput, partN: number): string {
   const scriptObj = (input.scripts || []).find((s) => s.index === partN - 1);
   const dialogPart = scriptObj ? scriptObj.script.join('\n') : '';
   return dialogPart;

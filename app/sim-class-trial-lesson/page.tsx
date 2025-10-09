@@ -13,6 +13,9 @@ function SimClassTrialLessonContent() {
     promptHistoryView,
     scriptwriterResponse,
     systemMessage,
+    systemUserBrief,
+    systemDialog,
+    systemChecklist,
     chapterNumber,
     isChapterDialogOpen,
     isPromptHistoryOpen,
@@ -244,7 +247,37 @@ function SimClassTrialLessonContent() {
                   <div className="system-message-icon">S</div>
                   <div className="system-message-title">系統提示</div>
                 </div>
-                <div className="system-message-content">{systemMessage}</div>
+                
+                
+                <div className="system-message-title">【背景資訊】</div>
+                <div className="system-message-content">
+                  {
+                    systemUserBrief.map((item, index) => (
+                      <li key={index}>{item}</li>
+                    ))
+                  }
+                </div>
+                <div className="system-message-title">【對話內容】</div>
+                <div className="system-message-content">
+                  {
+                    systemDialog.map((item, index) => (
+                      <li key={index}>{item}</li>
+                    ))
+                  }
+                </div>
+                <div className="system-message-title">【檢查重點】</div>
+                <div className="system-message-content">
+                  {
+                    systemChecklist.map((item, index) => (
+                      <li key={index}>{item}</li>
+                    ))
+                  }
+                </div>
+
+
+                {/* <div className="system-message-content">{systemMessage}</div> */}
+
+
               </div>
             )}
 

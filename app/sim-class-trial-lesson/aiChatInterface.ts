@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-import { getCoachAIParams, getStudentAIParams, getTeacherHintText } from '@/lib/aiRole/director/utils';
+import { getCoachAIParams, getStudentAIParams, getTeacherHintText, getUserBrief, getDialog, getCheckListForTeacher} from '@/lib/aiRole/director/utils';
 import type { DirectorInput } from '@/lib/aiRole/student/types';
 import type {
   BotType,
@@ -32,6 +32,9 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
   const [promptHistory, setPromptHistory] = useState<PromptHistoryRecord[]>([]);
   const [scriptwriterResponse, setScriptwriterResponse] = useState<DirectorInput | null>(null);
   const [systemMessage, setSystemMessage] = useState('');
+  const [systemUserBrief, setSystemUserBrief] = useState<string[]>([]);
+  const [systemDialog, setSystemDialog] = useState<string[]>([]);
+  const [systemChecklist, setSystemChecklist] = useState<string[]>([]);
 
   const [chapterNumber, setChapterNumber] = useState<number>(1);
   const [isChapterDialogOpen, setIsChapterDialogOpen] = useState(false);
@@ -84,6 +87,10 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
 
     if (scriptwriterResponse) {
       setSystemMessage(getTeacherHintText(scriptwriterResponse, chapterNumber));
+      setSystemUserBrief(getUserBrief(scriptwriterResponse, chapterNumber).split('\n'));
+      setSystemDialog(getDialog(scriptwriterResponse, chapterNumber).split('\n'));
+      setSystemChecklist(getCheckListForTeacher(chapterNumber).split('\n'));
+
     }
   }, [chapterNumber, router, scriptwriterResponse]);
 
@@ -91,6 +98,9 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
     if (scriptwriterResponse) {
       setWorkflowStep('student');
       setSystemMessage(getTeacherHintText(scriptwriterResponse, chapterNumber));
+      setSystemUserBrief(getUserBrief(scriptwriterResponse, chapterNumber).split('\n'));
+      setSystemDialog(getDialog(scriptwriterResponse, chapterNumber).split('\n'));
+      setSystemChecklist(getCheckListForTeacher(chapterNumber).split('\n'));
       setScriptwriterJson(JSON.stringify(scriptwriterResponse, null, 2));
     }
   }, [scriptwriterResponse, chapterNumber]);
@@ -310,6 +320,10 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
 
       setWorkflowStep('student');
       setSystemMessage(getTeacherHintText(parsedRole, chapterNumber));
+      setSystemUserBrief(getUserBrief(parsedRole, chapterNumber).split('\n'));
+      setSystemDialog(getDialog(parsedRole, chapterNumber).split('\n'));
+      setSystemChecklist(getCheckListForTeacher(chapterNumber).split('\n'));
+
       setFlash({ type: 'success', message: '已載入新的學生角色' });
     } catch (e) {
       const message = e instanceof Error ? e.message : '未知錯誤';
@@ -369,6 +383,10 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
     setConnectionStatus('disconnected');
     setWorkflowStep('idle');
     setSystemMessage('');
+    setSystemUserBrief([]);
+    setSystemDialog([]);
+    setSystemChecklist([]);
+
     setScriptwriterResponse(null);
     setScriptwriterJson(null);
     setPromptHistory([]);
@@ -437,6 +455,9 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
     promptHistory,
     scriptwriterResponse,
     systemMessage,
+    systemUserBrief,
+    systemDialog,
+    systemChecklist,
     chapterNumber,
     isChapterDialogOpen,
     isPromptHistoryOpen,

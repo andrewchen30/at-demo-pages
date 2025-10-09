@@ -44,6 +44,9 @@ export interface UseTrialLessonChatResult {
   promptHistory: PromptHistoryRecord[];
   scriptwriterResponse: DirectorInput | null;
   systemMessage: string;
+  systemUserBrief: string[];
+  systemDialog: string[];
+  systemChecklist: string[];
   chapterNumber: number;
   isChapterDialogOpen: boolean;
   isPromptHistoryOpen: boolean;
