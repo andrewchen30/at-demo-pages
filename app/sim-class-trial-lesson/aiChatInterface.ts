@@ -158,11 +158,23 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
   }, []);
 
   const getChatMessages = useCallback((): OpenAIChatMessage[] => {
-    return chatHistory.map((msg) => ({
-      role: msg.role,
-      content: [{ type: msg.role === 'user' ? 'input_text' : 'output_text', text: msg.content }],
-    }));
+    return chatHistory
+      .filter((m) => !m.content.includes('教練總結'))
+      .map((msg) => ({
+        role: msg.role,
+        content: [{ type: msg.role === 'user' ? 'input_text' : 'output_text', text: msg.content }],
+      }));
   }, [chatHistory]);
+
+  const appendUserMessage = useCallback((messages: OpenAIChatMessage[], message: string): OpenAIChatMessage[] => {
+    return [
+      ...messages,
+      {
+        role: 'user' as MessageRole,
+        content: [{ type: 'input_text', text: message }] 
+      }
+    ];
+  }, []);
 
   const getChatMessagesText = useCallback((): string => {
     return chatHistory
@@ -296,6 +308,8 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
     const message = (el?.value || '').trim();
     if (!message) return;
 
+    const chatMessage = getChatMessages();
+
     setChatHistory((prev) => [...prev, { role: 'user', content: message }]);
     if (el) {
       el.value = '';
@@ -304,7 +318,7 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
     setIsThinking(true);
     setConnectionStatus('thinking');
     try {
-      const response = await callOpenAI('student', getChatMessages());
+      const response = await callOpenAI('student', appendUserMessage(chatMessage, message));
       setChatHistory((prev) => [...prev, { role: 'assistant', content: response }]);
       setConnectionStatus('connected');
     } catch (e) {
