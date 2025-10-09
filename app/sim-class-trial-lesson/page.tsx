@@ -1,10 +1,10 @@
 'use client';
 
-import { FormEvent } from 'react';
+import { FormEvent, Suspense } from 'react';
 
 import { useTrialLessonChat } from './aiChatInterface';
 
-export default function SimClassTrialLessonPage() {
+function SimClassTrialLessonContent() {
   const {
     adminMode,
     workflowStep,
@@ -330,5 +330,25 @@ export default function SimClassTrialLessonPage() {
         )}
       </div>
     </main>
+  );
+}
+
+export default function SimClassTrialLessonPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="ai-page">
+          <div className="container">
+            <div className="chat-container">
+              <div className="chat-header">
+                <div className="chat-title">載入中...</div>
+              </div>
+            </div>
+          </div>
+        </main>
+      }
+    >
+      <SimClassTrialLessonContent />
+    </Suspense>
   );
 }
