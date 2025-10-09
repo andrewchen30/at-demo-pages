@@ -265,6 +265,7 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
   );
 
   const startScriptwriter = useCallback(async () => {
+    clearChat();
     setWorkflowStep('scriptwriter');
     setIsCreatingStudent(true);
     try {

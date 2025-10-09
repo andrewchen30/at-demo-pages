@@ -138,9 +138,9 @@ function SimClassTrialLessonContent() {
               >
                 {isSummarizing ? '教練總結中...' : '教練總結'}
               </button>
-              <button className="btn secondary" onClick={clearChat} disabled={isCreatingStudent || isSummarizing || isThinking}>
+              {/* <button className="btn secondary" onClick={clearChat} disabled={isCreatingStudent || isSummarizing || isThinking}>
                 清除對話
-              </button>
+              </button> */}
             </div>
           </div>
         </div>
