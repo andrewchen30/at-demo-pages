@@ -262,6 +262,7 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
+        cache: 'no-store',
       });
       if (!resp.ok) {
         let message = resp.statusText;
@@ -285,7 +286,9 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
     setWorkflowStep('scriptwriter');
     setIsCreatingStudent(true);
     try {
-      const response = await fetch('/api/students/random');
+      const response = await fetch('/api/students/random', {
+        cache: 'no-store',
+      });
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         const message = errorData?.error?.message || response.statusText || '無法取得學生角色';

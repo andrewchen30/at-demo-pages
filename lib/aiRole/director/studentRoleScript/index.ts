@@ -113,8 +113,7 @@ export async function getRandomStudentRole(): Promise<RandomRoleResponse> {
     throw new StudentRoleStoreEmptyError();
   }
 
-  // const randomIndex = Math.floor(Math.random() * roles.length);
-  const randomIndex = Date.now() % roles.length;
+  const randomIndex = Math.floor(Math.random() * roles.length);
   const role = roles[randomIndex];
 
   return {
