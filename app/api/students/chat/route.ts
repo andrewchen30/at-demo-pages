@@ -6,7 +6,7 @@ import type { StudentVariables } from '@/lib/aiRole/student';
 type ChatRequestBody = {
   textMessage?: unknown;
   variables?: unknown;
-  chatHistory?: unknown;
+  input?: unknown;
 };
 
 function ensureRecord(value: unknown): Record<string, unknown> {
@@ -34,7 +34,7 @@ export async function POST(request: Request) {
   }
 
   const rawVariables = ensureRecord(body?.variables);
-  const chatHistory = ensureArray(body?.chatHistory);
+  const chatHistory = ensureArray(body?.input);
 
   // 確保 variables 符合 StudentVariables 類型，使用 snake_case 傳遞給 OpenAI
   const variables: StudentVariables = {
