@@ -88,8 +88,6 @@ async function requestScriptwriterRole(directorOutput: string): Promise<string> 
   const script = getScripts(JSON.parse(directorOutput).persona);
   const message = `${SCRIPTWRITER_PROMPT}\n${JSON.stringify(script)}`;
 
-  console.log('message: ', message);
-
   try {
     const { result } = await scriptWriterAsk(message, {}, []);
     const trimmed = typeof result === 'string' ? result.trim() : '';
@@ -124,39 +122,47 @@ export async function getRandomStudentRole(): Promise<RandomRoleResponse> {
   };
 }
 
+function safeJsonParse<T extends Record<string, unknown>>(json: string, label: string): T {
+  try {
+    const parsed = JSON.parse(json) as unknown;
+    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+      throw new Error(`[${label}] JSON 內容不是物件`);
+    }
+    return parsed as T;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : '未知錯誤';
+    throw new Error(`[${label}] JSON.parse 失敗：${message}`);
+  }
+}
+
+export async function createStudentRole(): Promise<StoredRole> {
+  const directorOutput = await requestDirectorRole();
+  const scriptwriterOutput = await requestScriptwriterRole(directorOutput);
+
+  let merged: Record<string, unknown>;
+  try {
+    const directorObj = safeJsonParse<Record<string, unknown>>(directorOutput, '導演');
+    const scriptwriterObj = safeJsonParse<Record<string, unknown>>(scriptwriterOutput, '編劇');
+    merged = { ...directorObj, ...scriptwriterObj };
+  } catch (error) {
+    throw new Error(`解析角色資料失敗：${error instanceof Error ? error.message : '未知錯誤'}`);
+  }
+
+  return {
+    id: randomUUID(),
+    raw: JSON.stringify(merged),
+    createdAt: new Date().toISOString(),
+  };
+}
+
 export async function appendStudentRoles(count: number = DEFAULT_BATCH_SIZE) {
   if (count <= 0) {
     throw new StudentRoleInvalidCountError();
   }
 
   const roles = await readRoles();
-  const newRoles: StoredRole[] = [];
-
-  for (let i = 0; i < count; i += 1) {
-    const directorOutput = await requestDirectorRole();
-    const scriptwriterOutput = await requestScriptwriterRole(directorOutput);
-
-    console.log('scriptwriterOutput: ', scriptwriterOutput);
-    console.log('directorOutput: ', directorOutput);
-
-    // 請將兩個 output 都 JSON.parse 後再合併
-    let raw;
-    try {
-      raw = {
-        ...JSON.parse(directorOutput),
-        ...JSON.parse(scriptwriterOutput),
-      };
-    } catch (error) {
-      console.log('Failed to parse outputs:', error);
-      throw new Error(`解析角色資料失敗：${error instanceof Error ? error.message : '未知錯誤'}`);
-    }
-
-    newRoles.push({
-      id: randomUUID(),
-      raw: JSON.stringify(raw),
-      createdAt: new Date().toISOString(),
-    });
-  }
+  const tasks = Array.from({ length: count }, () => createStudentRole());
+  const newRoles = await Promise.all(tasks);
 
   const updatedRoles = [...roles, ...newRoles];
   await writeRoles(updatedRoles);
