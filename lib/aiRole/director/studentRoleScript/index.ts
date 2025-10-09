@@ -85,7 +85,7 @@ async function requestDirectorRole(): Promise<string> {
 }
 
 async function requestScriptwriterRole(directorOutput: string): Promise<string> {
-  const script = getScripts(JSON.parse(directorOutput).persona);
+  const script = getScripts(JSON.parse(directorOutput));
   const message = `${SCRIPTWRITER_PROMPT}\n${JSON.stringify(script)}`;
 
   try {

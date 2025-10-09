@@ -2,22 +2,22 @@ import type { DirectorInput, PersonaEntry } from '../../student/types';
 import { getCheckListForTeacher } from './getCheckListForTeacher';
 
 const BRIEF_TEMPLATE: readonly string[][] = [
-  ['1. 基本資料：{identity}', '2. 科目：{subject}、{usage_scenario}'],
-  ['1. 基本資料：{identity}、{usage_context}', '2. 學習動機：{extrinsic_motivation}'],
+  ['1. 基本資料：{job}', '2. 科目：{subject}、{usage_scenario_tag}'],
+  ['1. 基本資料：{job}、{usage_context}', '2. 學習動機：{extrinsic_motivation}'],
   [
-    '1. 基本資料：{identity}、{usage_context}',
+    '1. 基本資料：{job}、{usage_context}',
     '2. 學習動機：{extrinsic_motivation}',
     '3. 目前程度：{current_performance}、{strengths}、{biggest_gap}',
     '4. 學習痛點：{learning_blindspots}',
   ],
   [
-    '1. 基本資料：{identity}、{usage_context}',
+    '1. 基本資料：{job}、{usage_context}',
     '2. 學習動機：{extrinsic_motivation}、{intrinsic_motivation}',
     '3. 目前程度：{current_performance}、{strengths}、{biggest_gap}',
     '4. 學習目標：{target_level}',
   ],
   [
-    '1. 基本資料：{identity}、{usage_context}',
+    '1. 基本資料：{job}、{usage_context}',
     '2. 學習動機：{extrinsic_motivation}、{intrinsic_motivation}',
     '3. 目前程度：{current_performance}、{strengths}、{biggest_gap}',
     '4. 學習目標：{target_level}、{short_term_goal}、{long_term_goal}、{long_term_outcome}',
@@ -25,8 +25,12 @@ const BRIEF_TEMPLATE: readonly string[][] = [
   ],
 ];
 
+const DEFAULT_PARAMS = {
+  subject: '英文',
+}
+
 function fillTemplate(template: string, persona: PersonaEntry[]): string {
-  const lookup: Record<string, string> = {};
+  const lookup: Record<string, string> = DEFAULT_PARAMS;
   persona.forEach((p) => {
     lookup[p.information_key] = p.information;
   });
