@@ -12,6 +12,7 @@ interface ConversationRecord {
   title: string;
   messages: ChatMessage[];
   createdAt: string;
+  conversationTime?: string; // 實際對話時間
   isCollapsed: boolean;
   startTag?: string;
   endTag?: string;
@@ -25,6 +26,7 @@ const END_TAG = '：只用來調整語氣（親切、鼓勵），不可分析或
 export default function CoachLogViewerPage() {
   const [inputText, setInputText] = useState('');
   const [outputText, setOutputText] = useState('');
+  const [conversationTime, setConversationTime] = useState('');
   const [conversations, setConversations] = useState<ConversationRecord[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [editingTitleId, setEditingTitleId] = useState<string | null>(null);
@@ -121,6 +123,7 @@ export default function CoachLogViewerPage() {
         title: `對話記錄 ${new Date().toLocaleString('zh-TW')}`,
         messages: parsed,
         createdAt: new Date().toISOString(),
+        conversationTime: conversationTime.trim() || undefined,
         isCollapsed: false,
         startTag: hasStartTag ? START_TAG : undefined,
         endTag: hasEndTag ? END_TAG : undefined,
@@ -131,6 +134,7 @@ export default function CoachLogViewerPage() {
       setSelectedConversationId(newConversation.id); // 自動選擇新增的對話
       setInputText('');
       setOutputText('');
+      setConversationTime('');
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : '解析失敗');
@@ -326,6 +330,51 @@ export default function CoachLogViewerPage() {
 
             <div style={{ marginBottom: '12px' }}>
               <label
+                htmlFor="conversation-time"
+                style={{
+                  display: 'block',
+                  marginBottom: '8px',
+                  fontWeight: '500',
+                  color: 'var(--text)',
+                  fontSize: '13px',
+                }}
+              >
+                對話時間
+              </label>
+              <div
+                style={{
+                  marginBottom: '8px',
+                  padding: '8px',
+                  backgroundColor: '#f3e8ff',
+                  border: '1px solid #d8b4fe',
+                  borderRadius: '6px',
+                  fontSize: '11px',
+                  color: '#581c87',
+                }}
+              >
+                <div style={{ lineHeight: '1.5' }}>🕐 選填：實際對話發生的時間</div>
+              </div>
+              <input
+                id="conversation-time"
+                type="text"
+                value={conversationTime}
+                onChange={(e) => setConversationTime(e.target.value)}
+                placeholder="例如：2025/01/13 14:30:45"
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  border: '1px solid var(--border)',
+                  borderRadius: '6px',
+                  backgroundColor: 'var(--bg)',
+                  color: 'var(--text)',
+                  fontSize: '12px',
+                  fontFamily: 'monospace',
+                }}
+              />
+            </div>
+
+            <div style={{ marginBottom: '12px' }}>
+              <label
                 htmlFor="output-text"
                 style={{
                   display: 'block',
@@ -357,7 +406,7 @@ export default function CoachLogViewerPage() {
                 placeholder="貼上教練回饋..."
                 style={{
                   width: '100%',
-                  minHeight: '120px',
+                  minHeight: '100px',
                   padding: '10px',
                   border: '1px solid var(--border)',
                   borderRadius: '6px',
@@ -520,17 +569,7 @@ export default function CoachLogViewerPage() {
                       }}
                     >
                       <div>{conv.messages.length} 則訊息</div>
-                      <div style={{ fontSize: '10px' }}>
-                        {new Date(conv.createdAt).toLocaleString('zh-TW', {
-                          year: 'numeric',
-                          month: '2-digit',
-                          day: '2-digit',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                          second: '2-digit',
-                          hour12: false,
-                        })}
-                      </div>
+                      <div style={{ fontSize: '10px' }}>{conv.conversationTime || '未知'}</div>
                     </div>
                   </div>
                 ))}
@@ -593,7 +632,7 @@ export default function CoachLogViewerPage() {
                       </div>
                       <div style={{ fontSize: '12px', color: 'var(--muted)' }}>
                         {selectedConversation.messages.length} 則訊息 •{' '}
-                        {new Date(selectedConversation.createdAt).toLocaleString('zh-TW')}
+                        {selectedConversation.conversationTime || '未知'}
                       </div>
                     </>
                   )}
