@@ -114,9 +114,10 @@ export default function CoachLogViewerPage() {
         return;
       }
 
-      // 創建新的對話記錄
+      // 創建新的對話記錄（使用時間戳 + 隨機數確保唯一性）
+      const uniqueId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       const newConversation: ConversationRecord = {
-        id: Date.now().toString(),
+        id: uniqueId,
         title: `對話記錄 ${new Date().toLocaleString('zh-TW')}`,
         messages: parsed,
         createdAt: new Date().toISOString(),
