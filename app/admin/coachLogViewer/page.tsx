@@ -507,7 +507,7 @@ export default function CoachLogViewerPage() {
                       }
                     }}
                   >
-                    <div style={{ fontWeight: '600', fontSize: '13px', color: 'var(--text)', marginBottom: '4px' }}>
+                    <div style={{ fontWeight: '600', fontSize: '13px', color: 'var(--text)', marginBottom: '6px' }}>
                       {conv.title}
                     </div>
                     <div
@@ -515,13 +515,22 @@ export default function CoachLogViewerPage() {
                         fontSize: '11px',
                         color: 'var(--muted)',
                         display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
+                        flexDirection: 'column',
+                        gap: '2px',
                       }}
                     >
-                      <span>{conv.messages.length} 則訊息</span>
-                      <span>•</span>
-                      <span>{new Date(conv.createdAt).toLocaleDateString('zh-TW')}</span>
+                      <div>{conv.messages.length} 則訊息</div>
+                      <div style={{ fontSize: '10px' }}>
+                        {new Date(conv.createdAt).toLocaleString('zh-TW', {
+                          year: 'numeric',
+                          month: '2-digit',
+                          day: '2-digit',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          second: '2-digit',
+                          hour12: false,
+                        })}
+                      </div>
                     </div>
                   </div>
                 ))}
