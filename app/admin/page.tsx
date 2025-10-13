@@ -106,6 +106,24 @@ export default function AdminPage() {
       <div className="container">
         <div className="section">
           <div className="section-header">
+            <h1 className="section-title">管理後台</h1>
+            <p className="section-subtitle">管理系統資料與工具</p>
+          </div>
+          <div className="section-content" style={{ marginBottom: '32px' }}>
+            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+              <a
+                href="/admin/coachLogViewer"
+                className="btn"
+                style={{ background: 'linear-gradient(180deg, #8b5cf6, #7c3aed)', textDecoration: 'none' }}
+              >
+                對話記錄檢視器
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <div className="section">
+          <div className="section-header">
             <h1 className="section-title">學生角色資料庫</h1>
             <p className="section-subtitle">透過 AI 預先生成學生角色，儲存於伺服器以供模擬教學時隨機使用。</p>
           </div>
