@@ -522,82 +522,76 @@ export default function CoachLogViewerPage() {
               />
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <button
                 className="btn"
                 onClick={handleParse}
                 disabled={!inputText.trim()}
                 style={{
-                  background: inputText.trim()
-                    ? 'linear-gradient(180deg, #10b981, #059669)'
-                    : 'linear-gradient(180deg, #d1d5db, #9ca3af)',
+                  background: inputText.trim() ? '#6b7280' : '#e5e7eb',
                   width: '100%',
-                  fontSize: '13px',
-                  padding: '10px',
+                  fontSize: '12px',
+                  padding: '7px',
                 }}
               >
                 ✨ 解析並新增
               </button>
-              <button
-                className="btn"
-                onClick={exportAllData}
-                disabled={conversations.length === 0}
-                style={{
-                  background:
-                    conversations.length > 0
-                      ? 'linear-gradient(180deg, #3b82f6, #2563eb)'
-                      : 'linear-gradient(180deg, #d1d5db, #9ca3af)',
-                  width: '100%',
-                  fontSize: '13px',
-                  padding: '10px',
-                }}
-              >
-                📥 匯出全部
-              </button>
-              <button
-                className="btn"
-                onClick={importData}
-                style={{
-                  background: 'linear-gradient(180deg, #f59e0b, #d97706)',
-                  width: '100%',
-                  fontSize: '13px',
-                  padding: '10px',
-                }}
-              >
-                📤 匯入資料
-              </button>
-              <button
-                className="btn"
-                onClick={reparseAllConversations}
-                disabled={conversations.length === 0 || conversations.every((c) => !c.rawInput)}
-                style={{
-                  background:
-                    conversations.length > 0 && conversations.some((c) => c.rawInput)
-                      ? 'linear-gradient(180deg, #8b5cf6, #7c3aed)'
-                      : 'linear-gradient(180deg, #d1d5db, #9ca3af)',
-                  width: '100%',
-                  fontSize: '13px',
-                  padding: '10px',
-                }}
-              >
-                🔄 重新解析全部
-              </button>
-              <button
-                className="btn"
-                onClick={clearAllConversations}
-                disabled={conversations.length === 0}
-                style={{
-                  background:
-                    conversations.length > 0
-                      ? 'linear-gradient(180deg, #ef4444, #dc2626)'
-                      : 'linear-gradient(180deg, #d1d5db, #9ca3af)',
-                  width: '100%',
-                  fontSize: '13px',
-                  padding: '10px',
-                }}
-              >
-                🗑️ 清除全部
-              </button>
+              <div style={{ display: 'flex', gap: '6px' }}>
+                <button
+                  className="btn"
+                  onClick={exportAllData}
+                  disabled={conversations.length === 0}
+                  style={{
+                    background: conversations.length > 0 ? '#e5e7eb' : '#f3f4f6',
+                    flex: 1,
+                    fontSize: '12px',
+                    padding: '7px',
+                  }}
+                >
+                  📥 匯出
+                </button>
+                <button
+                  className="btn"
+                  onClick={importData}
+                  style={{
+                    background: '#e5e7eb',
+                    flex: 1,
+                    fontSize: '12px',
+                    padding: '7px',
+                  }}
+                >
+                  📤 匯入
+                </button>
+              </div>
+              <div style={{ display: 'flex', gap: '6px' }}>
+                <button
+                  className="btn"
+                  onClick={reparseAllConversations}
+                  disabled={conversations.length === 0 || conversations.every((c) => !c.rawInput)}
+                  style={{
+                    background:
+                      conversations.length > 0 && conversations.some((c) => c.rawInput) ? '#e5e7eb' : '#f3f4f6',
+                    flex: 1,
+                    fontSize: '12px',
+                    padding: '7px',
+                  }}
+                >
+                  🔄 重新解析
+                </button>
+                <button
+                  className="btn"
+                  onClick={clearAllConversations}
+                  disabled={conversations.length === 0}
+                  style={{
+                    background: conversations.length > 0 ? '#e5e7eb' : '#f3f4f6',
+                    flex: 1,
+                    fontSize: '12px',
+                    padding: '7px',
+                  }}
+                >
+                  🗑️ 清除
+                </button>
+              </div>
             </div>
 
             {error && (
