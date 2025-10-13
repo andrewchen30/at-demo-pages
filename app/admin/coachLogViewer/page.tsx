@@ -27,6 +27,7 @@ export default function CoachLogViewerPage() {
   const [error, setError] = useState<string | null>(null);
   const [editingTitleId, setEditingTitleId] = useState<string | null>(null);
   const [editingTitleValue, setEditingTitleValue] = useState('');
+  const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
 
   // 從 localStorage 載入資料
   useEffect(() => {
@@ -35,6 +36,10 @@ export default function CoachLogViewerPage() {
       try {
         const parsed = JSON.parse(stored);
         setConversations(parsed);
+        // 自動選擇第一個對話
+        if (parsed.length > 0) {
+          setSelectedConversationId(parsed[0].id);
+        }
       } catch (err) {
         console.error('載入資料失敗:', err);
       }
@@ -119,6 +124,7 @@ export default function CoachLogViewerPage() {
       };
 
       setConversations([newConversation, ...conversations]);
+      setSelectedConversationId(newConversation.id); // 自動選擇新增的對話
       setInputText('');
       setError(null);
     } catch (err) {
@@ -126,15 +132,22 @@ export default function CoachLogViewerPage() {
     }
   };
 
-  const toggleCollapse = (id: string) => {
-    setConversations(
-      conversations.map((conv) => (conv.id === id ? { ...conv, isCollapsed: !conv.isCollapsed } : conv))
-    );
-  };
-
   const deleteConversation = (id: string) => {
+    const currentIndex = conversations.findIndex((conv) => conv.id === id);
     const updated = conversations.filter((conv) => conv.id !== id);
     setConversations(updated);
+
+    // 如果刪除的是選中的對話，自動選擇下一個
+    if (selectedConversationId === id) {
+      if (updated.length > 0) {
+        // 優先選擇下一個，如果沒有就選擇上一個
+        const nextIndex = Math.min(currentIndex, updated.length - 1);
+        setSelectedConversationId(updated[nextIndex].id);
+      } else {
+        setSelectedConversationId(null);
+      }
+    }
+
     // 如果刪除所有對話，清除 localStorage
     if (updated.length === 0) {
       localStorage.removeItem(STORAGE_KEY);
@@ -197,47 +210,65 @@ export default function CoachLogViewerPage() {
     input.click();
   };
 
+  const selectedConversation = conversations.find((conv) => conv.id === selectedConversationId);
+
   return (
-    <main className="ai-page">
-      <div className="container" style={{ display: 'block', padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
-        {/* 頁首 */}
-        <div style={{ marginBottom: '24px' }}>
-          <h1 style={{ fontSize: '24px', fontWeight: '600', color: 'var(--text)', marginBottom: '8px' }}>
+    <main className="ai-page" style={{ height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      {/* 頂部導航欄 */}
+      <div
+        style={{
+          padding: '16px 24px',
+          borderBottom: '1px solid var(--border)',
+          backgroundColor: 'var(--bg)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+      >
+        <div>
+          <h1 style={{ fontSize: '20px', fontWeight: '600', color: 'var(--text)', marginBottom: '4px' }}>
             對話記錄檢視器
           </h1>
-          <p style={{ fontSize: '14px', color: 'var(--muted)', marginBottom: '12px' }}>
-            將 developer message 格式轉換為聊天記錄並視覺化呈現
-          </p>
-          <a
-            href="/admin"
-            style={{
-              display: 'inline-block',
-              color: 'var(--accent)',
-              textDecoration: 'none',
-              fontSize: '14px',
-            }}
-          >
-            ← 返回管理後台
-          </a>
+          <p style={{ fontSize: '13px', color: 'var(--muted)' }}>將 developer message 格式轉換為聊天記錄並視覺化呈現</p>
         </div>
-
-        {/* 輸入區域 - 固定在最上方 */}
-        <div
-          className="section"
+        <a
+          href="/admin"
           style={{
-            marginBottom: '24px',
-            position: 'sticky',
-            top: '20px',
-            zIndex: 10,
-            boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+            color: 'var(--accent)',
+            textDecoration: 'none',
+            fontSize: '14px',
+            fontWeight: '500',
           }}
         >
-          <div className="section-header" style={{ cursor: 'default' }}>
-            <h2 className="section-title">新增對話記錄</h2>
+          ← 返回管理後台
+        </a>
+      </div>
+
+      {/* 三欄式佈局 */}
+      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+        {/* 左側邊欄 - 新增對話記錄 */}
+        <div
+          style={{
+            width: '320px',
+            borderRight: '1px solid var(--border)',
+            backgroundColor: 'var(--panel)',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+          }}
+        >
+          <div
+            style={{
+              padding: '16px',
+              borderBottom: '1px solid var(--border)',
+              backgroundColor: 'var(--bg)',
+            }}
+          >
+            <h2 style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text)' }}>新增對話記錄</h2>
           </div>
 
-          <div className="section-content">
-            <div style={{ marginBottom: '16px' }}>
+          <div style={{ flex: 1, overflowY: 'auto', padding: '16px' }}>
+            <div style={{ marginBottom: '12px' }}>
               <label
                 htmlFor="input-text"
                 style={{
@@ -253,62 +284,53 @@ export default function CoachLogViewerPage() {
               <div
                 style={{
                   marginBottom: '8px',
-                  padding: '10px',
+                  padding: '8px',
                   backgroundColor: '#f0f9ff',
                   border: '1px solid #bae6fd',
                   borderRadius: '6px',
-                  fontSize: '12px',
+                  fontSize: '11px',
                   color: '#0c4a6e',
                 }}
               >
-                <div style={{ fontWeight: '600', marginBottom: '4px' }}>💡 支援兩種格式：</div>
-                <div style={{ marginLeft: '20px', lineHeight: '1.6' }}>
-                  <div>
-                    1. <strong>標準格式：</strong>直接貼上「學生: ...」「老師: ...」的對話記錄
-                  </div>
-                  <div>
-                    2. <strong>完整格式：</strong>包含開始標籤「
-                    <span style={{ fontFamily: 'monospace', fontSize: '11px', color: '#059669' }}>
-                      Judge 產生的 JSON...
-                    </span>
-                    」和結束標籤「
-                    <span style={{ fontFamily: 'monospace', fontSize: '11px', color: '#dc2626' }}>
-                      ：只用來調整語氣...
-                    </span>
-                    」的完整訊息
-                  </div>
+                <div style={{ fontWeight: '600', marginBottom: '4px' }}>💡 支援格式：</div>
+                <div style={{ lineHeight: '1.5' }}>
+                  <div>• 標準：學生/老師對話</div>
+                  <div>• 完整：含開始/結束標籤</div>
                 </div>
               </div>
               <textarea
                 id="input-text"
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
-                placeholder="貼上對話記錄...&#10;&#10;支援格式 1：&#10;老師: 那我們可以多練習對話和聽力&#10;學生: 好，我也期待。&#10;&#10;或格式 2：&#10;...Judge 產生的 JSON，含 summary 與 results。&#10;老師: 那我們可以多練習對話和聽力&#10;學生: 好，我也期待。&#10;：只用來調整語氣（親切、鼓勵），不可分析或引用其內容。"
+                placeholder="貼上對話記錄..."
                 style={{
                   width: '100%',
-                  minHeight: '150px',
-                  padding: '12px',
+                  minHeight: '200px',
+                  padding: '10px',
                   border: '1px solid var(--border)',
-                  borderRadius: '8px',
+                  borderRadius: '6px',
                   backgroundColor: 'var(--bg)',
                   color: 'var(--text)',
-                  fontSize: '13px',
+                  fontSize: '12px',
                   fontFamily: 'monospace',
                   resize: 'vertical',
-                  lineHeight: '1.5',
+                  lineHeight: '1.4',
                 }}
               />
             </div>
 
-            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <button
                 className="btn"
                 onClick={handleParse}
                 disabled={!inputText.trim()}
                 style={{
-                  background: 'linear-gradient(180deg, #10b981, #059669)',
-                  flex: '1',
-                  minWidth: '120px',
+                  background: inputText.trim()
+                    ? 'linear-gradient(180deg, #10b981, #059669)'
+                    : 'linear-gradient(180deg, #d1d5db, #9ca3af)',
+                  width: '100%',
+                  fontSize: '13px',
+                  padding: '10px',
                 }}
               >
                 ✨ 解析並新增
@@ -318,8 +340,13 @@ export default function CoachLogViewerPage() {
                 onClick={exportAllData}
                 disabled={conversations.length === 0}
                 style={{
-                  background: 'linear-gradient(180deg, #3b82f6, #2563eb)',
-                  flex: '0 0 auto',
+                  background:
+                    conversations.length > 0
+                      ? 'linear-gradient(180deg, #3b82f6, #2563eb)'
+                      : 'linear-gradient(180deg, #d1d5db, #9ca3af)',
+                  width: '100%',
+                  fontSize: '13px',
+                  padding: '10px',
                 }}
               >
                 📥 匯出全部
@@ -329,7 +356,9 @@ export default function CoachLogViewerPage() {
                 onClick={importData}
                 style={{
                   background: 'linear-gradient(180deg, #f59e0b, #d97706)',
-                  flex: '0 0 auto',
+                  width: '100%',
+                  fontSize: '13px',
+                  padding: '10px',
                 }}
               >
                 📤 匯入資料
@@ -340,12 +369,12 @@ export default function CoachLogViewerPage() {
               <div
                 style={{
                   marginTop: '12px',
-                  padding: '12px',
+                  padding: '10px',
                   backgroundColor: '#fef2f2',
                   border: '1px solid #fecaca',
-                  borderRadius: '8px',
+                  borderRadius: '6px',
                   color: '#dc2626',
-                  fontSize: '13px',
+                  fontSize: '12px',
                 }}
               >
                 ⚠️ {error}
@@ -354,275 +383,366 @@ export default function CoachLogViewerPage() {
           </div>
         </div>
 
-        {/* 對話記錄列表 */}
-        <div style={{ marginTop: '24px' }}>
-          {conversations.length === 0 ? (
+        {/* 中間邊欄 - 對話記錄列表 */}
+        <div
+          style={{
+            width: '280px',
+            borderRight: '1px solid var(--border)',
+            backgroundColor: 'var(--bg)',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+          }}
+        >
+          <div
+            style={{
+              padding: '16px',
+              borderBottom: '1px solid var(--border)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}
+          >
+            <h2 style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text)' }}>對話列表</h2>
+            <span
+              style={{
+                fontSize: '12px',
+                color: 'var(--muted)',
+                backgroundColor: 'var(--panel)',
+                padding: '4px 8px',
+                borderRadius: '12px',
+              }}
+            >
+              {conversations.length}
+            </span>
+          </div>
+
+          <div style={{ flex: 1, overflowY: 'auto' }}>
+            {conversations.length === 0 ? (
+              <div
+                style={{
+                  textAlign: 'center',
+                  padding: '40px 20px',
+                  color: 'var(--muted)',
+                }}
+              >
+                <div style={{ fontSize: '36px', marginBottom: '12px' }}>💬</div>
+                <div style={{ fontSize: '14px', fontWeight: '500', marginBottom: '4px' }}>尚無對話記錄</div>
+                <div style={{ fontSize: '12px' }}>請在左側新增</div>
+              </div>
+            ) : (
+              <div>
+                {conversations.map((conv) => (
+                  <div
+                    key={conv.id}
+                    onClick={() => setSelectedConversationId(conv.id)}
+                    style={{
+                      padding: '12px 16px',
+                      borderBottom: '1px solid var(--border)',
+                      cursor: 'pointer',
+                      backgroundColor: selectedConversationId === conv.id ? '#f0f9ff' : 'transparent',
+                      borderLeft: selectedConversationId === conv.id ? '3px solid #3b82f6' : '3px solid transparent',
+                      transition: 'all 0.2s ease',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (selectedConversationId !== conv.id) {
+                        e.currentTarget.style.backgroundColor = 'var(--panel)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (selectedConversationId !== conv.id) {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                      }
+                    }}
+                  >
+                    <div style={{ fontWeight: '600', fontSize: '13px', color: 'var(--text)', marginBottom: '4px' }}>
+                      {conv.title}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: '11px',
+                        color: 'var(--muted)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                      }}
+                    >
+                      <span>{conv.messages.length} 則訊息</span>
+                      <span>•</span>
+                      <span>{new Date(conv.createdAt).toLocaleDateString('zh-TW')}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* 右側主要內容 - 對話詳情 */}
+        <div
+          style={{
+            flex: 1,
+            backgroundColor: 'var(--bg)',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+          }}
+        >
+          {selectedConversation ? (
+            <>
+              {/* 對話標題列 */}
+              <div
+                style={{
+                  padding: '16px 24px',
+                  borderBottom: '1px solid var(--border)',
+                  backgroundColor: 'var(--panel)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}
+              >
+                <div style={{ flex: 1 }}>
+                  {editingTitleId === selectedConversation.id ? (
+                    <input
+                      type="text"
+                      value={editingTitleValue}
+                      onChange={(e) => setEditingTitleValue(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          saveTitle(selectedConversation.id);
+                        } else if (e.key === 'Escape') {
+                          cancelEditingTitle();
+                        }
+                      }}
+                      style={{
+                        width: '100%',
+                        padding: '8px 12px',
+                        border: '2px solid #3b82f6',
+                        borderRadius: '6px',
+                        fontSize: '16px',
+                        fontWeight: '600',
+                        outline: 'none',
+                      }}
+                      autoFocus
+                    />
+                  ) : (
+                    <>
+                      <div style={{ fontWeight: '600', fontSize: '16px', color: 'var(--text)', marginBottom: '4px' }}>
+                        {selectedConversation.title}
+                      </div>
+                      <div style={{ fontSize: '12px', color: 'var(--muted)' }}>
+                        {selectedConversation.messages.length} 則訊息 •{' '}
+                        {new Date(selectedConversation.createdAt).toLocaleString('zh-TW')}
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  {editingTitleId === selectedConversation.id ? (
+                    <>
+                      <button
+                        onClick={() => saveTitle(selectedConversation.id)}
+                        style={{
+                          padding: '8px 16px',
+                          border: 'none',
+                          borderRadius: '6px',
+                          background: '#10b981',
+                          color: 'white',
+                          fontSize: '13px',
+                          cursor: 'pointer',
+                          fontWeight: '500',
+                        }}
+                      >
+                        ✓ 儲存
+                      </button>
+                      <button
+                        onClick={cancelEditingTitle}
+                        style={{
+                          padding: '8px 16px',
+                          border: '1px solid var(--border)',
+                          borderRadius: '6px',
+                          background: 'white',
+                          color: 'var(--text)',
+                          fontSize: '13px',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        ✕ 取消
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => startEditingTitle(selectedConversation.id, selectedConversation.title)}
+                        style={{
+                          padding: '8px 16px',
+                          border: '1px solid var(--border)',
+                          borderRadius: '6px',
+                          background: 'white',
+                          color: 'var(--text)',
+                          fontSize: '13px',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease',
+                          fontWeight: '500',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = '#f1f5f9';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = 'white';
+                        }}
+                      >
+                        ✏️ 編輯標題
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (confirm('確定要刪除這個對話記錄嗎？')) {
+                            deleteConversation(selectedConversation.id);
+                          }
+                        }}
+                        style={{
+                          padding: '8px 16px',
+                          border: '1px solid #fecaca',
+                          borderRadius: '6px',
+                          background: 'white',
+                          color: '#ef4444',
+                          fontSize: '13px',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease',
+                          fontWeight: '500',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = '#fef2f2';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = 'white';
+                        }}
+                      >
+                        🗑️ 刪除
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* 對話內容 */}
+              <div style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '16px',
+                    maxWidth: '900px',
+                    margin: '0 auto',
+                  }}
+                >
+                  {selectedConversation.messages.map((message, index) => (
+                    <div
+                      key={index}
+                      style={{
+                        display: 'flex',
+                        justifyContent: message.role === 'student' ? 'flex-start' : 'flex-end',
+                        width: '100%',
+                      }}
+                    >
+                      <div
+                        style={{
+                          maxWidth: '70%',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '4px',
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontSize: '12px',
+                            color: 'var(--muted)',
+                            paddingLeft: message.role === 'student' ? '12px' : '0',
+                            paddingRight: message.role === 'teacher' ? '12px' : '0',
+                            textAlign: message.role === 'student' ? 'left' : 'right',
+                            fontWeight: '500',
+                          }}
+                        >
+                          {message.role === 'student' ? '學生' : '老師'}
+                        </div>
+                        <div
+                          style={{
+                            padding: '12px 16px',
+                            borderRadius: '16px',
+                            backgroundColor: message.role === 'student' ? '#e0f2fe' : '#dbeafe',
+                            color: '#1e293b',
+                            fontSize: '14px',
+                            lineHeight: '1.6',
+                            wordBreak: 'break-word',
+                            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                          }}
+                        >
+                          {message.content}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* JSON 檢視 */}
+                <div
+                  style={{
+                    marginTop: '32px',
+                    maxWidth: '900px',
+                    margin: '32px auto 0',
+                    padding: '16px',
+                    backgroundColor: 'var(--panel)',
+                    borderRadius: '8px',
+                    border: '1px solid var(--border)',
+                  }}
+                >
+                  <details>
+                    <summary
+                      style={{
+                        cursor: 'pointer',
+                        fontWeight: '600',
+                        color: 'var(--text)',
+                        userSelect: 'none',
+                        fontSize: '14px',
+                      }}
+                    >
+                      🔍 檢視 JSON 格式
+                    </summary>
+                    <pre
+                      style={{
+                        marginTop: '12px',
+                        padding: '12px',
+                        backgroundColor: 'var(--bg)',
+                        borderRadius: '6px',
+                        fontSize: '12px',
+                        overflow: 'auto',
+                        maxHeight: '300px',
+                        fontFamily: 'monospace',
+                        border: '1px solid var(--border)',
+                      }}
+                    >
+                      {JSON.stringify(selectedConversation.messages, null, 2)}
+                    </pre>
+                  </details>
+                </div>
+              </div>
+            </>
+          ) : (
             <div
               style={{
-                textAlign: 'center',
-                padding: '60px 20px',
+                flex: 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
                 color: 'var(--muted)',
               }}
             >
-              <div style={{ fontSize: '48px', marginBottom: '16px' }}>💬</div>
-              <div style={{ fontSize: '16px', fontWeight: '500', marginBottom: '8px' }}>尚無對話記錄</div>
-              <div style={{ fontSize: '14px' }}>請在上方貼上 developer message 開始解析</div>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {conversations.map((conv) => (
-                <div key={conv.id} className="section">
-                  {/* 可折疊的標題列 */}
-                  <div
-                    className="section-header"
-                    style={{
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      gap: '12px',
-                    }}
-                    onClick={() => toggleCollapse(conv.id)}
-                  >
-                    <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <span style={{ fontSize: '16px', transition: 'transform 0.2s ease' }}>
-                        {conv.isCollapsed ? '▶' : '▼'}
-                      </span>
-                      {editingTitleId === conv.id ? (
-                        <input
-                          type="text"
-                          value={editingTitleValue}
-                          onChange={(e) => setEditingTitleValue(e.target.value)}
-                          onClick={(e) => e.stopPropagation()}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              saveTitle(conv.id);
-                            } else if (e.key === 'Escape') {
-                              cancelEditingTitle();
-                            }
-                          }}
-                          style={{
-                            flex: 1,
-                            padding: '6px 12px',
-                            border: '2px solid #3b82f6',
-                            borderRadius: '6px',
-                            fontSize: '14px',
-                            fontWeight: '600',
-                            outline: 'none',
-                          }}
-                          autoFocus
-                        />
-                      ) : (
-                        <div style={{ flex: 1 }}>
-                          <div style={{ fontWeight: '600', fontSize: '14px', color: 'var(--text)' }}>{conv.title}</div>
-                          <div
-                            style={{
-                              fontSize: '12px',
-                              color: 'var(--muted)',
-                              marginTop: '2px',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '8px',
-                              flexWrap: 'wrap',
-                            }}
-                          >
-                            <span>{conv.messages.length} 則訊息</span>
-                            <span>•</span>
-                            <span>{new Date(conv.createdAt).toLocaleString('zh-TW')}</span>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    <div style={{ display: 'flex', gap: '8px' }} onClick={(e) => e.stopPropagation()}>
-                      {editingTitleId === conv.id ? (
-                        <>
-                          <button
-                            onClick={() => saveTitle(conv.id)}
-                            style={{
-                              padding: '6px 12px',
-                              border: 'none',
-                              borderRadius: '6px',
-                              background: '#10b981',
-                              color: 'white',
-                              fontSize: '12px',
-                              cursor: 'pointer',
-                            }}
-                          >
-                            ✓ 儲存
-                          </button>
-                          <button
-                            onClick={cancelEditingTitle}
-                            style={{
-                              padding: '6px 12px',
-                              border: '1px solid var(--border)',
-                              borderRadius: '6px',
-                              background: 'white',
-                              color: 'var(--text)',
-                              fontSize: '12px',
-                              cursor: 'pointer',
-                            }}
-                          >
-                            ✕ 取消
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          <button
-                            onClick={() => startEditingTitle(conv.id, conv.title)}
-                            style={{
-                              padding: '6px 12px',
-                              border: '1px solid var(--border)',
-                              borderRadius: '6px',
-                              background: 'white',
-                              color: 'var(--text)',
-                              fontSize: '12px',
-                              cursor: 'pointer',
-                              transition: 'all 0.2s ease',
-                            }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.background = '#f1f5f9';
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.background = 'white';
-                            }}
-                          >
-                            ✏️ 編輯
-                          </button>
-                          <button
-                            onClick={() => {
-                              if (confirm('確定要刪除這個對話記錄嗎？')) {
-                                deleteConversation(conv.id);
-                              }
-                            }}
-                            style={{
-                              padding: '6px 12px',
-                              border: '1px solid #fecaca',
-                              borderRadius: '6px',
-                              background: 'white',
-                              color: '#ef4444',
-                              fontSize: '12px',
-                              cursor: 'pointer',
-                              transition: 'all 0.2s ease',
-                            }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.background = '#fef2f2';
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.background = 'white';
-                            }}
-                          >
-                            🗑️ 刪除
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* 對話內容 */}
-                  {!conv.isCollapsed && (
-                    <div className="section-content">
-                      <div
-                        style={{
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '16px',
-                          maxHeight: '500px',
-                          overflowY: 'auto',
-                          padding: '16px',
-                          backgroundColor: 'var(--panel)',
-                          borderRadius: '8px',
-                        }}
-                      >
-                        {conv.messages.map((message, index) => (
-                          <div
-                            key={index}
-                            style={{
-                              display: 'flex',
-                              justifyContent: message.role === 'student' ? 'flex-start' : 'flex-end',
-                              width: '100%',
-                            }}
-                          >
-                            <div
-                              style={{
-                                maxWidth: '70%',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                gap: '4px',
-                              }}
-                            >
-                              <div
-                                style={{
-                                  fontSize: '12px',
-                                  color: 'var(--muted)',
-                                  paddingLeft: message.role === 'student' ? '12px' : '0',
-                                  paddingRight: message.role === 'teacher' ? '12px' : '0',
-                                  textAlign: message.role === 'student' ? 'left' : 'right',
-                                }}
-                              >
-                                {message.role === 'student' ? '學生' : '老師'}
-                              </div>
-                              <div
-                                style={{
-                                  padding: '12px 16px',
-                                  borderRadius: '16px',
-                                  backgroundColor: message.role === 'student' ? '#e0f2fe' : '#dbeafe',
-                                  color: '#1e293b',
-                                  fontSize: '14px',
-                                  lineHeight: '1.5',
-                                  wordBreak: 'break-word',
-                                  boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
-                                }}
-                              >
-                                {message.content}
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-
-                      {/* JSON 檢視 */}
-                      <div
-                        style={{
-                          marginTop: '16px',
-                          padding: '12px',
-                          backgroundColor: 'var(--bg)',
-                          borderRadius: '8px',
-                          border: '1px solid var(--border)',
-                        }}
-                      >
-                        <details>
-                          <summary
-                            style={{
-                              cursor: 'pointer',
-                              fontWeight: '500',
-                              color: 'var(--text)',
-                              userSelect: 'none',
-                              fontSize: '13px',
-                            }}
-                          >
-                            🔍 檢視 JSON 格式
-                          </summary>
-                          <pre
-                            style={{
-                              marginTop: '12px',
-                              padding: '12px',
-                              backgroundColor: 'var(--panel)',
-                              borderRadius: '8px',
-                              fontSize: '12px',
-                              overflow: 'auto',
-                              maxHeight: '300px',
-                              fontFamily: 'monospace',
-                            }}
-                          >
-                            {JSON.stringify(conv.messages, null, 2)}
-                          </pre>
-                        </details>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: '64px', marginBottom: '16px' }}>💬</div>
+                <div style={{ fontSize: '18px', fontWeight: '500', marginBottom: '8px' }}>請選擇一個對話</div>
+                <div style={{ fontSize: '14px' }}>從左側列表中選擇對話記錄來查看詳細內容</div>
+              </div>
             </div>
           )}
         </div>
