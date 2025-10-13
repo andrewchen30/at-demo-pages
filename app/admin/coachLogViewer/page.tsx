@@ -17,6 +17,7 @@ interface ConversationRecord {
   startTag?: string;
   endTag?: string;
   coachFeedback?: string;
+  rawInput?: string; // 原始輸入內容
 }
 
 const STORAGE_KEY = 'coachLogViewer_conversations';
@@ -32,6 +33,8 @@ export default function CoachLogViewerPage() {
   const [editingTitleId, setEditingTitleId] = useState<string | null>(null);
   const [editingTitleValue, setEditingTitleValue] = useState('');
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
+  const [editingRawInputId, setEditingRawInputId] = useState<string | null>(null);
+  const [editingRawInputValue, setEditingRawInputValue] = useState('');
 
   // 從 localStorage 載入資料
   useEffect(() => {
@@ -83,25 +86,44 @@ export default function CoachLogViewerPage() {
       contentToParse = text.substring(0, endIndex);
     }
 
-    const lines = contentToParse.split('\n').filter((line) => line.trim());
+    const lines = contentToParse.split('\n');
     const parsedMessages: ChatMessage[] = [];
+    let currentMessage: ChatMessage | null = null;
 
     for (const line of lines) {
       // 匹配 "學生: " 或 "老師: " 開頭
-      const studentMatch = line.match(/^學生[:：]\s*(.+)$/);
-      const teacherMatch = line.match(/^老師[:：]\s*(.+)$/);
+      const studentMatch = line.match(/^學生[:：]\s*(.*)$/);
+      const teacherMatch = line.match(/^老師[:：]\s*(.*)$/);
 
       if (studentMatch) {
-        parsedMessages.push({
+        // 如果有進行中的訊息，先儲存
+        if (currentMessage) {
+          parsedMessages.push(currentMessage);
+        }
+        // 開始新的學生訊息
+        currentMessage = {
           role: 'student',
           content: studentMatch[1].trim(),
-        });
+        };
       } else if (teacherMatch) {
-        parsedMessages.push({
+        // 如果有進行中的訊息，先儲存
+        if (currentMessage) {
+          parsedMessages.push(currentMessage);
+        }
+        // 開始新的老師訊息
+        currentMessage = {
           role: 'teacher',
           content: teacherMatch[1].trim(),
-        });
+        };
+      } else if (currentMessage && line.trim()) {
+        // 如果當前有進行中的訊息，且這行不是空行，則累加到內容中
+        currentMessage.content += '\n' + line.trim();
       }
+    }
+
+    // 不要忘記加入最後一個訊息
+    if (currentMessage) {
+      parsedMessages.push(currentMessage);
     }
 
     return { messages: parsedMessages, hasStartTag, hasEndTag };
@@ -128,6 +150,7 @@ export default function CoachLogViewerPage() {
         startTag: hasStartTag ? START_TAG : undefined,
         endTag: hasEndTag ? END_TAG : undefined,
         coachFeedback: outputText.trim() || undefined,
+        rawInput: inputText, // 儲存原始輸入
       };
 
       setConversations([newConversation, ...conversations]);
@@ -179,6 +202,24 @@ export default function CoachLogViewerPage() {
     setEditingTitleValue('');
   };
 
+  const startEditingRawInput = (id: string, currentRawInput: string | undefined) => {
+    setEditingRawInputId(id);
+    setEditingRawInputValue(currentRawInput || '');
+  };
+
+  const saveRawInput = (id: string) => {
+    setConversations(
+      conversations.map((conv) => (conv.id === id ? { ...conv, rawInput: editingRawInputValue } : conv))
+    );
+    setEditingRawInputId(null);
+    setEditingRawInputValue('');
+  };
+
+  const cancelEditingRawInput = () => {
+    setEditingRawInputId(null);
+    setEditingRawInputValue('');
+  };
+
   const exportAllData = () => {
     const json = JSON.stringify(conversations, null, 2);
     const blob = new Blob([json], { type: 'application/json' });
@@ -217,6 +258,67 @@ export default function CoachLogViewerPage() {
       reader.readAsText(file);
     };
     input.click();
+  };
+
+  const reparseAllConversations = () => {
+    if (!confirm('確定要重新解析所有對話記錄嗎？這會使用目前的 parser 重新處理所有 raw input。')) {
+      return;
+    }
+
+    let successCount = 0;
+    let failCount = 0;
+    const updatedConversations = conversations.map((conv) => {
+      if (!conv.rawInput) {
+        // 如果沒有 rawInput，保持原樣
+        return conv;
+      }
+
+      try {
+        const { messages: parsed, hasStartTag, hasEndTag } = parseMessages(conv.rawInput);
+        if (parsed.length > 0) {
+          successCount++;
+          return {
+            ...conv,
+            messages: parsed,
+            startTag: hasStartTag ? START_TAG : undefined,
+            endTag: hasEndTag ? END_TAG : undefined,
+          };
+        } else {
+          failCount++;
+          return conv;
+        }
+      } catch (err) {
+        failCount++;
+        console.error(`重新解析對話 ${conv.id} 失敗:`, err);
+        return conv;
+      }
+    });
+
+    setConversations(updatedConversations);
+    alert(`重新解析完成！\n✅ 成功: ${successCount}\n❌ 失敗或略過: ${failCount}`);
+  };
+
+  const clearAllConversations = () => {
+    const count = conversations.length;
+    if (count === 0) {
+      return;
+    }
+
+    if (
+      !confirm(`⚠️ 警告：此操作將永久刪除所有 ${count} 個對話記錄！\n\n建議先匯出備份再進行清除。\n\n確定要繼續嗎？`)
+    ) {
+      return;
+    }
+
+    // 二次確認
+    if (!confirm(`🚨 最後確認：真的要刪除全部 ${count} 個對話記錄嗎？\n\n此操作無法復原！`)) {
+      return;
+    }
+
+    setConversations([]);
+    setSelectedConversationId(null);
+    localStorage.removeItem(STORAGE_KEY);
+    alert(`✅ 已清除所有對話記錄（共 ${count} 個）`);
   };
 
   const selectedConversation = conversations.find((conv) => conv.id === selectedConversationId);
@@ -464,6 +566,38 @@ export default function CoachLogViewerPage() {
               >
                 📤 匯入資料
               </button>
+              <button
+                className="btn"
+                onClick={reparseAllConversations}
+                disabled={conversations.length === 0 || conversations.every((c) => !c.rawInput)}
+                style={{
+                  background:
+                    conversations.length > 0 && conversations.some((c) => c.rawInput)
+                      ? 'linear-gradient(180deg, #8b5cf6, #7c3aed)'
+                      : 'linear-gradient(180deg, #d1d5db, #9ca3af)',
+                  width: '100%',
+                  fontSize: '13px',
+                  padding: '10px',
+                }}
+              >
+                🔄 重新解析全部
+              </button>
+              <button
+                className="btn"
+                onClick={clearAllConversations}
+                disabled={conversations.length === 0}
+                style={{
+                  background:
+                    conversations.length > 0
+                      ? 'linear-gradient(180deg, #ef4444, #dc2626)'
+                      : 'linear-gradient(180deg, #d1d5db, #9ca3af)',
+                  width: '100%',
+                  fontSize: '13px',
+                  padding: '10px',
+                }}
+              >
+                🗑️ 清除全部
+              </button>
             </div>
 
             {error && (
@@ -556,8 +690,33 @@ export default function CoachLogViewerPage() {
                       }
                     }}
                   >
-                    <div style={{ fontWeight: '600', fontSize: '13px', color: 'var(--text)', marginBottom: '6px' }}>
+                    <div
+                      style={{
+                        fontWeight: '600',
+                        fontSize: '13px',
+                        color: 'var(--text)',
+                        marginBottom: '6px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                      }}
+                    >
                       {conv.title}
+                      {!conv.rawInput && (
+                        <span
+                          style={{
+                            fontSize: '10px',
+                            padding: '2px 6px',
+                            backgroundColor: '#fecaca',
+                            color: '#991b1b',
+                            borderRadius: '4px',
+                            fontWeight: '600',
+                          }}
+                          title="缺少 raw input"
+                        >
+                          ⚠️
+                        </span>
+                      )}
                     </div>
                     <div
                       style={{
@@ -823,6 +982,131 @@ export default function CoachLogViewerPage() {
                       </div>
                     </div>
                   )}
+
+                  {/* Raw Input 編輯區 */}
+                  <div
+                    style={{
+                      marginTop: '24px',
+                      padding: '16px',
+                      backgroundColor: selectedConversation.rawInput ? '#f0fdf4' : '#fef2f2',
+                      border: selectedConversation.rawInput ? '2px solid #86efac' : '2px solid #fca5a5',
+                      borderRadius: '12px',
+                      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        marginBottom: '12px',
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          fontSize: '14px',
+                          fontWeight: '600',
+                          color: selectedConversation.rawInput ? '#166534' : '#991b1b',
+                        }}
+                      >
+                        <span style={{ fontSize: '18px' }}>{selectedConversation.rawInput ? '📝' : '⚠️'}</span>
+                        <span>Raw Input {selectedConversation.rawInput ? '' : '（缺失）'}</span>
+                      </div>
+                      {editingRawInputId !== selectedConversation.id && (
+                        <button
+                          onClick={() => startEditingRawInput(selectedConversation.id, selectedConversation.rawInput)}
+                          style={{
+                            padding: '6px 12px',
+                            border: '1px solid var(--border)',
+                            borderRadius: '6px',
+                            background: 'white',
+                            color: 'var(--text)',
+                            fontSize: '12px',
+                            cursor: 'pointer',
+                            fontWeight: '500',
+                          }}
+                        >
+                          {selectedConversation.rawInput ? '✏️ 編輯' : '➕ 補充'}
+                        </button>
+                      )}
+                    </div>
+
+                    {editingRawInputId === selectedConversation.id ? (
+                      <>
+                        <textarea
+                          value={editingRawInputValue}
+                          onChange={(e) => setEditingRawInputValue(e.target.value)}
+                          placeholder="貼上原始輸入內容..."
+                          style={{
+                            width: '100%',
+                            minHeight: '200px',
+                            padding: '12px',
+                            border: '2px solid #3b82f6',
+                            borderRadius: '6px',
+                            fontSize: '13px',
+                            fontFamily: 'monospace',
+                            lineHeight: '1.5',
+                            resize: 'vertical',
+                            marginBottom: '12px',
+                          }}
+                          autoFocus
+                        />
+                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                          <button
+                            onClick={() => saveRawInput(selectedConversation.id)}
+                            style={{
+                              padding: '8px 16px',
+                              border: 'none',
+                              borderRadius: '6px',
+                              background: '#10b981',
+                              color: 'white',
+                              fontSize: '13px',
+                              cursor: 'pointer',
+                              fontWeight: '500',
+                            }}
+                          >
+                            ✓ 儲存
+                          </button>
+                          <button
+                            onClick={cancelEditingRawInput}
+                            style={{
+                              padding: '8px 16px',
+                              border: '1px solid var(--border)',
+                              borderRadius: '6px',
+                              background: 'white',
+                              color: 'var(--text)',
+                              fontSize: '13px',
+                              cursor: 'pointer',
+                            }}
+                          >
+                            ✕ 取消
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <div
+                        style={{
+                          fontSize: '13px',
+                          lineHeight: '1.6',
+                          color: selectedConversation.rawInput ? '#15803d' : '#991b1b',
+                          whiteSpace: 'pre-wrap',
+                          wordBreak: 'break-word',
+                          fontFamily: 'monospace',
+                          maxHeight: '200px',
+                          overflowY: 'auto',
+                          padding: '8px',
+                          backgroundColor: 'rgba(255, 255, 255, 0.5)',
+                          borderRadius: '6px',
+                        }}
+                      >
+                        {selectedConversation.rawInput ||
+                          '此記錄缺少 raw input，無法使用重新解析功能。請點擊「補充」按鈕新增。'}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* JSON 檢視 */}
