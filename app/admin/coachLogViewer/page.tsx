@@ -15,6 +15,7 @@ interface ConversationRecord {
   isCollapsed: boolean;
   startTag?: string;
   endTag?: string;
+  coachFeedback?: string;
 }
 
 const STORAGE_KEY = 'coachLogViewer_conversations';
@@ -23,6 +24,7 @@ const END_TAG = '：只用來調整語氣（親切、鼓勵），不可分析或
 
 export default function CoachLogViewerPage() {
   const [inputText, setInputText] = useState('');
+  const [outputText, setOutputText] = useState('');
   const [conversations, setConversations] = useState<ConversationRecord[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [editingTitleId, setEditingTitleId] = useState<string | null>(null);
@@ -121,11 +123,13 @@ export default function CoachLogViewerPage() {
         isCollapsed: false,
         startTag: hasStartTag ? START_TAG : undefined,
         endTag: hasEndTag ? END_TAG : undefined,
+        coachFeedback: outputText.trim() || undefined,
       };
 
       setConversations([newConversation, ...conversations]);
       setSelectedConversationId(newConversation.id); // 自動選擇新增的對話
       setInputText('');
+      setOutputText('');
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : '解析失敗');
@@ -305,7 +309,54 @@ export default function CoachLogViewerPage() {
                 placeholder="貼上對話記錄..."
                 style={{
                   width: '100%',
-                  minHeight: '200px',
+                  minHeight: '150px',
+                  padding: '10px',
+                  border: '1px solid var(--border)',
+                  borderRadius: '6px',
+                  backgroundColor: 'var(--bg)',
+                  color: 'var(--text)',
+                  fontSize: '12px',
+                  fontFamily: 'monospace',
+                  resize: 'vertical',
+                  lineHeight: '1.4',
+                }}
+              />
+            </div>
+
+            <div style={{ marginBottom: '12px' }}>
+              <label
+                htmlFor="output-text"
+                style={{
+                  display: 'block',
+                  marginBottom: '8px',
+                  fontWeight: '500',
+                  color: 'var(--text)',
+                  fontSize: '13px',
+                }}
+              >
+                貼上教練回饋 (output_text)
+              </label>
+              <div
+                style={{
+                  marginBottom: '8px',
+                  padding: '8px',
+                  backgroundColor: '#fef3c7',
+                  border: '1px solid #fde68a',
+                  borderRadius: '6px',
+                  fontSize: '11px',
+                  color: '#92400e',
+                }}
+              >
+                <div style={{ lineHeight: '1.5' }}>💬 選填：教練對此對話的回饋</div>
+              </div>
+              <textarea
+                id="output-text"
+                value={outputText}
+                onChange={(e) => setOutputText(e.target.value)}
+                placeholder="貼上教練回饋..."
+                style={{
+                  width: '100%',
+                  minHeight: '120px',
                   padding: '10px',
                   border: '1px solid var(--border)',
                   borderRadius: '6px',
@@ -683,6 +734,46 @@ export default function CoachLogViewerPage() {
                       </div>
                     </div>
                   ))}
+
+                  {/* 教練回饋 */}
+                  {selectedConversation.coachFeedback && (
+                    <div
+                      style={{
+                        marginTop: '24px',
+                        padding: '16px',
+                        backgroundColor: '#fef3c7',
+                        border: '2px solid #fbbf24',
+                        borderRadius: '12px',
+                        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          marginBottom: '12px',
+                          fontSize: '14px',
+                          fontWeight: '600',
+                          color: '#92400e',
+                        }}
+                      >
+                        <span style={{ fontSize: '18px' }}>🎯</span>
+                        <span>教練回饋</span>
+                      </div>
+                      <div
+                        style={{
+                          fontSize: '14px',
+                          lineHeight: '1.6',
+                          color: '#78350f',
+                          whiteSpace: 'pre-wrap',
+                          wordBreak: 'break-word',
+                        }}
+                      >
+                        {selectedConversation.coachFeedback}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* JSON 檢視 */}
