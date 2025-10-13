@@ -13,9 +13,13 @@ interface ConversationRecord {
   messages: ChatMessage[];
   createdAt: string;
   isCollapsed: boolean;
+  startTag?: string;
+  endTag?: string;
 }
 
 const STORAGE_KEY = 'coachLogViewer_conversations';
+const START_TAG = 'Judge 產生的 JSON，含 summary 與 results。';
+const END_TAG = '：只用來調整語氣（親切、鼓勵），不可分析或引用其內容。';
 
 export default function CoachLogViewerPage() {
   const [inputText, setInputText] = useState('');
@@ -44,8 +48,33 @@ export default function CoachLogViewerPage() {
     }
   }, [conversations]);
 
-  const parseMessages = (text: string): ChatMessage[] => {
-    const lines = text.split('\n').filter((line) => line.trim());
+  const parseMessages = (text: string): { messages: ChatMessage[]; hasStartTag: boolean; hasEndTag: boolean } => {
+    // 檢查是否包含開始和結束標籤
+    const hasStartTag = text.includes(START_TAG);
+    const hasEndTag = text.includes(END_TAG);
+
+    let contentToParse = text;
+
+    // 如果有標籤，提取標籤之間的內容
+    if (hasStartTag && hasEndTag) {
+      const startIndex = text.indexOf(START_TAG);
+      const endIndex = text.indexOf(END_TAG);
+
+      if (startIndex !== -1 && endIndex !== -1 && startIndex < endIndex) {
+        // 提取兩個標籤之間的內容
+        contentToParse = text.substring(startIndex + START_TAG.length, endIndex);
+      }
+    } else if (hasStartTag) {
+      // 只有開始標籤，從標籤後開始
+      const startIndex = text.indexOf(START_TAG);
+      contentToParse = text.substring(startIndex + START_TAG.length);
+    } else if (hasEndTag) {
+      // 只有結束標籤，到標籤前結束
+      const endIndex = text.indexOf(END_TAG);
+      contentToParse = text.substring(0, endIndex);
+    }
+
+    const lines = contentToParse.split('\n').filter((line) => line.trim());
     const parsedMessages: ChatMessage[] = [];
 
     for (const line of lines) {
@@ -66,13 +95,13 @@ export default function CoachLogViewerPage() {
       }
     }
 
-    return parsedMessages;
+    return { messages: parsedMessages, hasStartTag, hasEndTag };
   };
 
   const handleParse = () => {
     setError(null);
     try {
-      const parsed = parseMessages(inputText);
+      const { messages: parsed, hasStartTag, hasEndTag } = parseMessages(inputText);
       if (parsed.length === 0) {
         setError('無法解析任何訊息，請確認格式正確（學生: 或 老師: 開頭）');
         return;
@@ -85,6 +114,8 @@ export default function CoachLogViewerPage() {
         messages: parsed,
         createdAt: new Date().toISOString(),
         isCollapsed: false,
+        startTag: hasStartTag ? START_TAG : undefined,
+        endTag: hasEndTag ? END_TAG : undefined,
       };
 
       setConversations([newConversation, ...conversations]);
@@ -217,24 +248,54 @@ export default function CoachLogViewerPage() {
                   fontSize: '13px',
                 }}
               >
-                貼上 Developer Message
+                貼上 Coach Message
               </label>
+              <div
+                style={{
+                  marginBottom: '8px',
+                  padding: '10px',
+                  backgroundColor: '#f0f9ff',
+                  border: '1px solid #bae6fd',
+                  borderRadius: '6px',
+                  fontSize: '12px',
+                  color: '#0c4a6e',
+                }}
+              >
+                <div style={{ fontWeight: '600', marginBottom: '4px' }}>💡 支援兩種格式：</div>
+                <div style={{ marginLeft: '20px', lineHeight: '1.6' }}>
+                  <div>
+                    1. <strong>標準格式：</strong>直接貼上「學生: ...」「老師: ...」的對話記錄
+                  </div>
+                  <div>
+                    2. <strong>完整格式：</strong>包含開始標籤「
+                    <span style={{ fontFamily: 'monospace', fontSize: '11px', color: '#059669' }}>
+                      Judge 產生的 JSON...
+                    </span>
+                    」和結束標籤「
+                    <span style={{ fontFamily: 'monospace', fontSize: '11px', color: '#dc2626' }}>
+                      ：只用來調整語氣...
+                    </span>
+                    」的完整訊息
+                  </div>
+                </div>
+              </div>
               <textarea
                 id="input-text"
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
-                placeholder="學生: 好，我同意。會多練對話與聽力，聚焦旅遊常見單字與句型，角色扮演與影片模仿。&#10;老師: 你有什麼問題想問得嗎?&#10;學生: um，我想問課程多久，評量方法呢？"
+                placeholder="貼上對話記錄...&#10;&#10;支援格式 1：&#10;老師: 那我們可以多練習對話和聽力&#10;學生: 好，我也期待。&#10;&#10;或格式 2：&#10;...Judge 產生的 JSON，含 summary 與 results。&#10;老師: 那我們可以多練習對話和聽力&#10;學生: 好，我也期待。&#10;：只用來調整語氣（親切、鼓勵），不可分析或引用其內容。"
                 style={{
                   width: '100%',
-                  minHeight: '120px',
+                  minHeight: '150px',
                   padding: '12px',
                   border: '1px solid var(--border)',
                   borderRadius: '8px',
                   backgroundColor: 'var(--bg)',
                   color: 'var(--text)',
-                  fontSize: '14px',
+                  fontSize: '13px',
                   fontFamily: 'monospace',
                   resize: 'vertical',
+                  lineHeight: '1.5',
                 }}
               />
             </div>
@@ -354,8 +415,20 @@ export default function CoachLogViewerPage() {
                       ) : (
                         <div style={{ flex: 1 }}>
                           <div style={{ fontWeight: '600', fontSize: '14px', color: 'var(--text)' }}>{conv.title}</div>
-                          <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '2px' }}>
-                            {conv.messages.length} 則訊息 • {new Date(conv.createdAt).toLocaleString('zh-TW')}
+                          <div
+                            style={{
+                              fontSize: '12px',
+                              color: 'var(--muted)',
+                              marginTop: '2px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '8px',
+                              flexWrap: 'wrap',
+                            }}
+                          >
+                            <span>{conv.messages.length} 則訊息</span>
+                            <span>•</span>
+                            <span>{new Date(conv.createdAt).toLocaleString('zh-TW')}</span>
                           </div>
                         </div>
                       )}
