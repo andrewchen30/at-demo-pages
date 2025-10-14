@@ -1,10 +1,19 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type CSSProperties } from 'react';
 
 type RefreshState = 'idle' | 'loading' | 'success' | 'error';
 
 const DEFAULT_BATCH_SIZE = 20;
+
+const ADMIN_TOOLS = [
+  {
+    href: '/admin/coachLogViewer',
+    title: '對話記錄檢視器',
+    description: '瀏覽、篩選並檢視教練與學生的互動記錄，快速掌握需要追蹤的對話內容。',
+    accent: 'linear-gradient(90deg, #8b5cf6, #7c3aed)',
+  },
+];
 
 export default function AdminPage() {
   const [refreshState, setRefreshState] = useState<RefreshState>('idle');
@@ -103,21 +112,29 @@ export default function AdminPage() {
 
   return (
     <main className="ai-page">
-      <div className="container">
+      <div className="admin-container">
         <div className="section">
           <div className="section-header">
             <h1 className="section-title">管理後台</h1>
             <p className="section-subtitle">管理系統資料與工具</p>
           </div>
           <div className="section-content" style={{ marginBottom: '32px' }}>
-            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-              <a
-                href="/admin/coachLogViewer"
-                className="btn"
-                style={{ background: 'linear-gradient(180deg, #8b5cf6, #7c3aed)', textDecoration: 'none' }}
-              >
-                對話記錄檢視器
-              </a>
+            <div className="admin-entry-grid">
+              {ADMIN_TOOLS.map((tool) => (
+                <a
+                  key={tool.href}
+                  href={tool.href}
+                  className="admin-entry-card"
+                  style={{ '--admin-card-accent': tool.accent } as CSSProperties}
+                >
+                  <span className="admin-entry-card-title">{tool.title}</span>
+                  <p className="admin-entry-card-description">{tool.description}</p>
+                  <span className="admin-entry-card-cta">
+                    前往
+                    <span aria-hidden="true">→</span>
+                  </span>
+                </a>
+              ))}
             </div>
           </div>
         </div>
@@ -128,7 +145,7 @@ export default function AdminPage() {
             <p className="section-subtitle">透過 AI 預先生成學生角色，儲存於伺服器以供模擬教學時隨機使用。</p>
           </div>
           <div className="section-content">
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxWidth: '400px' }}>
               <button
                 className="btn"
                 onClick={handleRefresh}
@@ -148,7 +165,7 @@ export default function AdminPage() {
             </div>
             <div style={{ marginTop: '16px', fontSize: '14px', color: 'var(--muted)' }}>
               <div>資料庫中的角色數量：{total ?? '載入中...'}</div>
-              <div>模擬環境中的難有將從資料庫中隨機選擇角色使用。</div>
+              <div>模擬環境中將從資料庫中隨機選擇角色使用。</div>
             </div>
             {alert && (
               <div
