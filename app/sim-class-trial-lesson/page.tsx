@@ -271,12 +271,16 @@ function SimClassTrialLessonContent() {
                     <li key={index}>{item}</li>
                   ))}
                 </div>
-                <div className="system-message-title">【對話內容】</div>
-                <div className="system-message-content">
-                  {systemDialog.map((item, index) => (
-                    <li key={index}>{item}</li>
-                  ))}
-                </div>
+                {chapterNumber !== 1 && (
+                  <>
+                    <div className="system-message-title">【對話內容】</div>
+                    <div className="system-message-content">
+                      {systemDialog.map((item, index) => (
+                        <li key={index}>{item}</li>
+                      ))}
+                    </div>
+                  </>
+                )}
                 <div className="system-message-title">【檢查重點】</div>
                 <div className="system-message-content">
                   {systemChecklist.map((item, index) => (
