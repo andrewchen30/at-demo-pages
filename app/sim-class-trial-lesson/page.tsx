@@ -59,6 +59,14 @@ function SimClassTrialLessonContent() {
     await sendMessage();
   };
 
+  const handleKeyDown = async (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // 檢查是否按下 Cmd+Enter (Mac) 或 Ctrl+Enter (Windows/Linux)
+    if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
+      event.preventDefault();
+      await sendMessage();
+    }
+  };
+
   return (
     <main className="ai-page">
       <div className="container">
@@ -213,12 +221,17 @@ function SimClassTrialLessonContent() {
               <textarea
                 ref={chatInputRef}
                 className="chat-input"
-                placeholder="輸入您的訊息... (按發送按鈕送出)"
+                placeholder="輸入您的訊息... (Cmd+Enter 或按發送按鈕送出)"
                 rows={1}
                 onInput={autoResizeTextarea}
+                onKeyDown={handleKeyDown}
                 disabled={isCreatingStudent || isSummarizing || isThinking || workflowStep === 'idle'}
               />
-              <button className="send-btn" type="submit" disabled={isCreatingStudent || isSummarizing || isThinking || workflowStep === 'idle'}>
+              <button
+                className="send-btn"
+                type="submit"
+                disabled={isCreatingStudent || isSummarizing || isThinking || workflowStep === 'idle'}
+              >
                 {isThinking ? '發送中...' : '發送'}
               </button>
             </div>
@@ -251,37 +264,27 @@ function SimClassTrialLessonContent() {
                   <div className="system-message-icon">S</div>
                   <div className="system-message-title">系統提示</div>
                 </div>
-                
-                
+
                 <div className="system-message-title">【背景資訊】</div>
                 <div className="system-message-content">
-                  {
-                    systemUserBrief.map((item, index) => (
-                      <li key={index}>{item}</li>
-                    ))
-                  }
+                  {systemUserBrief.map((item, index) => (
+                    <li key={index}>{item}</li>
+                  ))}
                 </div>
                 <div className="system-message-title">【對話內容】</div>
                 <div className="system-message-content">
-                  {
-                    systemDialog.map((item, index) => (
-                      <li key={index}>{item}</li>
-                    ))
-                  }
+                  {systemDialog.map((item, index) => (
+                    <li key={index}>{item}</li>
+                  ))}
                 </div>
                 <div className="system-message-title">【檢查重點】</div>
                 <div className="system-message-content">
-                  {
-                    systemChecklist.map((item, index) => (
-                      <li key={index}>{item}</li>
-                    ))
-                  }
+                  {systemChecklist.map((item, index) => (
+                    <li key={index}>{item}</li>
+                  ))}
                 </div>
 
-
                 {/* <div className="system-message-content">{systemMessage}</div> */}
-
-
               </div>
             )}
 
