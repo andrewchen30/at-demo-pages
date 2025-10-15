@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 
 interface ChatLog {
   id: string;
-  teacher_key: string;
+  teacher_name: string;
   chat_history: string;
   chat_count: number;
   background_info: string;
@@ -80,9 +80,9 @@ export default function DatabaseTestPage() {
     executeOperation(
       'appendRow',
       {
-        teacher_key: `TEACHER_${Date.now()}`,
+        teacher_name: `TEACHER_${Date.now()}`,
         chat_history: `user: Hello!
-assistant: Hi there!`,
+ assistant: Hi there!`,
         chat_count: 1,
         background_info: `測試資料 - ${timestamp}`,
       },
@@ -111,15 +111,15 @@ assistant: Hi there!`,
     );
   };
 
-  // 測試 3: upsertByKey - 根據 teacher_key upsert
+  // 測試 3: upsertByKey - 根據 teacher_name upsert
   const testUpsertByKey = () => {
-    const teacherKey = 'TEACHER_UPSERT_TEST';
+    const teacherName = 'TEACHER_UPSERT_TEST';
     executeOperation(
       'upsertByKey',
       {
-        key: teacherKey,
+        key: teacherName,
         row: {
-          teacher_key: teacherKey,
+          teacher_name: teacherName,
           chat_history: JSON.stringify([
             { role: 'user', content: 'Test upsert' },
             { role: 'assistant', content: 'Upserted successfully!' },
@@ -303,7 +303,7 @@ assistant: Hi there!`,
                   3️⃣ 測試 upsertByKey
                 </h3>
                 <p style={{ fontSize: '12px', color: '#581c87', marginBottom: '12px' }}>
-                  根據 teacher_key 更新或新增（固定 key: TEACHER_UPSERT_TEST）
+                  根據 teacher_name 更新或新增（固定 key: TEACHER_UPSERT_TEST）
                 </p>
                 <button
                   className="btn"
@@ -449,7 +449,7 @@ assistant: Hi there!`,
                         <div style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text)', marginBottom: '4px' }}>
                           ID: {record.id}
                         </div>
-                        <div style={{ fontSize: '13px', color: 'var(--muted)' }}>Teacher: {record.teacher_key}</div>
+                        <div style={{ fontSize: '13px', color: 'var(--muted)' }}>Teacher: {record.teacher_name}</div>
                       </div>
                       <div style={{ textAlign: 'right' }}>
                         <div

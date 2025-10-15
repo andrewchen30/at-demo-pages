@@ -75,7 +75,7 @@ export interface DB {
  */
 export type ChatLog = {
   id: string;
-  teacher_key: string;
+  teacher_name: string;
   chat_history: string;
   chat_count: number;
   background_info: string;
@@ -88,6 +88,6 @@ export type ChatLog = {
  */
 export const ChatLogModel: ModelDef<ChatLog> = {
   sheet: 'chat_logs',
-  columns: ['id', 'teacher_key', 'chat_history', 'chat_count', 'background_info', 'created_at', 'updated_at'],
-  keyField: 'teacher_key',
+  columns: ['id', 'teacher_name', 'chat_history', 'chat_count', 'background_info', 'created_at', 'updated_at'],
+  keyField: 'teacher_name',
 };

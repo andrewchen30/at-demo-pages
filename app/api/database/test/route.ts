@@ -32,9 +32,9 @@ export async function POST(request: NextRequest) {
 
       switch (action) {
         case 'appendRow': {
-          const { teacher_key, chat_history, chat_count, background_info } = data;
+          const { teacher_name, chat_history, chat_count, background_info } = data;
           const id = await db.appendRow(ChatLogModel, {
-            teacher_key,
+            teacher_name,
             chat_history,
             chat_count,
             background_info,
