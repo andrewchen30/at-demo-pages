@@ -193,30 +193,44 @@ export async function appendStudentRoles(count: number = DEFAULT_BATCH_SIZE) {
     throw new StudentRoleInvalidCountError();
   }
 
-  const roles = await readRoles();
-  const tasks = Array.from({ length: count }, () => createStudentRole());
-  const newRoles = await Promise.all(tasks);
+  // 確保資料初始化
+  await ensureRolesLoaded();
 
-  const updatedRoles = [...roles, ...newRoles];
-  await writeRoles(updatedRoles);
-
-  // 將新增資料寫入 Google Spreadsheet
   const db = await getDb();
-  for (const r of newRoles) {
-    await db.appendRow(AIGenStudentModel, {
-      id: r.id,
-      raw: r.raw,
-      created_at: r.createdAt,
-      updated_at: r.createdAt,
-    });
+  const currentRoles = await readRoles();
+
+  let added = 0;
+
+  // 逐筆建立並即時寫入 Spreadsheet，單筆失敗不中斷
+  for (let i = 0; i < count; i++) {
+    try {
+      const role = await createStudentRole();
+
+      // 寫入 Spreadsheet 成功後再更新記憶體
+      await db.appendRow(AIGenStudentModel, {
+        id: role.id,
+        raw: role.raw,
+        created_at: role.createdAt,
+        updated_at: role.createdAt,
+      });
+
+      currentRoles.push(role);
+      await writeRoles(currentRoles);
+      added++;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '未知錯誤';
+      console.error(`[appendStudentRoles] 建立或寫入學生角色失敗：${message}`);
+      continue;
+    }
   }
 
   // 以 Spreadsheet 為權威來源，重新載入記憶體
   await loadRolesFromSpreadsheet();
 
+  const finalRoles = await readRoles();
   return {
-    added: newRoles.length,
-    total: updatedRoles.length,
+    added,
+    total: finalRoles.length,
   };
 }
 

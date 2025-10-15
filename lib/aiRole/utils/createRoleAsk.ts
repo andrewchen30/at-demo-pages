@@ -172,7 +172,7 @@ export function createRoleAsk<Variables extends Record<string, unknown> = Record
     formatLog(
       'AI OUTPUT - 最終結果',
       {
-        resultPreview: truncateText(result, 300),
+        resultPreview: truncateText(result, 10000),
         resultLength: result.length,
       },
       colors.green
