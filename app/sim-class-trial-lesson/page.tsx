@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, Suspense, useEffect, useState } from 'react';
+import { FormEvent, Suspense, useCallback, useEffect, useState } from 'react';
 
 import { useTrialLessonChat } from './aiChatInterface';
 
@@ -53,22 +53,244 @@ function SimClassTrialLessonContent() {
   const [isNameDialogOpen, setIsNameDialogOpen] = useState(false);
   const [teacherName, setTeacherName] = useState('');
   const [nameInputValue, setNameInputValue] = useState('');
+  const [chatLogId, setChatLogId] = useState('');
+  const [chatLogCreated, setChatLogCreated] = useState(false);
 
+  // 生成 UUID
+  const generateUUID = (): string => {
+    if (typeof window !== 'undefined' && window.crypto && window.crypto.randomUUID) {
+      return window.crypto.randomUUID();
+    }
+    // Fallback for older browsers
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+      const r = (Math.random() * 16) | 0;
+      const v = c === 'x' ? r : (r & 0x3) | 0x8;
+      return v.toString(16);
+    });
+  };
+
+  // 格式化日期時間為 YYYY-MM-DD-HH-mm-ss (使用 +8 時區)
+  const formatDateTime = (date: Date): string => {
+    // 轉換為 +8 時區（台北時區）
+    const utcTime = date.getTime() + date.getTimezoneOffset() * 60000;
+    const taipei = new Date(utcTime + 8 * 3600000);
+
+    const year = taipei.getFullYear();
+    const month = String(taipei.getMonth() + 1).padStart(2, '0');
+    const day = String(taipei.getDate()).padStart(2, '0');
+    const hours = String(taipei.getHours()).padStart(2, '0');
+    const minutes = String(taipei.getMinutes()).padStart(2, '0');
+    const seconds = String(taipei.getSeconds()).padStart(2, '0');
+    return `${year}-${month}-${day}-${hours}-${minutes}-${seconds}`;
+  };
+
+  // 格式化系統提示為純文字
+  const formatSystemPrompt = useCallback((): string => {
+    const sections: string[] = [];
+
+    // 章節資訊
+    if (chapterInfo) {
+      sections.push(`=== 章節資訊 ===`);
+      sections.push(`標題: ${chapterInfo.title}`);
+      sections.push(`目標: ${chapterInfo.goal}`);
+      sections.push('');
+    }
+
+    // 背景資訊
+    if (systemUserBrief.length > 0) {
+      sections.push(`=== 背景資訊 ===`);
+      systemUserBrief.forEach((item) => {
+        sections.push(item);
+      });
+      sections.push('');
+    }
+
+    // 對話內容（只在非第一章時顯示）
+    if (chapterNumber !== 1 && systemDialog.length > 0) {
+      sections.push(`=== 對話內容 ===`);
+      systemDialog.forEach((item) => {
+        sections.push(item);
+      });
+      sections.push('');
+    }
+
+    // 檢查重點
+    if (systemChecklist.length > 0) {
+      sections.push(`=== 檢查重點 ===`);
+      systemChecklist.forEach((item) => {
+        sections.push(item);
+      });
+    }
+
+    return sections.join('\n');
+  }, [chapterInfo, chapterNumber, systemUserBrief, systemDialog, systemChecklist]);
+
+  // 格式化對話記錄
+  const formatChatHistory = useCallback((history: typeof chatHistory): string => {
+    const baseTime = new Date();
+    return history
+      .map((msg, index) => {
+        // 為每則訊息添加索引對應的秒數差異，讓時間戳記有所區別
+        const msgTime = new Date(baseTime.getTime() + index * 1000);
+        const timestamp = formatDateTime(msgTime);
+
+        // 檢查是否為教練總結
+        const isCoachFeedback = msg.content.includes('教練總結');
+
+        // 決定角色名稱
+        let role = msg.role === 'user' ? '老師' : '學生';
+        if (isCoachFeedback) {
+          role = '教練';
+        }
+
+        // 將訊息內容中的換行改為分號
+        const content = msg.content.replace(/\n/g, ';');
+
+        // 如果是教練總結，前後加上分隔線
+        if (isCoachFeedback) {
+          return `=====\n${timestamp}-${role}-${content}\n=====`;
+        }
+
+        return `${timestamp}-${role}-${content}`;
+      })
+      .join('\n');
+  }, []);
+
+  // 建立 ChatLog 記錄
+  const createChatLog = useCallback(
+    async (teacherName: string, chatLogId: string) => {
+      try {
+        console.log('準備建立 ChatLog 記錄:', { teacherName, chatLogId });
+
+        // 格式化對話記錄
+        const formattedChatHistory = formatChatHistory(chatHistory);
+
+        // 格式化系統提示
+        const formattedSystemPrompt = formatSystemPrompt();
+
+        const response = await fetch('/api/chat-logs', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            chat_log_id: chatLogId,
+            teacher_name: teacherName,
+            chat_history: formattedChatHistory,
+            chat_count: chatHistory.length,
+            background_info: formattedSystemPrompt,
+          }),
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          console.log('成功建立 ChatLog 記錄:', result);
+          setChatLogCreated(true);
+        } else {
+          console.error('建立 ChatLog 記錄失敗:', result.error);
+        }
+      } catch (error) {
+        console.error('建立 ChatLog 記錄時發生錯誤:', error);
+      }
+    },
+    [chatHistory, formatChatHistory, formatSystemPrompt]
+  );
+
+  // 更新 ChatLog 記錄
+  const updateChatLog = useCallback(
+    async (chatLogId: string) => {
+      try {
+        console.log('準備更新 ChatLog 記錄:', { chatLogId });
+
+        // 格式化對話記錄
+        const formattedChatHistory = formatChatHistory(chatHistory);
+
+        // 格式化系統提示
+        const formattedSystemPrompt = formatSystemPrompt();
+
+        const response = await fetch('/api/chat-logs', {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            chat_log_id: chatLogId,
+            chat_history: formattedChatHistory,
+            chat_count: chatHistory.length,
+            background_info: formattedSystemPrompt,
+          }),
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          console.log('成功更新 ChatLog 記錄:', result);
+        } else {
+          console.error('更新 ChatLog 記錄失敗:', result.error);
+        }
+      } catch (error) {
+        console.error('更新 ChatLog 記錄時發生錯誤:', error);
+      }
+    },
+    [chatHistory, formatChatHistory, formatSystemPrompt]
+  );
+
+  // 初始化：生成 chat_log_id 和檢查老師名字
   useEffect(() => {
+    // 每次進入頁面時生成新的 chat_log_id
+    const newChatLogId = generateUUID();
+    setChatLogId(newChatLogId);
+    console.log('生成新的 chat_log_id:', newChatLogId);
+
     // 檢查 localStorage 中是否已有老師名字
     const storedName = localStorage.getItem('teacherName');
     console.log('檢查 localStorage 中的老師名字:', storedName);
     if (storedName) {
-      console.log('找到已儲存的名字，直接啟動編劇');
+      console.log('找到已儲存的名字，啟動編劇（等待第一次對話後才建立 ChatLog）');
       setTeacherName(storedName);
-      // 如果已有名字，直接啟動編劇
+      // 啟動編劇
       startScriptwriter();
     } else {
       console.log('沒有找到名字，顯示輸入對話框');
       // 如果沒有名字，顯示對話框
       setIsNameDialogOpen(true);
     }
-  }, [startScriptwriter]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // 監聽對話記錄，在第一次 AI 回覆後建立 ChatLog，之後持續更新
+  useEffect(() => {
+    // 如果尚未建立 ChatLog
+    if (!chatLogCreated) {
+      // 檢查條件：
+      // 1. 有老師名字
+      // 2. 有 chat_log_id
+      // 3. chatHistory 至少有 2 則訊息（1 則用戶 + 1 則 AI）
+      // 4. 最後一則訊息是 assistant（確保 AI 已完成回覆）
+      if (
+        teacherName &&
+        chatLogId &&
+        chatHistory.length >= 2 &&
+        chatHistory[chatHistory.length - 1]?.role === 'assistant'
+      ) {
+        // 檢查是否有至少一對完整對話（user -> assistant）
+        const hasUserMessage = chatHistory.some((msg) => msg.role === 'user');
+        const hasAssistantMessage = chatHistory.some((msg) => msg.role === 'assistant');
+
+        if (hasUserMessage && hasAssistantMessage) {
+          console.log('偵測到第一次對話完成，建立 ChatLog 記錄');
+          createChatLog(teacherName, chatLogId);
+        }
+      }
+    } else {
+      // 如果已建立 ChatLog，只在有新的 assistant 訊息時更新（避免過於頻繁）
+      // 這樣可以確保每次對話完成（包括教練總結）都會更新記錄
+      const lastMessage = chatHistory[chatHistory.length - 1];
+      if (chatLogId && lastMessage && lastMessage.role === 'assistant') {
+        console.log('對話已更新（AI/教練回覆完成），更新 ChatLog 記錄');
+        updateChatLog(chatLogId);
+      }
+    }
+  }, [chatHistory, chatLogCreated, teacherName, chatLogId, createChatLog, updateChatLog]);
 
   const handleNameSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -78,7 +300,7 @@ function SimClassTrialLessonContent() {
       localStorage.setItem('teacherName', trimmedName);
       setTeacherName(trimmedName);
       setIsNameDialogOpen(false);
-      // 啟動編劇
+      // 啟動編劇（不立即建立 ChatLog，等第一次對話完成後）
       startScriptwriter();
     }
   };
