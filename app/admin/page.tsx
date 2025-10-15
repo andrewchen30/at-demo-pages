@@ -13,6 +13,12 @@ const ADMIN_TOOLS = [
     description: '瀏覽、篩選並檢視教練與學生的互動記錄，快速掌握需要追蹤的對話內容。',
     accent: 'linear-gradient(90deg, #8b5cf6, #7c3aed)',
   },
+  {
+    href: '/admin/database-test',
+    title: 'Google Spreadsheet 資料庫測試',
+    description: '測試 Google Spreadsheet 輕量級資料庫的 CRUD 功能，包含新增、讀取、更新與 Upsert 操作。',
+    accent: 'linear-gradient(90deg, #10b981, #059669)',
+  },
 ];
 
 export default function AdminPage() {
