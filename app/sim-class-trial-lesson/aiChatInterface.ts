@@ -3,7 +3,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-import { getCoachAIParams, getStudentAIParams, getTeacherHintText, getUserBrief, getDialog, getCheckListForTeacher} from '@/lib/aiRole/director/utils';
+import {
+  getCoachAIParams,
+  getStudentAIParams,
+  getTeacherHintText,
+  getUserBrief,
+  getDialog,
+  getCheckListForTeacher,
+} from '@/lib/aiRole/director/utils';
 import type { DirectorInput } from '@/lib/aiRole/student/types';
 import type {
   BotType,
@@ -90,7 +97,6 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
       setSystemUserBrief(getUserBrief(scriptwriterResponse, chapterNumber).split('\n'));
       setSystemDialog(getDialog(scriptwriterResponse, chapterNumber).split('\n'));
       setSystemChecklist(getCheckListForTeacher(chapterNumber).split('\n'));
-
     }
   }, [chapterNumber, router, scriptwriterResponse]);
 
@@ -120,9 +126,8 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
     }
   }, []);
 
-
   useEffect(() => {
-    setIsLastMessageCoach(getIsLastMessageCoach())
+    setIsLastMessageCoach(getIsLastMessageCoach());
   }, [chatHistory]);
 
   const chapterInfo = CHAPTER_GOALS[chapterNumber];
@@ -187,8 +192,8 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
       ...messages,
       {
         role: 'user' as MessageRole,
-        content: [{ type: 'input_text', text: message }] 
-      }
+        content: [{ type: 'input_text', text: message }],
+      },
     ];
   }, []);
 
@@ -199,15 +204,14 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
       .join('\n');
   }, [chatHistory]);
 
-
   const getIsLastMessageCoach = useCallback((): boolean => {
     const lastMessage = chatHistory.at(-1);
     if (!lastMessage || !lastMessage.content) {
-      return false 
+      return false;
     }
-    
-    return lastMessage.content.includes('教練總結')
-  }, [chatHistory])
+
+    return lastMessage.content.includes('教練總結');
+  }, [chatHistory]);
 
   const getVariables = useCallback(
     (botType: BotType = 'student'): Record<string, unknown> => {
@@ -248,7 +252,10 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
   }, []);
 
   const callOpenAI = useCallback(
-    async (botType: BotType = 'student', input?: string | OpenAIChatMessage[]): Promise<string> => {
+    async (
+      botType: BotType = 'student',
+      input?: string | OpenAIChatMessage[]
+    ): Promise<{ result: string; judgeResult?: string }> => {
       const botEndpointMap: Record<BotType, string> = {
         student: '/api/students/chat',
         coach: '/api/coaches/feedback',
@@ -285,7 +292,10 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
       }
       const data = await resp.json();
       updateLastPromptResponse(data.raw || data);
-      return data.result ?? '';
+      return {
+        result: data.result ?? '',
+        judgeResult: data.judgeResult,
+      };
     },
     [getVariables, recordPromptHistory, updateLastPromptResponse]
   );
@@ -350,7 +360,7 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
     setConnectionStatus('thinking');
     try {
       const response = await callOpenAI('student', appendUserMessage(chatMessage, message));
-      setChatHistory((prev) => [...prev, { role: 'assistant', content: response }]);
+      setChatHistory((prev) => [...prev, { role: 'assistant', content: response.result }]);
       setConnectionStatus('connected');
     } catch (e) {
       const text = e instanceof Error ? e.message : '未知錯誤';
@@ -359,17 +369,18 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
     } finally {
       setIsThinking(false);
     }
-  }, [autoResizeTextarea, callOpenAI, getChatMessages]);
+  }, [autoResizeTextarea, callOpenAI, getChatMessages, appendUserMessage]);
 
-  const generateSummary = useCallback(async () => {
+  const generateSummary = useCallback(async (): Promise<string | undefined> => {
     if (chatHistory.length === 0) {
       setFlash({ type: 'error', message: '沒有對話記錄可以總結' });
       return;
     }
     setIsSummarizing(true);
     try {
-      const summary = await callOpenAI('coach');
-      setChatHistory((prev) => [...prev, { role: 'assistant', content: `📋 **教練總結**\n\n${summary}` }]);
+      const response = await callOpenAI('coach');
+      setChatHistory((prev) => [...prev, { role: 'assistant', content: `📋 **教練總結**\n\n${response.result}` }]);
+      return response.judgeResult;
     } catch (e) {
       const text = e instanceof Error ? e.message : '未知錯誤';
       setFlash({ type: 'error', message: `教練 Bot 錯誤: ${text}` });

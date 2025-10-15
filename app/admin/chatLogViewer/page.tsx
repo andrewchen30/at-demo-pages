@@ -621,7 +621,7 @@ export default function ChatLogViewerPage() {
                                     wordBreak: 'break-word',
                                   }}
                                 >
-                                  {message.content.replace(/;;/g, '\n')}
+                                  {message.content.replace(/;/g, '\n')}
                                 </div>
                               </div>
                             ))}

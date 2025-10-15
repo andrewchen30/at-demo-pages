@@ -55,6 +55,7 @@ function SimClassTrialLessonContent() {
   const [nameInputValue, setNameInputValue] = useState('');
   const [chatLogId, setChatLogId] = useState('');
   const [chatLogCreated, setChatLogCreated] = useState(false);
+  const [judgeResult, setJudgeResult] = useState<string>('');
 
   // 生成 UUID
   const generateUUID = (): string => {
@@ -85,45 +86,55 @@ function SimClassTrialLessonContent() {
   };
 
   // 格式化系統提示為純文字
-  const formatSystemPrompt = useCallback((): string => {
-    const sections: string[] = [];
+  const formatSystemPrompt = useCallback(
+    (includeJudgeResult: boolean = false): string => {
+      const sections: string[] = [];
 
-    // 章節資訊
-    if (chapterInfo) {
-      sections.push(`=== 章節資訊 ===`);
-      sections.push(`標題: ${chapterInfo.title}`);
-      sections.push(`目標: ${chapterInfo.goal}`);
-      sections.push('');
-    }
+      // 章節資訊
+      if (chapterInfo) {
+        sections.push(`=== 章節資訊 ===`);
+        sections.push(`標題: ${chapterInfo.title}`);
+        sections.push(`目標: ${chapterInfo.goal}`);
+        sections.push('');
+      }
 
-    // 背景資訊
-    if (systemUserBrief.length > 0) {
-      sections.push(`=== 背景資訊 ===`);
-      systemUserBrief.forEach((item) => {
-        sections.push(item);
-      });
-      sections.push('');
-    }
+      // 背景資訊
+      if (systemUserBrief.length > 0) {
+        sections.push(`=== 背景資訊 ===`);
+        systemUserBrief.forEach((item) => {
+          sections.push(item);
+        });
+        sections.push('');
+      }
 
-    // 對話內容（只在非第一章時顯示）
-    if (chapterNumber !== 1 && systemDialog.length > 0) {
-      sections.push(`=== 對話內容 ===`);
-      systemDialog.forEach((item) => {
-        sections.push(item);
-      });
-      sections.push('');
-    }
+      // 對話內容（只在非第一章時顯示）
+      if (chapterNumber !== 1 && systemDialog.length > 0) {
+        sections.push(`=== 對話內容 ===`);
+        systemDialog.forEach((item) => {
+          sections.push(item);
+        });
+        sections.push('');
+      }
 
-    // 檢查重點
-    if (systemChecklist.length > 0) {
-      sections.push(`=== 檢查重點 ===`);
-      systemChecklist.forEach((item) => {
-        sections.push(item);
-      });
-    }
+      // 檢查重點
+      if (systemChecklist.length > 0) {
+        sections.push(`=== 檢查重點 ===`);
+        systemChecklist.forEach((item) => {
+          sections.push(item);
+        });
+      }
 
-    return sections.join('\n');
-  }, [chapterInfo, chapterNumber, systemUserBrief, systemDialog, systemChecklist]);
+      // Judge Result（如果有的話）
+      if (includeJudgeResult && judgeResult) {
+        sections.push('');
+        sections.push('=== Judge Result ===');
+        sections.push(judgeResult);
+      }
+
+      return sections.join('\n');
+    },
+    [chapterInfo, chapterNumber, systemUserBrief, systemDialog, systemChecklist, judgeResult]
+  );
 
   // 格式化對話記錄
   const formatChatHistory = useCallback((history: typeof chatHistory): string => {
@@ -164,18 +175,8 @@ function SimClassTrialLessonContent() {
   const createChatLog = useCallback(
     async (teacherName: string, chatLogId: string) => {
       try {
-        console.log('準備建立 ChatLog 記錄:', { teacherName, chatLogId });
-
-        // 格式化對話記錄
         const formattedChatHistory = formatChatHistory(chatHistory);
-
-        // 格式化系統提示
-        const formattedSystemPrompt = formatSystemPrompt();
-
-        // 輸出格式化後的內容供檢查
-        console.log('=== 格式化的 chat_history ===');
-        console.log(formattedChatHistory);
-        console.log('=== 換行符號數量 ===', (formattedChatHistory.match(/\n/g) || []).length);
+        const formattedSystemPrompt = formatSystemPrompt(false);
 
         const response = await fetch('/api/chat-logs', {
           method: 'POST',
@@ -193,7 +194,6 @@ function SimClassTrialLessonContent() {
 
         const result = await response.json();
         if (result.success) {
-          console.log('成功建立 ChatLog 記錄:', result);
           setChatLogCreated(true);
         } else {
           console.error('建立 ChatLog 記錄失敗:', result.error);
@@ -207,15 +207,10 @@ function SimClassTrialLessonContent() {
 
   // 更新 ChatLog 記錄
   const updateChatLog = useCallback(
-    async (chatLogId: string) => {
+    async (chatLogId: string, includeJudgeResult: boolean = false) => {
       try {
-        console.log('準備更新 ChatLog 記錄:', { chatLogId });
-
-        // 格式化對話記錄
         const formattedChatHistory = formatChatHistory(chatHistory);
-
-        // 格式化系統提示
-        const formattedSystemPrompt = formatSystemPrompt();
+        const formattedSystemPrompt = formatSystemPrompt(includeJudgeResult);
 
         const response = await fetch('/api/chat-logs', {
           method: 'PATCH',
@@ -231,9 +226,7 @@ function SimClassTrialLessonContent() {
         });
 
         const result = await response.json();
-        if (result.success) {
-          console.log('成功更新 ChatLog 記錄:', result);
-        } else {
+        if (!result.success) {
           console.error('更新 ChatLog 記錄失敗:', result.error);
         }
       } catch (error) {
@@ -295,11 +288,21 @@ function SimClassTrialLessonContent() {
       // 這樣可以確保每次對話完成（包括教練總結）都會更新記錄
       const lastMessage = chatHistory[chatHistory.length - 1];
       if (chatLogId && lastMessage && lastMessage.role === 'assistant') {
-        console.log('對話已更新（AI/教練回覆完成），更新 ChatLog 記錄');
-        updateChatLog(chatLogId);
+        // 檢查是否為教練總結
+        const isCoachFeedback = lastMessage.content.includes('教練總結');
+        // 如果是教練總結，在 background_info 中包含 judge_result
+        updateChatLog(chatLogId, isCoachFeedback);
       }
     }
   }, [chatHistory, chatLogCreated, teacherName, chatLogId, createChatLog, updateChatLog]);
+
+  // 處理教練總結按鈕
+  const handleGenerateSummary = useCallback(async () => {
+    const result = await generateSummary();
+    if (result) {
+      setJudgeResult(result);
+    }
+  }, [generateSummary]);
 
   const handleNameSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -408,7 +411,7 @@ function SimClassTrialLessonContent() {
               <button
                 className="btn"
                 style={{ background: 'linear-gradient(180deg, #3b82f6, #2563eb)', marginBottom: '8px' }}
-                onClick={generateSummary}
+                onClick={handleGenerateSummary}
                 disabled={!canSummarize || isCreatingStudent || isSummarizing || isThinking}
               >
                 {isSummarizing ? '教練總結中...' : '教練總結'}

@@ -46,8 +46,8 @@ export async function POST(request: NextRequest) {
       const id = await db.appendRow(ChatLogModel, {
         id: chat_log_id,
         teacher_name,
-        chat_history: chat_history || '', // 使用傳入的 chat_history，預設為空字串
-        chat_count: chat_count || 0, // 使用傳入的 chat_count，預設為 0
+        chat_history: chat_history || '',
+        chat_count: chat_count || 0,
         background_info: background_info || '',
       } as Partial<ChatLog> as ChatLog);
 

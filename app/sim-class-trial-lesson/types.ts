@@ -70,7 +70,7 @@ export interface UseTrialLessonChatResult {
   autoResizeTextarea: () => void;
   startScriptwriter: () => Promise<void>;
   sendMessage: () => Promise<void>;
-  generateSummary: () => Promise<void>;
+  generateSummary: () => Promise<string | undefined>;
   clearChat: () => void;
   exportConfig: () => void;
   importConfig: (file: File | null) => void;
@@ -83,4 +83,3 @@ export interface UseTrialLessonChatResult {
   toggleJsonCollapsed: () => void;
   dismissFlash: () => void;
 }
-
