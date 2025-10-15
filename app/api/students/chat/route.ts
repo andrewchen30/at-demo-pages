@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
-import { studentRole } from '@/lib/aiRole';
-import type { StudentVariables } from '@/lib/aiRole/student';
+import { studentRole } from '@/lib/aiCharacter';
+import type { StudentVariables } from '@/lib/aiCharacter/student';
 
 type ChatRequestBody = {
   textMessage?: unknown;

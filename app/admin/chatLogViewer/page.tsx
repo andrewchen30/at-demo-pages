@@ -239,7 +239,7 @@ export default function ChatLogViewerPage() {
   const selectedLog = filteredLogs.find((log) => log.id === selectedLogId);
 
   return (
-    <main className="ai-page" style={{ height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+    <main className="min-h-screen bg-gradient-to-b from-slate-50 to-white flex flex-col overflow-hidden">
       {/* 頂部導航欄 */}
       <div
         style={{
@@ -259,15 +259,13 @@ export default function ChatLogViewerPage() {
         </div>
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
           <button
-            className="btn"
             onClick={fetchChatLogs}
             disabled={loading}
-            style={{
-              background: loading ? '#e5e7eb' : '#6b7280',
-              color: 'white',
-              fontSize: '13px',
-              padding: '8px 16px',
-            }}
+            className={`inline-flex items-center justify-center px-4 py-2.5 rounded-lg text-[13px] font-medium transition-all border ${
+              loading
+                ? 'bg-slate-200 text-slate-600 border-slate-300 cursor-not-allowed'
+                : 'bg-slate-600 text-white border-slate-600 hover:brightness-105'
+            }`}
           >
             {loading ? '載入中...' : '🔄 重新載入'}
           </button>

@@ -5,13 +5,3 @@ export const CHAPTER_GOALS: Record<number, { title: string; goal: string }> = {
   4: { title: '體驗課 part-4 學習計畫', goal: '讓學生知道可以怎麼開始、可能多久會有效果' },
   5: { title: '體驗課 part-5 解決疑慮', goal: '幫助學生放心做下一步決定' },
 };
-
-export const BOT_LABELS: Record<string, string> = {
-  director: '導演 Bot',
-  scriptwriter: '編劇 Bot',
-  student: '學生 Bot',
-  coach: '教練 Bot',
-  teacher: '老師 Bot',
-  judge: '評審 Bot',
-};
-

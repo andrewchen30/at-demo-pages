@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-import { directorRole } from '@/lib/aiRole';
+import { directorRole } from '@/lib/aiCharacter';
 
 export async function GET() {
   try {

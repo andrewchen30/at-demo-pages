@@ -351,6 +351,49 @@ export class GoogleSpreadsheet implements DB {
     });
   }
 
+  /**
+   * 清空指定 Model 的所有資料（保留並重建表頭）
+   */
+  async clearModel<T>(model: ModelDef<T>): Promise<void> {
+    if (!this.sheetsClient) {
+      throw new Error('Not connected. Call connect() first.');
+    }
+
+    await this.retryOnError(async () => {
+      // 找到目標工作表 sheetId
+      const meta = await this.sheetsClient!.spreadsheets.get({ spreadsheetId: this.spreadsheetId });
+      const target = meta.data.sheets?.find((s) => s.properties?.title === model.sheet);
+
+      if (target?.properties?.sheetId != null) {
+        const sheetId = target.properties.sheetId!;
+        // 刪除該工作表
+        await this.sheetsClient!.spreadsheets.batchUpdate({
+          spreadsheetId: this.spreadsheetId,
+          requestBody: {
+            requests: [{ deleteSheet: { sheetId } }, { addSheet: { properties: { title: model.sheet } } }],
+          },
+        });
+      } else {
+        // 若不存在則新增
+        await this.sheetsClient!.spreadsheets.batchUpdate({
+          spreadsheetId: this.spreadsheetId,
+          requestBody: {
+            requests: [{ addSheet: { properties: { title: model.sheet } } }],
+          },
+        });
+      }
+
+      // 重建表頭
+      const headers = model.columns.map(String);
+      await this.sheetsClient!.spreadsheets.values.update({
+        spreadsheetId: this.spreadsheetId,
+        range: `${model.sheet}!A1`,
+        valueInputOption: 'RAW',
+        requestBody: { values: [headers] },
+      });
+    });
+  }
+
   // === 輔助方法 ===
 
   /**
@@ -374,11 +417,9 @@ export class GoogleSpreadsheet implements DB {
 
     let str = String(value);
 
-    // 截斷過長字串
-    if (str.length > 2000) {
-      str = str.substring(0, 2000);
-    }
-
+    // 不再截斷字串，以避免破壞 JSON 結構。
+    // Google Sheets 每個儲存格最大約 50,000 字元，超過時才考慮處理。
+    // 若將來需要安全上限，可調整為接近上限的值（例如 45000），但本案保留完整內容。
     return str;
   }
 

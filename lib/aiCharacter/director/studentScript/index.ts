@@ -1,11 +1,10 @@
 import 'server-only';
 
 import { randomUUID } from 'crypto';
-import path from 'path';
 import { DIRECTOR_PROMPTS } from './prompts';
 import { getScripts } from '../utils/getScript';
-import { FileCache } from './fileCache';
-import { createRoleAsk } from '@/lib/aiRole/utils/createRoleAsk';
+import { createRoleAsk } from '@/lib/aiCharacter/utils/createRoleAsk';
+import { AIGenStudentsRepo } from '@/lib/repository/studentScript';
 
 export class StudentRoleStoreEmptyError extends Error {
   constructor(message: string = '目前沒有可用的學生角色，請先產生角色。') {
@@ -34,8 +33,7 @@ type RandomRoleResponse = {
   index: number;
 };
 
-const DATA_DIR = path.join(process.cwd(), '.data');
-const DEFAULT_BATCH_SIZE = 10;
+const DEFAULT_BATCH_SIZE = 5;
 
 const SCRIPTWRITER_PROMPT = '以下是腳本內容，請用 JSON 格式回覆我：';
 
@@ -49,21 +47,38 @@ const scriptWriterAsk = createRoleAsk({
   botIdEnvVar: 'OPENAI_SCRIPTWRITER_BOT_ID',
 });
 
-// 創建 FileCache 實例來管理學生角色數據
-const rolesCache = new FileCache<StoredRole[]>({
-  dataDir: DATA_DIR,
-  fileName: 'student_roles.json',
-  defaultValue: [],
-});
+// 以記憶體快取保存目前的學生角色（資料來源轉為 Google Spreadsheet）
+let memoryRoles: StoredRole[] = [];
 
 async function readRoles(): Promise<StoredRole[]> {
-  const roles = await rolesCache.read();
-  // 確保返回的是陣列
-  return Array.isArray(roles) ? roles : [];
+  return Array.isArray(memoryRoles) ? memoryRoles : [];
 }
 
 async function writeRoles(roles: StoredRole[]): Promise<void> {
-  await rolesCache.write(roles);
+  memoryRoles = Array.isArray(roles) ? roles : [];
+}
+
+// 從 Google Spreadsheet 載入資料至記憶體（在 server 啟動或刷新後呼叫）
+export async function loadRolesFromSpreadsheet(): Promise<void> {
+  const rows = await AIGenStudentsRepo.list({ orderBy: 'created_at' });
+  const mapped: StoredRole[] = rows.map((r) => ({ id: r.id, raw: r.raw, createdAt: r.created_at }));
+  await writeRoles(mapped);
+}
+
+let initialized = false;
+let initializingPromise: Promise<void> | null = null;
+export async function ensureRolesLoaded(): Promise<void> {
+  if (initialized) return;
+  if (!initializingPromise) {
+    initializingPromise = loadRolesFromSpreadsheet()
+      .then(() => {
+        initialized = true;
+      })
+      .finally(() => {
+        initializingPromise = null;
+      });
+  }
+  return initializingPromise;
 }
 
 async function requestDirectorRole(): Promise<string> {
@@ -113,14 +128,26 @@ export async function getRandomStudentRole(): Promise<RandomRoleResponse> {
     throw new StudentRoleStoreEmptyError();
   }
 
-  const randomIndex = Math.floor(Math.random() * roles.length);
-  const role = roles[randomIndex];
+  const validIndices: number[] = [];
+  for (let i = 0; i < roles.length; i++) {
+    try {
+      JSON.parse(roles[i].raw);
+      validIndices.push(i);
+    } catch {}
+  }
+
+  if (validIndices.length === 0) {
+    throw new Error('目前沒有有效的學生角色資料，請先重新產生。');
+  }
+
+  const idx = validIndices[Math.floor(Math.random() * validIndices.length)];
+  const role = roles[idx];
 
   return {
     role: role.raw,
     total: roles.length,
     createdAt: role.createdAt,
-    index: randomIndex,
+    index: idx,
   };
 }
 
@@ -162,21 +189,41 @@ export async function appendStudentRoles(count: number = DEFAULT_BATCH_SIZE) {
     throw new StudentRoleInvalidCountError();
   }
 
-  const roles = await readRoles();
-  const tasks = Array.from({ length: count }, () => createStudentRole());
-  const newRoles = await Promise.all(tasks);
+  await ensureRolesLoaded();
 
-  const updatedRoles = [...roles, ...newRoles];
-  await writeRoles(updatedRoles);
+  const currentRoles = await readRoles();
 
+  let added = 0;
+  for (let i = 0; i < count; i++) {
+    try {
+      const role = await createStudentRole();
+      await AIGenStudentsRepo.create({
+        id: role.id,
+        raw: role.raw,
+      });
+      currentRoles.push(role);
+      await writeRoles(currentRoles);
+      added++;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '未知錯誤';
+      console.error(`[appendStudentRoles] 建立或寫入學生角色失敗：${message}`);
+      continue;
+    }
+  }
+
+  await loadRolesFromSpreadsheet();
+
+  const finalRoles = await readRoles();
   return {
-    added: newRoles.length,
-    total: updatedRoles.length,
+    added,
+    total: finalRoles.length,
   };
 }
 
 export async function clearStudentRoles() {
   await writeRoles([]);
+  await AIGenStudentsRepo.clearAll();
+  await loadRolesFromSpreadsheet();
   return { total: 0 };
 }
 

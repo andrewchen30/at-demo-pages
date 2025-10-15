@@ -68,6 +68,11 @@ export interface DB {
    * 建立 Model 對應的工作表（若不存在）
    */
   createModel<T>(model: ModelDef<T>): Promise<void>;
+
+  /**
+   * 清空指定 Model 的所有資料（保留並重建表頭）
+   */
+  clearModel<T>(model: ModelDef<T>): Promise<void>;
 }
 
 /**
@@ -90,4 +95,22 @@ export const ChatLogModel: ModelDef<ChatLog> = {
   sheet: 'chat_logs',
   columns: ['id', 'teacher_name', 'chat_history', 'chat_count', 'background_info', 'created_at', 'updated_at'],
   keyField: 'teacher_name',
+};
+
+/**
+ * 由導演/編劇 AI 產生的學生角色資料
+ */
+export type AIGenStudent = {
+  id: string;
+  raw: string;
+  created_at: string;
+  updated_at: string;
+};
+
+/**
+ * AI 產生學生角色 Model 定義
+ */
+export const AIGenStudentModel: ModelDef<AIGenStudent> = {
+  sheet: 'ai_gen_students',
+  columns: ['id', 'raw', 'created_at', 'updated_at'],
 };

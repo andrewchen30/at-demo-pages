@@ -11,8 +11,8 @@ import {
   getDialog,
   getCheckListForTeacher,
   getScriptedChatHistory,
-} from '@/lib/aiRole/director/utils';
-import type { DirectorInput } from '@/lib/aiRole/student/types';
+} from '@/lib/aiCharacter/director/utils';
+import type { DirectorInput } from '@/lib/aiCharacter/student/types';
 import type {
   BotType,
   WorkflowStep,
@@ -30,6 +30,7 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
   const router = useRouter();
   const searchParams = useSearchParams();
 
+  // 移除 adminMode 對外回傳，但內部仍可依網址參數切行為（若未來需要可完全刪除）
   const [adminMode, setAdminMode] = useState(false);
   const [workflowStep, setWorkflowStep] = useState<WorkflowStep>('idle');
   const [currentBot] = useState<BotType>('student');
@@ -45,19 +46,16 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
 
   const [chapterNumber, setChapterNumber] = useState<number>(1);
   const [isChapterDialogOpen, setIsChapterDialogOpen] = useState(false);
-  const [isJsonCollapsed, setIsJsonCollapsed] = useState(false);
+  // 移除 JSON 摺疊功能
 
   const [isThinking, setIsThinking] = useState(false);
   const [isCreatingStudent, setIsCreatingStudent] = useState(false);
   const [isSummarizing, setIsSummarizing] = useState(false);
 
   const [flash, setFlash] = useState<FlashMessage | null>(null);
-  const [importedFileName, setImportedFileName] = useState('');
-  const [scriptwriterJson, setScriptwriterJson] = useState<string | null>(null);
+  // 移除 scriptwriterJson 對外回傳
 
   const chatInputRef = useRef<HTMLTextAreaElement | null>(null);
-  const exportLinkRef = useRef<HTMLAnchorElement | null>(null);
-  const importInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     const admin = searchParams?.get('admin') === 'true';
@@ -105,7 +103,7 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
       setSystemUserBrief(getUserBrief(scriptwriterResponse, chapterNumber).split('\n'));
       setSystemDialog(getDialog(scriptwriterResponse, chapterNumber).split('\n'));
       setSystemChecklist(getCheckListForTeacher(chapterNumber).split('\n'));
-      setScriptwriterJson(JSON.stringify(scriptwriterResponse, null, 2));
+      // scriptwriterJson 已移除
       // 若聊天室目前為空，插入前情提要（劇本對話），並記錄前情數量
       setChatHistory((prev) => {
         if (prev.length > 0) return prev;
@@ -274,7 +272,7 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
       }
 
       setScriptwriterResponse(parsedRole);
-      setScriptwriterJson(JSON.stringify(parsedRole, null, 2));
+      // scriptwriterJson 已移除
 
       setWorkflowStep('student');
       setSystemMessage(getTeacherHintText(parsedRole, chapterNumber));
@@ -353,47 +351,12 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
     setSystemChecklist([]);
 
     setScriptwriterResponse(null);
-    setScriptwriterJson(null);
+    // scriptwriterJson 已移除
   }, []);
 
-  const exportConfig = useCallback(() => {
-    const dataStr = JSON.stringify({ chapter: chapterNumber }, null, 2);
-    const blob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = exportLinkRef.current;
-    if (a) {
-      a.href = url;
-      a.download = `ai-chat-config-${new Date().toISOString().slice(0, 10)}.json`;
-      a.click();
-      setTimeout(() => URL.revokeObjectURL(url), 0);
-    }
-  }, [chapterNumber]);
+  // 移除 export/import 相關功能（已不再使用）
 
-  const importConfig = useCallback((file: File | null) => {
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const text = e.target?.result;
-        if (typeof text !== 'string') throw new Error('檔案內容無法解析');
-        const json = JSON.parse(text) as { chapter?: number };
-        if (typeof json.chapter === 'number' && CHAPTER_GOALS[json.chapter]) {
-          setChapterNumber(json.chapter);
-        }
-        setImportedFileName(file.name);
-        setFlash({ type: 'success', message: '配置已成功匯入' });
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : '未知錯誤';
-        setFlash({ type: 'error', message: `匯入配置失敗: ${msg}` });
-      }
-    };
-    reader.readAsText(file);
-  }, []);
-
-  const handleImportClick = useCallback(() => {
-    importInputRef.current?.click();
-  }, []);
-
+  // 開啟章節選單方法改為內部使用，不對外暴露
   const openChapterDialog = useCallback(() => setIsChapterDialogOpen(true), []);
   const closeChapterDialog = useCallback(() => setIsChapterDialogOpen(false), []);
 
@@ -402,52 +365,38 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
     setIsChapterDialogOpen(false);
   }, []);
 
-  const toggleJsonCollapsed = useCallback(() => {
-    setIsJsonCollapsed((prev) => !prev);
-  }, []);
+  // 移除 JSON 摺疊切換
 
   const dismissFlash = useCallback(() => setFlash(null), []);
 
   return {
-    adminMode,
     workflowStep,
     currentBot,
     connectionStatus,
     chatHistory,
     preludeCount,
-    scriptwriterResponse,
     systemMessage,
     systemUserBrief,
     systemDialog,
     systemChecklist,
     chapterNumber,
     isChapterDialogOpen,
-    isJsonCollapsed,
     isThinking,
     isCreatingStudent,
     isSummarizing,
     flash,
-    importedFileName,
     statusText,
     canSummarize,
     chapterInfo,
     chapterOptions,
-    scriptwriterJson,
     chatInputRef,
-    exportLinkRef,
-    importInputRef,
     autoResizeTextarea,
     startScriptwriter,
     sendMessage,
     generateSummary,
     clearChat,
-    exportConfig,
-    importConfig,
-    handleImportClick,
-    openChapterDialog,
     closeChapterDialog,
     selectChapter,
-    toggleJsonCollapsed,
     dismissFlash,
   };
 }
