@@ -75,6 +75,44 @@ export async function POST(request: NextRequest) {
 }
 
 /**
+ * 取得所有 ChatLog 記錄
+ */
+export async function GET(request: NextRequest) {
+  try {
+    const db = initDB();
+    await db.connect();
+
+    try {
+      // 確保 Model 存在
+      await db.createModel(ChatLogModel);
+
+      // 獲取所有 ChatLog 記錄
+      const logs = await db.list(ChatLogModel);
+
+      await db.disconnect();
+
+      return NextResponse.json({
+        success: true,
+        data: logs,
+        count: logs.length,
+      });
+    } catch (error) {
+      await db.disconnect();
+      throw error;
+    }
+  } catch (error) {
+    console.error('Failed to fetch ChatLogs:', error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: error instanceof Error ? error.message : '獲取 ChatLog 記錄失敗',
+      },
+      { status: 500 }
+    );
+  }
+}
+
+/**
  * 更新 ChatLog 記錄
  */
 export async function PATCH(request: NextRequest) {

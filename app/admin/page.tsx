@@ -8,9 +8,9 @@ const DEFAULT_BATCH_SIZE = 20;
 
 const ADMIN_TOOLS = [
   {
-    href: '/admin/coachLogViewer',
+    href: '/admin/chatLogViewer',
     title: '對話記錄檢視器',
-    description: '瀏覽、篩選並檢視教練與學生的互動記錄，快速掌握需要追蹤的對話內容。',
+    description: '從 Google Spreadsheet 載入並檢視聊天記錄，包含對話內容、背景資訊與教師篩選功能。',
     accent: 'linear-gradient(90deg, #8b5cf6, #7c3aed)',
   },
   {
