@@ -146,7 +146,7 @@ export default function DatabaseTestPage() {
   const selectedRecord = records.find((r) => r.id === selectedId);
 
   return (
-    <main className="ai-page" style={{ height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+    <main className="min-h-screen bg-gradient-to-b from-slate-50 to-white flex flex-col overflow-hidden">
       {/* 頂部導航欄 */}
       <div
         style={{
@@ -248,14 +248,9 @@ export default function DatabaseTestPage() {
                 </h3>
                 <p style={{ fontSize: '12px', color: '#1e3a8a', marginBottom: '12px' }}>新增一筆測試資料到資料庫</p>
                 <button
-                  className="btn"
                   onClick={testAppendRow}
                   disabled={operationState === 'loading'}
-                  style={{
-                    background: 'linear-gradient(180deg, #3b82f6, #2563eb)',
-                    width: '100%',
-                    fontSize: '13px',
-                  }}
+                  className="w-full bg-gradient-to-b from-blue-500 to-blue-600 text-white px-4 py-2.5 rounded-lg text-[13px] font-medium transition-all hover:brightness-105 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {operationState === 'loading' && lastOperation === 'appendRow' ? '執行中...' : '➕ 新增資料'}
                 </button>
@@ -277,14 +272,13 @@ export default function DatabaseTestPage() {
                   根據 ID 更新資料（需先選擇 ID）
                 </p>
                 <button
-                  className="btn"
                   onClick={testUpdateById}
                   disabled={operationState === 'loading' || !selectedId}
-                  style={{
-                    background: selectedId ? 'linear-gradient(180deg, #f59e0b, #d97706)' : '#d1d5db',
-                    width: '100%',
-                    fontSize: '13px',
-                  }}
+                  className={`w-full px-4 py-2.5 rounded-lg text-[13px] font-medium transition-all border ${
+                    selectedId
+                      ? 'bg-gradient-to-b from-amber-500 to-amber-600 text-white hover:brightness-105 border-amber-600'
+                      : 'bg-slate-300 text-slate-700 border-slate-300 cursor-not-allowed'
+                  }`}
                 >
                   {operationState === 'loading' && lastOperation === 'updateById' ? '執行中...' : '✏️ 更新資料'}
                 </button>
@@ -306,14 +300,9 @@ export default function DatabaseTestPage() {
                   根據 teacher_name 更新或新增（固定 key: TEACHER_UPSERT_TEST）
                 </p>
                 <button
-                  className="btn"
                   onClick={testUpsertByKey}
                   disabled={operationState === 'loading'}
-                  style={{
-                    background: 'linear-gradient(180deg, #a855f7, #9333ea)',
-                    width: '100%',
-                    fontSize: '13px',
-                  }}
+                  className="w-full bg-gradient-to-b from-purple-500 to-purple-600 text-white px-4 py-2.5 rounded-lg text-[13px] font-medium transition-all hover:brightness-105 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {operationState === 'loading' && lastOperation === 'upsertByKey' ? '執行中...' : '🔄 Upsert 資料'}
                 </button>
@@ -335,14 +324,13 @@ export default function DatabaseTestPage() {
                   根據 ID 取得單筆資料（需先選擇 ID）
                 </p>
                 <button
-                  className="btn"
                   onClick={testGetById}
                   disabled={operationState === 'loading' || !selectedId}
-                  style={{
-                    background: selectedId ? 'linear-gradient(180deg, #10b981, #059669)' : '#d1d5db',
-                    width: '100%',
-                    fontSize: '13px',
-                  }}
+                  className={`w-full px-4 py-2.5 rounded-lg text-[13px] font-medium transition-all border ${
+                    selectedId
+                      ? 'bg-gradient-to-b from-emerald-500 to-emerald-600 text-white hover:brightness-105 border-emerald-600'
+                      : 'bg-slate-300 text-slate-700 border-slate-300 cursor-not-allowed'
+                  }`}
                 >
                   {operationState === 'loading' && lastOperation === 'getById' ? '執行中...' : '🔍 取得資料'}
                 </button>
@@ -350,15 +338,9 @@ export default function DatabaseTestPage() {
 
               {/* 重新載入按鈕 */}
               <button
-                className="btn"
                 onClick={fetchRecords}
                 disabled={operationState === 'loading'}
-                style={{
-                  background: '#e5e7eb',
-                  width: '100%',
-                  fontSize: '13px',
-                  marginTop: '8px',
-                }}
+                className="w-full bg-slate-200 text-slate-700 px-4 py-2.5 rounded-lg text-[13px] font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed mt-2"
               >
                 🔄 重新載入資料
               </button>

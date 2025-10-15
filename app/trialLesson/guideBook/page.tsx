@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { FormEvent, MouseEvent, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { CHAPTER_GOALS } from '@/app/trialLesson/sim/constants';
 
@@ -412,9 +412,45 @@ const GUIDE_CONTENT: Record<
 
 export default function GuideBookPage() {
   const [selectedChapter, setSelectedChapter] = useState<number>(1);
+  const [isNameDialogOpen, setIsNameDialogOpen] = useState(false);
+  const [teacherName, setTeacherName] = useState('');
+  const [nameInputValue, setNameInputValue] = useState('');
 
   const currentContent = GUIDE_CONTENT[selectedChapter];
   const chapterInfo = CHAPTER_GOALS[selectedChapter];
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const storedName = localStorage.getItem('teacherName');
+    if (storedName) {
+      setTeacherName(storedName);
+      setNameInputValue(storedName);
+    } else {
+      setIsNameDialogOpen(true);
+    }
+  }, []);
+
+  const handleNameSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const trimmedName = nameInputValue.trim();
+    if (!trimmedName) return;
+    localStorage.setItem('teacherName', trimmedName);
+    setTeacherName(trimmedName);
+    setIsNameDialogOpen(false);
+  };
+
+  const handlePracticeClick = (event: MouseEvent<HTMLAnchorElement>) => {
+    if (!teacherName.trim()) {
+      event.preventDefault();
+      setNameInputValue(teacherName);
+      setIsNameDialogOpen(true);
+    }
+  };
+
+  const handleEditName = () => {
+    setNameInputValue(teacherName);
+    setIsNameDialogOpen(true);
+  };
 
   // 簡單的 Markdown 渲染函數
   const renderMarkdown = (markdown: string) => {
@@ -532,18 +568,101 @@ export default function GuideBookPage() {
 
         {/* 底部固定 Bar */}
         <div className="guide-bottom-bar">
-          <Link href={`/trialLesson/sim?chapter=${selectedChapter}`} className="guide-practice-btn">
-            <span className="practice-btn-icon">🎯</span>
-            <span className="practice-btn-text">
-              <span className="practice-btn-main">立即開始練習</span>
-              <span className="practice-btn-sub">
-                Chapter {selectedChapter} - {chapterInfo?.title}
+          <div className="guide-bottom-bar-content">
+            <div className="guide-teacher-info">
+              <div className="guide-teacher-label">老師姓名</div>
+              <div className="guide-teacher-name">{teacherName || '尚未設定'}</div>
+              <button type="button" className="guide-teacher-edit-btn" onClick={handleEditName}>
+                {teacherName ? '變更' : '設定'}
+              </button>
+            </div>
+            <Link
+              href={`/trialLesson/sim?chapter=${selectedChapter}`}
+              className="guide-practice-btn"
+              onClick={handlePracticeClick}
+            >
+              <span className="practice-btn-icon">🎯</span>
+              <span className="practice-btn-text">
+                <span className="practice-btn-main">立即開始練習</span>
+                <span className="practice-btn-sub">
+                  Chapter {selectedChapter} - {chapterInfo?.title}
+                </span>
               </span>
-            </span>
-            <span className="practice-btn-arrow">→</span>
-          </Link>
+              <span className="practice-btn-arrow">→</span>
+            </Link>
+          </div>
         </div>
       </main>
+
+      {isNameDialogOpen && (
+        <div className="chapter-dialog-overlay" role="dialog" aria-modal="true" style={{ display: 'flex' }}>
+          <div className="chapter-dialog">
+            <div className="chapter-dialog-header">
+              <h3 className="chapter-dialog-title">👋 歡迎使用 AI 教學工具</h3>
+            </div>
+            <div className="chapter-dialog-content">
+              <form onSubmit={handleNameSubmit} style={{ padding: '20px' }}>
+                <div style={{ marginBottom: '20px' }}>
+                  <label
+                    htmlFor="guide-teacher-name"
+                    style={{
+                      display: 'block',
+                      marginBottom: '8px',
+                      fontWeight: '500',
+                      fontSize: '14px',
+                    }}
+                  >
+                    請輸入您的名字
+                  </label>
+                  <input
+                    id="guide-teacher-name"
+                    type="text"
+                    value={nameInputValue}
+                    onChange={(e) => setNameInputValue(e.target.value)}
+                    placeholder="請輸入名字"
+                    required
+                    autoFocus
+                    style={{
+                      width: '100%',
+                      padding: '12px',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      outline: 'none',
+                      transition: 'border-color 0.2s',
+                    }}
+                    onFocus={(e) => (e.target.style.borderColor = '#3b82f6')}
+                    onBlur={(e) => (e.target.style.borderColor = '#e2e8f0')}
+                  />
+                  <p
+                    style={{
+                      marginTop: '8px',
+                      fontSize: '12px',
+                      color: '#64748b',
+                      lineHeight: '1.5',
+                    }}
+                  >
+                    💡 請輸入與 AmazingTalker 站上相同的名字
+                  </p>
+                </div>
+                <button
+                  type="submit"
+                  className="btn"
+                  style={{
+                    width: '100%',
+                    background: 'linear-gradient(180deg, #3b82f6, #2563eb)',
+                    padding: '12px',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                  }}
+                >
+                  確認
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
 
       <style jsx>{`
         .guide-page {
@@ -779,6 +898,62 @@ export default function GuideBookPage() {
           z-index: 100;
         }
 
+        .guide-bottom-bar-content {
+          width: min(1160px, 100% - 64px);
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 24px;
+        }
+
+        .guide-teacher-info {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          flex-wrap: wrap;
+          padding: 16px 20px;
+          background: rgba(59, 130, 246, 0.08);
+          border: 1px solid rgba(37, 99, 235, 0.2);
+          border-radius: 14px;
+          box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.6);
+        }
+
+        .guide-teacher-label {
+          font-size: 12px;
+          font-weight: 700;
+          letter-spacing: 0.4px;
+          color: #2563eb;
+        }
+
+        .guide-teacher-name {
+          font-size: 16px;
+          font-weight: 600;
+          color: var(--text);
+          min-width: 120px;
+        }
+
+        .guide-teacher-edit-btn {
+          background: #ffffff;
+          border: 1px solid rgba(37, 99, 235, 0.35);
+          color: #2563eb;
+          font-size: 14px;
+          font-weight: 600;
+          padding: 8px 18px;
+          border-radius: 9999px;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+
+        .guide-teacher-edit-btn:hover {
+          background: rgba(37, 99, 235, 0.12);
+          border-color: #2563eb;
+        }
+
+        .guide-teacher-edit-btn:focus-visible {
+          outline: 3px solid rgba(37, 99, 235, 0.3);
+          outline-offset: 2px;
+        }
+
         .guide-practice-btn {
           display: inline-flex !important;
           flex-direction: row !important;
@@ -802,6 +977,7 @@ export default function GuideBookPage() {
           animation: pulse-glow 2s ease-in-out infinite;
           width: auto;
           max-width: 100%;
+          flex-shrink: 0;
         }
 
         @keyframes pulse-glow {
@@ -919,6 +1095,15 @@ export default function GuideBookPage() {
           .guide-title {
             font-size: 28px;
           }
+
+          .guide-bottom-bar-content {
+            width: calc(100% - 48px);
+            gap: 16px;
+          }
+
+          .guide-teacher-info {
+            padding: 14px 18px;
+          }
         }
 
         @media (max-width: 768px) {
@@ -953,11 +1138,36 @@ export default function GuideBookPage() {
             padding: 24px;
           }
 
-          .guide-practice-btn {
+          .guide-bottom-bar {
+            height: auto;
+            padding: 16px;
+          }
+
+          .guide-bottom-bar-content {
+            flex-direction: column;
+            align-items: stretch;
+            width: 100%;
             gap: 12px;
-            padding: 18px 32px;
+          }
+
+          .guide-teacher-info {
+            width: 100%;
+            justify-content: space-between;
+            gap: 12px;
+          }
+
+          .guide-teacher-name {
+            flex: 1;
+            min-width: auto;
+          }
+
+          .guide-practice-btn {
+            width: 100%;
+            gap: 12px;
+            padding: 18px 28px;
             font-size: 16px;
             border-width: 2px;
+            justify-content: space-between !important;
           }
 
           .practice-btn-icon {
@@ -974,11 +1184,6 @@ export default function GuideBookPage() {
 
           .practice-btn-arrow {
             font-size: 20px;
-          }
-
-          .guide-bottom-bar {
-            height: 90px;
-            padding: 0 16px;
           }
         }
       `}</style>

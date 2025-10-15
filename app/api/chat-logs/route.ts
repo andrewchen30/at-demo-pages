@@ -1,20 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { GoogleSpreadsheet, ChatLogModel, type ChatLog } from '@/lib/database';
+import type { ChatLog } from '@/lib/database';
+import { ChatLogsRepo } from '@/lib/database/repository/chatLogs';
 
 // 初始化資料庫連接
-function initDB() {
-  if (!process.env.GOOGLE_SHEETS_ID || !process.env.GOOGLE_CLIENT_EMAIL || !process.env.GOOGLE_PRIVATE_KEY) {
-    throw new Error(
-      'Missing required environment variables: GOOGLE_SHEETS_ID, GOOGLE_CLIENT_EMAIL, GOOGLE_PRIVATE_KEY'
-    );
-  }
-
-  return new GoogleSpreadsheet({
-    GOOGLE_SHEETS_ID: process.env.GOOGLE_SHEETS_ID,
-    GOOGLE_CLIENT_EMAIL: process.env.GOOGLE_CLIENT_EMAIL,
-    GOOGLE_PRIVATE_KEY: process.env.GOOGLE_PRIVATE_KEY,
-  });
-}
+// 已由 Repository 封裝 DB 連線與 createModel
 
 /**
  * 建立新的 ChatLog 記錄
@@ -35,33 +24,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const db = initDB();
-    await db.connect();
+    const id = await ChatLogsRepo.create({
+      id: chat_log_id,
+      teacher_name,
+      chat_history: chat_history || '',
+      chat_count: chat_count || 0,
+      background_info: background_info || '',
+    } as Partial<ChatLog> as ChatLog);
 
-    try {
-      // 確保 Model 存在
-      await db.createModel(ChatLogModel);
-
-      // 建立新的 ChatLog 記錄
-      const id = await db.appendRow(ChatLogModel, {
-        id: chat_log_id,
-        teacher_name,
-        chat_history: chat_history || '',
-        chat_count: chat_count || 0,
-        background_info: background_info || '',
-      } as Partial<ChatLog> as ChatLog);
-
-      await db.disconnect();
-
-      return NextResponse.json({
-        success: true,
-        id,
-        message: '成功建立 ChatLog 記錄',
-      });
-    } catch (error) {
-      await db.disconnect();
-      throw error;
-    }
+    return NextResponse.json({
+      success: true,
+      id,
+      message: '成功建立 ChatLog 記錄',
+    });
   } catch (error) {
     console.error('Failed to create ChatLog:', error);
     return NextResponse.json(
@@ -79,27 +54,12 @@ export async function POST(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
   try {
-    const db = initDB();
-    await db.connect();
-
-    try {
-      // 確保 Model 存在
-      await db.createModel(ChatLogModel);
-
-      // 獲取所有 ChatLog 記錄
-      const logs = await db.list(ChatLogModel);
-
-      await db.disconnect();
-
-      return NextResponse.json({
-        success: true,
-        data: logs,
-        count: logs.length,
-      });
-    } catch (error) {
-      await db.disconnect();
-      throw error;
-    }
+    const logs = await ChatLogsRepo.list();
+    return NextResponse.json({
+      success: true,
+      data: logs,
+      count: logs.length,
+    });
   } catch (error) {
     console.error('Failed to fetch ChatLogs:', error);
     return NextResponse.json(
@@ -131,35 +91,23 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    const db = initDB();
-    await db.connect();
-
-    try {
-      // 準備更新資料
-      const patch: Partial<ChatLog> = {};
-      if (chat_history !== undefined) {
-        patch.chat_history = typeof chat_history === 'string' ? chat_history : JSON.stringify(chat_history);
-      }
-      if (chat_count !== undefined) {
-        patch.chat_count = chat_count;
-      }
-      if (background_info !== undefined) {
-        patch.background_info = background_info;
-      }
-
-      // 更新記錄
-      await db.updateRowById(ChatLogModel, chat_log_id, patch);
-
-      await db.disconnect();
-
-      return NextResponse.json({
-        success: true,
-        message: '成功更新 ChatLog 記錄',
-      });
-    } catch (error) {
-      await db.disconnect();
-      throw error;
+    const patch: Partial<ChatLog> = {};
+    if (chat_history !== undefined) {
+      patch.chat_history = typeof chat_history === 'string' ? chat_history : JSON.stringify(chat_history);
     }
+    if (chat_count !== undefined) {
+      patch.chat_count = chat_count;
+    }
+    if (background_info !== undefined) {
+      patch.background_info = background_info;
+    }
+
+    await ChatLogsRepo.updateById(chat_log_id, patch);
+
+    return NextResponse.json({
+      success: true,
+      message: '成功更新 ChatLog 記錄',
+    });
   } catch (error) {
     console.error('Failed to update ChatLog:', error);
     return NextResponse.json(

@@ -308,13 +308,16 @@ function SimClassTrialLessonContent() {
   };
 
   return (
-    <main className="ai-page">
-      <div className="container">
-        <div className="left-panel">
+    <main className="min-h-screen bg-gradient-to-b from-slate-50 to-white text-slate-800 overflow-hidden">
+      <div className="grid grid-cols-[440px_1fr] min-h-screen gap-px bg-slate-200 w-full max-w-none m-0 p-0">
+        <div className="bg-slate-50 p-5 overflow-y-auto border-r border-slate-200 flex flex-col gap-4">
           {/* 移除 Import/Export 區塊 */}
 
           {/* 回到選單按鈕 */}
-          <Link href="/trialLesson/guideBook" className="back-to-menu-btn">
+          <Link
+            href="/trialLesson/guideBook"
+            className="flex items-center gap-2 px-4 py-3 bg-white border border-slate-200 rounded-lg text-slate-800 text-sm font-medium transition-all cursor-pointer hover:bg-slate-50 hover:border-slate-300"
+          >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M19 12H5M12 19l-7-7 7-7" />
             </svg>
@@ -322,14 +325,14 @@ function SimClassTrialLessonContent() {
           </Link>
 
           {/* 檢查清單卡片 */}
-          <div className="sidebar-card">
-            <div className="sidebar-card-header">
-              <div className="sidebar-card-header-content">
-                <div className="sidebar-card-title">檢查清單</div>
-                <div className="sidebar-card-subtitle">{chapterInfo?.title ?? `章節 ${chapterNumber}`}</div>
+          <div className="bg-white border border-slate-200 rounded-xl flex flex-col overflow-hidden flex-1 min-h-0">
+            <div className="p-4 border-b border-slate-200 flex items-center justify-between flex-shrink-0">
+              <div className="flex flex-col gap-1">
+                <div className="text-base font-semibold text-slate-800">檢查清單</div>
+                <div className="text-xs text-slate-500">{chapterInfo?.title ?? `章節 ${chapterNumber}`}</div>
               </div>
               <button
-                className="sidebar-card-toggle-btn"
+                className="bg-white border border-slate-200 rounded-lg w-9 h-9 inline-flex items-center justify-center cursor-pointer text-slate-500 transition-all hover:bg-slate-50 hover:border-slate-300 hover:text-slate-800 flex-shrink-0"
                 title={isChecklistVisible ? '隱藏檢查清單' : '顯示檢查清單'}
                 onClick={() => setIsChecklistVisible(!isChecklistVisible)}
               >
@@ -348,39 +351,39 @@ function SimClassTrialLessonContent() {
                 </svg>
               </button>
             </div>
-            <div className="sidebar-card-content">
+            <div className="flex-1 overflow-y-auto p-4">
               {!systemMessage ? (
-                <div className="empty-sidebar">
-                  <div className="empty-sidebar-icon">📝</div>
-                  <div className="empty-sidebar-text">等待編劇產生檢查清單</div>
-                  <div className="empty-sidebar-subtext">點擊「更換」開始</div>
+                <div className="text-center text-slate-500 p-10">
+                  <div className="text-3xl mb-3">📝</div>
+                  <div className="text-[15px] font-semibold mb-1">等待編劇產生檢查清單</div>
+                  <div className="text-sm">點擊「更換」開始</div>
                 </div>
               ) : isChecklistVisible ? (
-                <div className="system-message">
-                  <div className="system-message-content">
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                  <div className="text-sm leading-6 text-slate-800 whitespace-pre-wrap px-4">
                     {systemChecklist.map((item, index) => (
                       <li key={index}>{item}</li>
                     ))}
                   </div>
                 </div>
               ) : (
-                <div className="empty-sidebar">
-                  <div className="empty-sidebar-icon">👁️</div>
-                  <div className="empty-sidebar-text">檢查清單已隱藏</div>
-                  <div className="empty-sidebar-subtext">點擊右上角按鈕顯示</div>
+                <div className="text-center text-slate-500 p-10">
+                  <div className="text-3xl mb-3">👁️</div>
+                  <div className="text-[15px] font-semibold mb-1">檢查清單已隱藏</div>
+                  <div className="text-sm">點擊右上角按鈕顯示</div>
                 </div>
               )}
             </div>
           </div>
 
           {/* 教練回饋卡片 */}
-          <div className="sidebar-card">
-            <div className="sidebar-card-header">
-              <div className="sidebar-card-header-content">
-                <div className="sidebar-card-title">教練回饋</div>
+          <div className="bg-white border border-slate-200 rounded-xl flex flex-col overflow-hidden">
+            <div className="p-4 border-b border-slate-200 flex items-center justify-between flex-shrink-0">
+              <div className="flex flex-col gap-1">
+                <div className="text-base font-semibold text-slate-800">教練回饋</div>
               </div>
               <button
-                className="sidebar-card-action-btn"
+                className="bg-gradient-to-b from-blue-500 to-blue-600 rounded-lg px-4 py-2 text-[13px] font-medium text-white transition-all hover:brightness-105 disabled:opacity-50 disabled:cursor-not-allowed"
                 onClick={handleGenerateSummary}
                 disabled={!canSummarize || isCreatingStudent || isSummarizing || isThinking}
                 title="取得教練回饋"
@@ -388,15 +391,15 @@ function SimClassTrialLessonContent() {
                 {isSummarizing ? '產生中...' : '取得回饋'}
               </button>
             </div>
-            <div className="sidebar-card-content">
+            <div className="flex-1 overflow-y-auto p-4">
               {!coachResult ? (
-                <div className="empty-sidebar">
-                  <div className="empty-sidebar-icon">💬</div>
-                  <div className="empty-sidebar-text">尚無教練回饋</div>
-                  <div className="empty-sidebar-subtext">點擊右上角按鈕取得回饋</div>
+                <div className="text-center text-slate-500 p-10">
+                  <div className="text-3xl mb-3">💬</div>
+                  <div className="text-[15px] font-semibold mb-1">尚無教練回饋</div>
+                  <div className="text-sm">點擊右上角按鈕取得回饋</div>
                 </div>
               ) : (
-                <div className="feedback-content">
+                <div className="text-sm leading-[1.4] text-slate-800">
                   {coachResult.split('\n').map((line, i) => (
                     <p key={i}>{line}</p>
                   ))}
@@ -406,31 +409,43 @@ function SimClassTrialLessonContent() {
           </div>
         </div>
 
-        <div className="chat-container">
-          <div className="chat-header">
-            <div className="chat-title">AI 互動介面</div>
-            <div className="chat-subtitle">
-              <span className="status-indicator">
-                <span className={`status-dot ${connectionStatus === 'connected' ? 'connected' : ''}`}></span>
+        <div className="flex flex-col h-screen bg-slate-50">
+          <div className="p-5 border-b border-slate-200 bg-white">
+            <div className="text-lg font-semibold text-slate-800">AI 互動介面</div>
+            <div className="text-xs text-slate-500 mt-1">
+              <span className="inline-flex items-center gap-1">
+                <span
+                  className={`w-2 h-2 rounded-full ${
+                    connectionStatus === 'connected' ? 'bg-emerald-500' : 'bg-slate-300'
+                  }`}
+                ></span>
                 <span>{statusText}</span>
               </span>
             </div>
           </div>
 
           {flash && (
-            <div role="alert" className={`flash-message ${flash.type}`} onClick={dismissFlash}>
+            <div
+              role="alert"
+              onClick={dismissFlash}
+              className={`fixed bottom-8 left-1/2 -translate-x-1/2 z-[9999] min-w-[320px] max-w-[500px] px-6 py-4 rounded-xl text-sm font-medium leading-6 shadow-xl backdrop-blur-md cursor-pointer transition-all animate-[slideUp_0.3s_ease-out] ${
+                flash.type === 'error'
+                  ? 'bg-gradient-to-br from-rose-500/95 to-rose-600/95 text-white border border-white/30'
+                  : 'bg-gradient-to-br from-emerald-500/95 to-emerald-600/95 text-white border border-white/30'
+              }`}
+            >
               {flash.message}
             </div>
           )}
 
-          <div className="chat-messages">
+          <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-4">
             {/* 學生資訊卡片 */}
             {systemUserBrief.length > 0 && (
-              <div className="student-info-card">
-                <div className="student-info-header">
-                  <h3 className="student-info-title">學生資訊</h3>
+              <div className="bg-white border border-slate-200 rounded-xl p-5 mx-auto mb-5 max-w-[600px] w-full self-center">
+                <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-200">
+                  <h3 className="text-base font-semibold text-slate-800 m-0">學生資訊</h3>
                   <button
-                    className="student-info-change-btn"
+                    className="bg-slate-50 border border-slate-200 rounded-md px-3.5 py-1.5 text-[13px] font-medium text-slate-800 transition-all hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed"
                     onClick={startScriptwriter}
                     disabled={isCreatingStudent || isSummarizing || isThinking}
                     title="更換學生角色"
@@ -438,7 +453,7 @@ function SimClassTrialLessonContent() {
                     更換
                   </button>
                 </div>
-                <div className="student-info-content">
+                <div className="text-sm leading-6 text-slate-800">
                   {systemUserBrief.map((item, index) => (
                     <p key={index}>{item}</p>
                   ))}
@@ -447,10 +462,10 @@ function SimClassTrialLessonContent() {
             )}
 
             {chatHistory.length === 0 ? (
-              <div className="empty-state">
-                <div className="empty-state-icon">🤖</div>
-                <div className="empty-state-text">開始與 AI 對話</div>
-                <div className="empty-state-subtext">在下方輸入框中輸入您的訊息</div>
+              <div className="flex flex-col items-center justify-center h-full text-slate-500 text-center">
+                <div className="text-5xl mb-4">🤖</div>
+                <div className="text-lg mb-2">開始與 AI 對話</div>
+                <div className="text-sm">在下方輸入框中輸入您的訊息</div>
               </div>
             ) : (
               <>
@@ -459,10 +474,18 @@ function SimClassTrialLessonContent() {
                   chatHistory.slice(0, preludeCount).map((message, index) => (
                     <div
                       key={`prelude-${index}`}
-                      className={`message ${message.role === 'user' ? 'user' : 'assistant'}`}
+                      className={`flex gap-3 max-w-[80%] ${
+                        message.role === 'user' ? 'self-end flex-row-reverse' : 'self-start'
+                      }`}
                     >
-                      <div className="message-avatar">{message.role === 'user' ? '你' : '學生'}</div>
-                      <div className="message-content">
+                      <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold bg-emerald-500 text-white">
+                        {message.role === 'user' ? '你' : '學生'}
+                      </div>
+                      <div
+                        className={`rounded-xl border border-slate-200 px-4 py-3 leading-6 text-slate-800 bg-white ${
+                          message.role === 'user' ? 'bg-emerald-500 text-white border-emerald-300/30' : ''
+                        }`}
+                      >
                         {message.content.split('\n').map((line, lineIndex) => (
                           <p key={lineIndex}>{line}</p>
                         ))}
@@ -473,29 +496,36 @@ function SimClassTrialLessonContent() {
                 {/* 正式分隔線：前情提要與後續對話 */}
                 {preludeCount > 0 && (
                   <div
-                    className="chat-separator"
+                    className="flex items-center gap-3 my-4 text-slate-500 text-xs"
                     role="separator"
                     aria-label="前情提要分隔線"
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '12px',
-                      margin: '16px 0',
-                      color: 'var(--muted)',
-                      fontSize: '12px',
-                    }}
                   >
-                    <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
-                    <div style={{ whiteSpace: 'nowrap' }}>前情提要結束，以下開始與學生互動</div>
-                    <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
+                    <div className="flex-1 h-px bg-slate-200" />
+                    <div className="whitespace-nowrap">前情提要結束，以下開始與學生互動</div>
+                    <div className="flex-1 h-px bg-slate-200" />
                   </div>
                 )}
 
                 {/* 後續對話 */}
                 {chatHistory.slice(preludeCount).map((message, index) => (
-                  <div key={`chat-${index}`} className={`message ${message.role === 'user' ? 'user' : 'assistant'}`}>
-                    <div className="message-avatar">{message.role === 'user' ? '你' : '學生'}</div>
-                    <div className="message-content">
+                  <div
+                    key={`chat-${index}`}
+                    className={`flex gap-3 max-w-[80%] ${
+                      message.role === 'user' ? 'self-end flex-row-reverse' : 'self-start'
+                    }`}
+                  >
+                    <div
+                      className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${
+                        message.role === 'user' ? 'bg-emerald-500 text-white' : 'bg-blue-500 text-white'
+                      }`}
+                    >
+                      {message.role === 'user' ? '你' : '學生'}
+                    </div>
+                    <div
+                      className={`rounded-xl border border-slate-200 px-4 py-3 leading-6 text-slate-800 bg-white ${
+                        message.role === 'user' ? 'bg-emerald-500 text-white border-emerald-300/30' : ''
+                      }`}
+                    >
                       {message.content.split('\n').map((line, lineIndex) => (
                         <p key={lineIndex}>{line}</p>
                       ))}
@@ -505,25 +535,27 @@ function SimClassTrialLessonContent() {
               </>
             )}
             {isThinking && (
-              <div className="message assistant">
-                <div className="message-avatar">學生</div>
-                <div className="thinking-indicator">
+              <div className="flex gap-3 max-w-[80%] self-start">
+                <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold bg-blue-500 text-white">
+                  學生
+                </div>
+                <div className="flex items-center gap-2 text-slate-500 text-sm px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl max-w-[200px]">
                   <span>思考中</span>
-                  <div className="thinking-dots">
-                    <div className="thinking-dot" />
-                    <div className="thinking-dot" />
-                    <div className="thinking-dot" />
+                  <div className="flex gap-1">
+                    <div className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-[thinking_1.4s_infinite_ease-in-out_-0.32s]" />
+                    <div className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-[thinking_1.4s_infinite_ease-in-out_-0.16s]" />
+                    <div className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-[thinking_1.4s_infinite_ease-in-out]" />
                   </div>
                 </div>
               </div>
             )}
           </div>
 
-          <form className="chat-input-container" onSubmit={handleSubmit}>
-            <div className="chat-input-wrapper">
+          <form className="p-5 border-t border-slate-200 bg-white" onSubmit={handleSubmit}>
+            <div className="flex gap-3 items-end">
               <textarea
                 ref={chatInputRef}
-                className="chat-input"
+                className="flex-1 bg-white border border-slate-200 rounded-xl px-4 py-3 text-[14px] outline-none resize-none min-h-[44px] max-h-[120px] leading-6 focus:border-blue-500 focus:[box-shadow:0_0_0_2px_rgba(59,130,246,0.2)]"
                 placeholder="輸入您的訊息... (Cmd+Enter 或按發送按鈕送出)"
                 rows={1}
                 onInput={autoResizeTextarea}
@@ -531,7 +563,7 @@ function SimClassTrialLessonContent() {
                 disabled={isCreatingStudent || isSummarizing || isThinking || workflowStep === 'idle'}
               />
               <button
-                className="send-btn"
+                className="bg-emerald-500 text-white px-5 py-3 rounded-xl text-sm font-medium transition-all min-w-[80px] hover:brightness-105 disabled:opacity-50 disabled:cursor-not-allowed"
                 type="submit"
                 disabled={isCreatingStudent || isSummarizing || isThinking || workflowStep === 'idle'}
               >
@@ -542,28 +574,39 @@ function SimClassTrialLessonContent() {
         </div>
 
         {isChapterDialogOpen && (
-          <div className="chapter-dialog-overlay" role="dialog" aria-modal="true" style={{ display: 'flex' }}>
-            <div className="chapter-dialog">
-              <div className="chapter-dialog-header">
-                <h3 className="chapter-dialog-title">選擇章節</h3>
-                <button className="chapter-dialog-close" onClick={closeChapterDialog} aria-label="關閉章節選擇">
+          <div
+            className="fixed inset-0 bg-black/50 hidden items-center justify-center z-[1000]"
+            role="dialog"
+            aria-modal="true"
+            style={{ display: 'flex' }}
+          >
+            <div className="bg-white rounded-xl shadow-2xl max-w-[500px] w-[90%] max-h-[80vh] overflow-hidden">
+              <div className="p-5 border-b border-slate-200 flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-slate-800 m-0">選擇章節</h3>
+                <button
+                  className="w-8 h-8 rounded-md hover:bg-slate-50 text-slate-500"
+                  onClick={closeChapterDialog}
+                  aria-label="關閉章節選擇"
+                >
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <line x1="18" y1="6" x2="6" y2="18"></line>
                     <line x1="6" y1="6" x2="18" y2="18"></line>
                   </svg>
                 </button>
               </div>
-              <div className="chapter-dialog-content">
-                <div className="chapter-options">
+              <div className="p-5">
+                <div className="flex flex-col gap-3">
                   {chapterOptions.map((option) => (
                     <button
                       key={option.number}
                       type="button"
-                      className={`chapter-option ${option.selected ? 'selected' : ''}`}
+                      className={`p-4 border border-slate-200 rounded-lg cursor-pointer transition-all bg-white hover:border-blue-500 hover:bg-slate-50 ${
+                        option.selected ? 'border-blue-500 bg-blue-50' : ''
+                      }`}
                       onClick={() => selectChapter(option.number)}
                     >
-                      <div className="chapter-option-title">{option.title}</div>
-                      <div className="chapter-option-goal">目標：{option.goal}</div>
+                      <div className="text-base font-semibold text-slate-800 mb-1">{option.title}</div>
+                      <div className="text-sm text-slate-500 leading-[1.4]">目標：{option.goal}</div>
                     </button>
                   ))}
                 </div>
@@ -573,23 +616,25 @@ function SimClassTrialLessonContent() {
         )}
       </div>
       {isExperiencePopoutVisible && (
-        <div
-          className="experience-popout-overlay"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="experience-popout-title"
-        >
-          <div className="experience-popout">
-            <div className="experience-popout-icon" aria-hidden="true">
+        <div className="fixed inset-0 flex items-center justify-center p-6 bg-slate-900/45 backdrop-blur-sm z-[1200]">
+          <div className="relative w-[min(420px,100%)] bg-gradient-to-br from-white via-slate-50 to-blue-50 rounded-2xl p-10 text-center shadow-2xl [box-shadow:0_25px_50px_-12px_rgba(15,23,42,0.35),inset_0_0_0_1px_rgba(148,163,184,0.18)] overflow-hidden">
+            <div className="absolute -left-20 -top-28 w-60 h-60 rounded-full bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.25),transparent_70%)] pointer-events-none" />
+            <div className="absolute -right-24 -bottom-36 w-56 h-56 rounded-full bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.18),transparent_70%)] pointer-events-none" />
+            <div className="relative w-16 h-16 mx-auto mb-5 rounded-full bg-gradient-to-br from-sky-400 to-indigo-500 flex items-center justify-center text-3xl text-white shadow-[0_12px_20px_-8px_rgba(99,102,241,0.5)]">
               ✨
             </div>
-            <h2 id="experience-popout-title" className="experience-popout-title">
+            <h2
+              id="experience-popout-title"
+              className="relative text-[26px] font-bold text-slate-800 tracking-wide mb-3"
+            >
               體驗課開始！
             </h2>
-            <p className="experience-popout-text">與模擬學生展開對話，體驗 AmazingTalker 體驗課的完整流程。</p>
+            <p className="relative text-[15px] text-slate-600 leading-7 mb-7">
+              與模擬學生展開對話，體驗 AmazingTalker 體驗課的完整流程。
+            </p>
             <button
               type="button"
-              className="experience-popout-button"
+              className="relative w-full rounded-full px-6 py-3.5 bg-gradient-to-br from-blue-500 to-blue-600 text-white text-[15px] font-semibold shadow-[0_18px_30px_-15px_rgba(37,99,235,0.75)] transition hover:-translate-y-0.5 hover:brightness-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-400 active:translate-y-0"
               onClick={() => setIsExperiencePopoutVisible(false)}
             >
               開始模擬練習
@@ -605,11 +650,11 @@ export default function SimClassTrialLessonPage() {
   return (
     <Suspense
       fallback={
-        <main className="ai-page">
-          <div className="container">
-            <div className="chat-container">
-              <div className="chat-header">
-                <div className="chat-title">載入中...</div>
+        <main className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
+          <div className="grid grid-cols-[440px_1fr] min-h-screen gap-px bg-slate-200 w-full max-w-none m-0 p-0">
+            <div className="flex flex-col h-screen bg-slate-50">
+              <div className="p-5 border-b border-slate-200 bg-white">
+                <div className="text-lg font-semibold text-slate-800">載入中...</div>
               </div>
             </div>
           </div>
