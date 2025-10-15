@@ -52,12 +52,9 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
   const [isSummarizing, setIsSummarizing] = useState(false);
 
   const [flash, setFlash] = useState<FlashMessage | null>(null);
-  const [importedFileName, setImportedFileName] = useState('');
   const [scriptwriterJson, setScriptwriterJson] = useState<string | null>(null);
 
   const chatInputRef = useRef<HTMLTextAreaElement | null>(null);
-  const exportLinkRef = useRef<HTMLAnchorElement | null>(null);
-  const importInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     const admin = searchParams?.get('admin') === 'true';
@@ -356,43 +353,7 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
     setScriptwriterJson(null);
   }, []);
 
-  const exportConfig = useCallback(() => {
-    const dataStr = JSON.stringify({ chapter: chapterNumber }, null, 2);
-    const blob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = exportLinkRef.current;
-    if (a) {
-      a.href = url;
-      a.download = `ai-chat-config-${new Date().toISOString().slice(0, 10)}.json`;
-      a.click();
-      setTimeout(() => URL.revokeObjectURL(url), 0);
-    }
-  }, [chapterNumber]);
-
-  const importConfig = useCallback((file: File | null) => {
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const text = e.target?.result;
-        if (typeof text !== 'string') throw new Error('檔案內容無法解析');
-        const json = JSON.parse(text) as { chapter?: number };
-        if (typeof json.chapter === 'number' && CHAPTER_GOALS[json.chapter]) {
-          setChapterNumber(json.chapter);
-        }
-        setImportedFileName(file.name);
-        setFlash({ type: 'success', message: '配置已成功匯入' });
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : '未知錯誤';
-        setFlash({ type: 'error', message: `匯入配置失敗: ${msg}` });
-      }
-    };
-    reader.readAsText(file);
-  }, []);
-
-  const handleImportClick = useCallback(() => {
-    importInputRef.current?.click();
-  }, []);
+  // 移除 export/import 相關功能（已不再使用）
 
   const openChapterDialog = useCallback(() => setIsChapterDialogOpen(true), []);
   const closeChapterDialog = useCallback(() => setIsChapterDialogOpen(false), []);
@@ -427,23 +388,17 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
     isCreatingStudent,
     isSummarizing,
     flash,
-    importedFileName,
     statusText,
     canSummarize,
     chapterInfo,
     chapterOptions,
     scriptwriterJson,
     chatInputRef,
-    exportLinkRef,
-    importInputRef,
     autoResizeTextarea,
     startScriptwriter,
     sendMessage,
     generateSummary,
     clearChat,
-    exportConfig,
-    importConfig,
-    handleImportClick,
     openChapterDialog,
     closeChapterDialog,
     selectChapter,

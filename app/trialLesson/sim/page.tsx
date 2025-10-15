@@ -24,23 +24,17 @@ function SimClassTrialLessonContent() {
     isCreatingStudent,
     isSummarizing,
     flash,
-    importedFileName,
     statusText,
     canSummarize,
     chapterInfo,
     chapterOptions,
     scriptwriterJson,
     chatInputRef,
-    exportLinkRef,
-    importInputRef,
     autoResizeTextarea,
     startScriptwriter,
     sendMessage,
     generateSummary,
     clearChat,
-    exportConfig,
-    importConfig,
-    handleImportClick,
     openChapterDialog,
     closeChapterDialog,
     selectChapter,
@@ -48,14 +42,13 @@ function SimClassTrialLessonContent() {
     dismissFlash,
   } = useTrialLessonChat();
 
-  const [isNameDialogOpen, setIsNameDialogOpen] = useState(false);
   const [teacherName, setTeacherName] = useState('');
-  const [nameInputValue, setNameInputValue] = useState('');
   const [chatLogId, setChatLogId] = useState('');
   const [chatLogCreated, setChatLogCreated] = useState(false);
   const [judgeResult, setJudgeResult] = useState<string>('');
   const [coachResult, setCoachResult] = useState<string>('');
   const [isChecklistVisible, setIsChecklistVisible] = useState(true);
+  const [isExperiencePopoutVisible, setIsExperiencePopoutVisible] = useState(true);
 
   // 生成 UUID
   const generateUUID = (): string => {
@@ -246,13 +239,12 @@ function SimClassTrialLessonContent() {
     if (storedName) {
       console.log('找到已儲存的名字，啟動編劇（等待第一次對話後才建立 ChatLog）');
       setTeacherName(storedName);
-      // 啟動編劇
-      startScriptwriter();
     } else {
-      console.log('沒有找到名字，顯示輸入對話框');
-      // 如果沒有名字，顯示對話框
-      setIsNameDialogOpen(true);
+      console.warn('沒有找到老師名字，請先在教戰手冊頁面設定');
     }
+
+    // 確保能立即開始練習
+    startScriptwriter();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -302,19 +294,6 @@ function SimClassTrialLessonContent() {
     }
   }, [generateSummary]);
 
-  const handleNameSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const trimmedName = nameInputValue.trim();
-    if (trimmedName) {
-      // 儲存到 localStorage
-      localStorage.setItem('teacherName', trimmedName);
-      setTeacherName(trimmedName);
-      setIsNameDialogOpen(false);
-      // 啟動編劇（不立即建立 ChatLog，等第一次對話完成後）
-      startScriptwriter();
-    }
-  };
-
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     await sendMessage();
@@ -332,41 +311,7 @@ function SimClassTrialLessonContent() {
     <main className="ai-page">
       <div className="container">
         <div className="left-panel">
-          {adminMode && (
-            <>
-              <div className="section">
-                <div className="section-content">
-                  <button
-                    className="btn"
-                    style={{ background: '#f1f5f9', borderColor: '#e2e8f0', color: '#64748b', marginBottom: '8px' }}
-                    onClick={exportConfig}
-                  >
-                    💾 Export Config
-                  </button>
-                  <a ref={exportLinkRef} style={{ display: 'none' }} />
-                  <button
-                    className="btn"
-                    style={{ background: '#f1f5f9', borderColor: '#e2e8f0', color: '#64748b', marginBottom: '8px' }}
-                    onClick={handleImportClick}
-                  >
-                    📂 Import Config
-                  </button>
-                  <input
-                    ref={importInputRef}
-                    type="file"
-                    accept=".json"
-                    style={{ display: 'none' }}
-                    onChange={(event) => importConfig(event.target.files?.[0] ?? null)}
-                  />
-                  {importedFileName && (
-                    <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '8px' }}>
-                      已匯入: <span>{importedFileName}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </>
-          )}
+          {/* 移除 Import/Export 區塊 */}
 
           {/* 回到選單按鈕 */}
           <Link href="/trialLesson/guideBook" className="back-to-menu-btn">
@@ -626,77 +571,32 @@ function SimClassTrialLessonContent() {
             </div>
           </div>
         )}
-
-        {isNameDialogOpen && (
-          <div className="chapter-dialog-overlay" role="dialog" aria-modal="true" style={{ display: 'flex' }}>
-            <div className="chapter-dialog">
-              <div className="chapter-dialog-header">
-                <h3 className="chapter-dialog-title">👋 歡迎使用 AI 教學工具</h3>
-              </div>
-              <div className="chapter-dialog-content">
-                <form onSubmit={handleNameSubmit} style={{ padding: '20px' }}>
-                  <div style={{ marginBottom: '20px' }}>
-                    <label
-                      htmlFor="teacher-name"
-                      style={{
-                        display: 'block',
-                        marginBottom: '8px',
-                        fontWeight: '500',
-                        fontSize: '14px',
-                      }}
-                    >
-                      請輸入您的名字
-                    </label>
-                    <input
-                      id="teacher-name"
-                      type="text"
-                      value={nameInputValue}
-                      onChange={(e) => setNameInputValue(e.target.value)}
-                      placeholder="請輸入名字"
-                      required
-                      autoFocus
-                      style={{
-                        width: '100%',
-                        padding: '12px',
-                        border: '1px solid #e2e8f0',
-                        borderRadius: '8px',
-                        fontSize: '14px',
-                        outline: 'none',
-                        transition: 'border-color 0.2s',
-                      }}
-                      onFocus={(e) => (e.target.style.borderColor = '#3b82f6')}
-                      onBlur={(e) => (e.target.style.borderColor = '#e2e8f0')}
-                    />
-                    <p
-                      style={{
-                        marginTop: '8px',
-                        fontSize: '12px',
-                        color: '#64748b',
-                        lineHeight: '1.5',
-                      }}
-                    >
-                      💡 請輸入與 AmazingTalker 站上相同的名字
-                    </p>
-                  </div>
-                  <button
-                    type="submit"
-                    className="btn"
-                    style={{
-                      width: '100%',
-                      background: 'linear-gradient(180deg, #3b82f6, #2563eb)',
-                      padding: '12px',
-                      fontSize: '14px',
-                      fontWeight: '500',
-                    }}
-                  >
-                    確認
-                  </button>
-                </form>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
+      {isExperiencePopoutVisible && (
+        <div
+          className="experience-popout-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="experience-popout-title"
+        >
+          <div className="experience-popout">
+            <div className="experience-popout-icon" aria-hidden="true">
+              ✨
+            </div>
+            <h2 id="experience-popout-title" className="experience-popout-title">
+              體驗課開始！
+            </h2>
+            <p className="experience-popout-text">與模擬學生展開對話，體驗 AmazingTalker 體驗課的完整流程。</p>
+            <button
+              type="button"
+              className="experience-popout-button"
+              onClick={() => setIsExperiencePopoutVisible(false)}
+            >
+              開始模擬練習
+            </button>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

@@ -46,15 +46,12 @@ export interface UseTrialLessonChatResult {
   isCreatingStudent: boolean;
   isSummarizing: boolean;
   flash: FlashMessage | null;
-  importedFileName: string;
   statusText: string;
   canSummarize: boolean;
   chapterInfo: { title: string; goal: string } | undefined;
   chapterOptions: Array<{ number: number; title: string; goal: string; selected: boolean }>;
   scriptwriterJson: string | null;
   chatInputRef: RefObject<HTMLTextAreaElement>;
-  exportLinkRef: RefObject<HTMLAnchorElement>;
-  importInputRef: RefObject<HTMLInputElement>;
   autoResizeTextarea: () => void;
   startScriptwriter: () => Promise<void>;
   sendMessage: () => Promise<void>;
@@ -63,9 +60,6 @@ export interface UseTrialLessonChatResult {
     coachResult: string;
   }>;
   clearChat: () => void;
-  exportConfig: () => void;
-  importConfig: (file: File | null) => void;
-  handleImportClick: () => void;
   openChapterDialog: () => void;
   closeChapterDialog: () => void;
   selectChapter: (chapterNumber: number) => void;
