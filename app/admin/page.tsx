@@ -9,8 +9,8 @@ const DEFAULT_BATCH_SIZE = 20;
 const ADMIN_TOOLS = [
   {
     href: '/admin/chatLogViewer',
-    title: '對話記錄檢視器',
-    description: '從 Google Spreadsheet 載入並檢視聊天記錄，包含對話內容、背景資訊與教師篩選功能。',
+    title: 'ChatLog 檢視器',
+    description: '從 Google Spreadsheet 載入 ChatLog 記錄，檢視師生對話內容、背景資訊，支援按教師篩選與時間排序。',
     accent: 'linear-gradient(90deg, #8b5cf6, #7c3aed)',
   },
   {

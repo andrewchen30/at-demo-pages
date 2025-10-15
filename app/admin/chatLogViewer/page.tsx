@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 
 interface ChatMessage {
   timestamp: string;
-  role: 'student' | 'teacher';
+  role: 'student' | 'teacher' | 'coach';
   content: string;
 }
 
@@ -90,19 +90,28 @@ export default function ChatLogViewerPage() {
       // 如果不是 JSON，嘗試文字解析
     }
 
+    // 移除 ===== 分隔線
+    const cleanedHistory = chatHistory.replace(/^=+\s*$/gm, '');
+
     // 文字格式解析
-    const lines = chatHistory.split('\n');
+    const lines = cleanedHistory.split('\n');
     const messages: ChatMessage[] = [];
     let currentMessage: ChatMessage | null = null;
 
     for (const line of lines) {
+      // 跳過空行和只有 = 的行
+      if (!line.trim() || /^=+$/.test(line.trim())) {
+        continue;
+      }
+
       // 格式 1: [角色] (時間): 內容
       // 例如: [老師] (2025/10/15 14:12:56): 嗨請問你想學什麼語言？
-      const match1 = line.match(/^\[(學生|老師|student|teacher)\]\s*\(([^)]+)\)[:：]\s*(.*)$/i);
+      // 支援角色: 學生、老師、教練
+      const match1 = line.match(/^\[(學生|老師|教練|student|teacher|coach)\]\s*\(([^)]+)\)[:：]\s*(.*)$/i);
 
       // 格式 2: [時間] 角色: 內容
       // 例如: [2025-01-15 14:30:45] 學生: 內容
-      const match2 = line.match(/^\[([^\]]+)\]\s*(學生|老師|student|teacher)[:：]\s*(.*)$/i);
+      const match2 = line.match(/^\[([^\]]+)\]\s*(學生|老師|教練|student|teacher|coach)[:：]\s*(.*)$/i);
 
       if (match1) {
         // 如果有進行中的訊息，先儲存
@@ -111,7 +120,14 @@ export default function ChatLogViewerPage() {
         }
 
         const roleText = match1[1].toLowerCase();
-        const role = roleText === '學生' || roleText === 'student' ? 'student' : 'teacher';
+        let role: 'student' | 'teacher' | 'coach';
+        if (roleText === '學生' || roleText === 'student') {
+          role = 'student';
+        } else if (roleText === '教練' || roleText === 'coach') {
+          role = 'coach';
+        } else {
+          role = 'teacher';
+        }
         const timestamp = match1[2];
         const content = match1[3].trim();
 
@@ -128,7 +144,14 @@ export default function ChatLogViewerPage() {
 
         const timestamp = match2[1];
         const roleText = match2[2].toLowerCase();
-        const role = roleText === '學生' || roleText === 'student' ? 'student' : 'teacher';
+        let role: 'student' | 'teacher' | 'coach';
+        if (roleText === '學生' || roleText === 'student') {
+          role = 'student';
+        } else if (roleText === '教練' || roleText === 'coach') {
+          role = 'coach';
+        } else {
+          role = 'teacher';
+        }
         const content = match2[3].trim();
 
         currentMessage = {
@@ -153,6 +176,7 @@ export default function ChatLogViewerPage() {
       for (const line of lines) {
         const studentMatch = line.match(/^(學生|student)[:：]\s*(.*)$/i);
         const teacherMatch = line.match(/^(老師|teacher)[:：]\s*(.*)$/i);
+        const coachMatch = line.match(/^(教練|coach)[:：]\s*(.*)$/i);
 
         if (studentMatch) {
           if (currentMessage) {
@@ -171,6 +195,15 @@ export default function ChatLogViewerPage() {
             timestamp: '',
             role: 'teacher',
             content: teacherMatch[2].trim(),
+          };
+        } else if (coachMatch) {
+          if (currentMessage) {
+            messages.push(currentMessage);
+          }
+          currentMessage = {
+            timestamp: '',
+            role: 'coach',
+            content: coachMatch[2].trim(),
           };
         } else if (currentMessage && line.trim()) {
           currentMessage.content += '\n' + line.trim();
@@ -476,60 +509,123 @@ export default function ChatLogViewerPage() {
                   }}
                 >
                   {selectedLog.messages && selectedLog.messages.length > 0 ? (
-                    selectedLog.messages.map((message, index) => (
-                      <div
-                        key={index}
-                        style={{
-                          display: 'flex',
-                          justifyContent: message.role === 'student' ? 'flex-start' : 'flex-end',
-                          width: '100%',
-                        }}
-                      >
+                    <>
+                      {/* 顯示學生和老師的對話（排除教練） */}
+                      {selectedLog.messages
+                        .filter((message) => message.role !== 'coach')
+                        .map((message, index) => (
+                          <div
+                            key={index}
+                            style={{
+                              display: 'flex',
+                              justifyContent: message.role === 'student' ? 'flex-start' : 'flex-end',
+                              width: '100%',
+                            }}
+                          >
+                            <div
+                              style={{
+                                maxWidth: '70%',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '4px',
+                              }}
+                            >
+                              <div
+                                style={{
+                                  fontSize: '12px',
+                                  color: 'var(--muted)',
+                                  paddingLeft: message.role === 'student' ? '12px' : '0',
+                                  paddingRight: message.role === 'teacher' ? '12px' : '0',
+                                  textAlign: message.role === 'student' ? 'left' : 'right',
+                                  fontWeight: '500',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '6px',
+                                  justifyContent: message.role === 'student' ? 'flex-start' : 'flex-end',
+                                }}
+                              >
+                                <span>{message.role === 'student' ? '學生' : '老師'}</span>
+                                {message.timestamp && (
+                                  <span style={{ fontSize: '10px', opacity: 0.7 }}>{message.timestamp}</span>
+                                )}
+                              </div>
+                              <div
+                                style={{
+                                  padding: '12px 16px',
+                                  borderRadius: '16px',
+                                  backgroundColor: message.role === 'student' ? '#e0f2fe' : '#dbeafe',
+                                  color: '#1e293b',
+                                  fontSize: '14px',
+                                  lineHeight: '1.6',
+                                  wordBreak: 'break-word',
+                                  boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                                  whiteSpace: 'pre-wrap',
+                                }}
+                              >
+                                {message.content}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+
+                      {/* 顯示教練回饋 */}
+                      {selectedLog.messages.filter((message) => message.role === 'coach').length > 0 && (
                         <div
                           style={{
-                            maxWidth: '70%',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: '4px',
+                            marginTop: '24px',
+                            padding: '16px',
+                            backgroundColor: '#fef3c7',
+                            border: '2px solid #fbbf24',
+                            borderRadius: '12px',
+                            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
                           }}
                         >
                           <div
                             style={{
-                              fontSize: '12px',
-                              color: 'var(--muted)',
-                              paddingLeft: message.role === 'student' ? '12px' : '0',
-                              paddingRight: message.role === 'teacher' ? '12px' : '0',
-                              textAlign: message.role === 'student' ? 'left' : 'right',
-                              fontWeight: '500',
                               display: 'flex',
                               alignItems: 'center',
-                              gap: '6px',
-                              justifyContent: message.role === 'student' ? 'flex-start' : 'flex-end',
-                            }}
-                          >
-                            <span>{message.role === 'student' ? '學生' : '老師'}</span>
-                            {message.timestamp && (
-                              <span style={{ fontSize: '10px', opacity: 0.7 }}>{message.timestamp}</span>
-                            )}
-                          </div>
-                          <div
-                            style={{
-                              padding: '12px 16px',
-                              borderRadius: '16px',
-                              backgroundColor: message.role === 'student' ? '#e0f2fe' : '#dbeafe',
-                              color: '#1e293b',
+                              gap: '8px',
+                              marginBottom: '12px',
                               fontSize: '14px',
-                              lineHeight: '1.6',
-                              wordBreak: 'break-word',
-                              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-                              whiteSpace: 'pre-wrap',
+                              fontWeight: '600',
+                              color: '#92400e',
                             }}
                           >
-                            {message.content}
+                            <span style={{ fontSize: '18px' }}>🎯</span>
+                            <span>教練回饋</span>
                           </div>
+                          {selectedLog.messages
+                            .filter((message) => message.role === 'coach')
+                            .map((message, index) => (
+                              <div key={index}>
+                                {message.timestamp && (
+                                  <div
+                                    style={{
+                                      fontSize: '11px',
+                                      color: '#92400e',
+                                      opacity: 0.7,
+                                      marginBottom: '8px',
+                                    }}
+                                  >
+                                    {message.timestamp}
+                                  </div>
+                                )}
+                                <div
+                                  style={{
+                                    fontSize: '14px',
+                                    lineHeight: '1.6',
+                                    color: '#78350f',
+                                    whiteSpace: 'pre-wrap',
+                                    wordBreak: 'break-word',
+                                  }}
+                                >
+                                  {message.content.replace(/;;/g, '\n')}
+                                </div>
+                              </div>
+                            ))}
                         </div>
-                      </div>
-                    ))
+                      )}
+                    </>
                   ) : (
                     <div
                       style={{
