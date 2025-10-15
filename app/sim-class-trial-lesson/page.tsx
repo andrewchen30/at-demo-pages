@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, Suspense, useEffect } from 'react';
+import { FormEvent, Suspense, useEffect, useState } from 'react';
 
 import { useTrialLessonChat } from './aiChatInterface';
 
@@ -50,9 +50,38 @@ function SimClassTrialLessonContent() {
     dismissFlash,
   } = useTrialLessonChat();
 
+  const [isNameDialogOpen, setIsNameDialogOpen] = useState(false);
+  const [teacherName, setTeacherName] = useState('');
+  const [nameInputValue, setNameInputValue] = useState('');
+
   useEffect(() => {
-    startScriptwriter();
-  }, []);
+    // 檢查 localStorage 中是否已有老師名字
+    const storedName = localStorage.getItem('teacherName');
+    console.log('檢查 localStorage 中的老師名字:', storedName);
+    if (storedName) {
+      console.log('找到已儲存的名字，直接啟動編劇');
+      setTeacherName(storedName);
+      // 如果已有名字，直接啟動編劇
+      startScriptwriter();
+    } else {
+      console.log('沒有找到名字，顯示輸入對話框');
+      // 如果沒有名字，顯示對話框
+      setIsNameDialogOpen(true);
+    }
+  }, [startScriptwriter]);
+
+  const handleNameSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const trimmedName = nameInputValue.trim();
+    if (trimmedName) {
+      // 儲存到 localStorage
+      localStorage.setItem('teacherName', trimmedName);
+      setTeacherName(trimmedName);
+      setIsNameDialogOpen(false);
+      // 啟動編劇
+      startScriptwriter();
+    }
+  };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -306,7 +335,7 @@ function SimClassTrialLessonContent() {
         </div>
 
         {isChapterDialogOpen && (
-          <div className="chapter-dialog-overlay" role="dialog" aria-modal="true">
+          <div className="chapter-dialog-overlay" role="dialog" aria-modal="true" style={{ display: 'flex' }}>
             <div className="chapter-dialog">
               <div className="chapter-dialog-header">
                 <h3 className="chapter-dialog-title">選擇章節</h3>
@@ -337,7 +366,7 @@ function SimClassTrialLessonContent() {
         )}
 
         {isPromptHistoryOpen && (
-          <div className="chapter-dialog-overlay" role="dialog" aria-modal="true">
+          <div className="chapter-dialog-overlay" role="dialog" aria-modal="true" style={{ display: 'flex' }}>
             <div className="chapter-dialog">
               <div className="chapter-dialog-header">
                 <h3 className="chapter-dialog-title">Prompt History</h3>
@@ -368,6 +397,76 @@ function SimClassTrialLessonContent() {
                     ))}
                   </div>
                 )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {isNameDialogOpen && (
+          <div className="chapter-dialog-overlay" role="dialog" aria-modal="true" style={{ display: 'flex' }}>
+            <div className="chapter-dialog">
+              <div className="chapter-dialog-header">
+                <h3 className="chapter-dialog-title">👋 歡迎使用 AI 教學工具</h3>
+              </div>
+              <div className="chapter-dialog-content">
+                <form onSubmit={handleNameSubmit} style={{ padding: '20px' }}>
+                  <div style={{ marginBottom: '20px' }}>
+                    <label
+                      htmlFor="teacher-name"
+                      style={{
+                        display: 'block',
+                        marginBottom: '8px',
+                        fontWeight: '500',
+                        fontSize: '14px',
+                      }}
+                    >
+                      請輸入您的名字
+                    </label>
+                    <input
+                      id="teacher-name"
+                      type="text"
+                      value={nameInputValue}
+                      onChange={(e) => setNameInputValue(e.target.value)}
+                      placeholder="請輸入名字"
+                      required
+                      autoFocus
+                      style={{
+                        width: '100%',
+                        padding: '12px',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '8px',
+                        fontSize: '14px',
+                        outline: 'none',
+                        transition: 'border-color 0.2s',
+                      }}
+                      onFocus={(e) => (e.target.style.borderColor = '#3b82f6')}
+                      onBlur={(e) => (e.target.style.borderColor = '#e2e8f0')}
+                    />
+                    <p
+                      style={{
+                        marginTop: '8px',
+                        fontSize: '12px',
+                        color: '#64748b',
+                        lineHeight: '1.5',
+                      }}
+                    >
+                      💡 請輸入與 AmazingTalker 站上相同的名字
+                    </p>
+                  </div>
+                  <button
+                    type="submit"
+                    className="btn"
+                    style={{
+                      width: '100%',
+                      background: 'linear-gradient(180deg, #3b82f6, #2563eb)',
+                      padding: '12px',
+                      fontSize: '14px',
+                      fontWeight: '500',
+                    }}
+                  >
+                    確認
+                  </button>
+                </form>
               </div>
             </div>
           </div>
