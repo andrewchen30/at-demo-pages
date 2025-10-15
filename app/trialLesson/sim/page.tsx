@@ -11,7 +11,7 @@ function SimClassTrialLessonContent() {
     workflowStep,
     connectionStatus,
     chatHistory,
-    promptHistoryView,
+    preludeCount,
     scriptwriterResponse,
     systemMessage,
     systemUserBrief,
@@ -19,7 +19,6 @@ function SimClassTrialLessonContent() {
     systemChecklist,
     chapterNumber,
     isChapterDialogOpen,
-    isPromptHistoryOpen,
     isJsonCollapsed,
     isThinking,
     isCreatingStudent,
@@ -44,8 +43,6 @@ function SimClassTrialLessonContent() {
     handleImportClick,
     openChapterDialog,
     closeChapterDialog,
-    openPromptHistory,
-    closePromptHistory,
     selectChapter,
     toggleJsonCollapsed,
     dismissFlash,
@@ -342,13 +339,6 @@ function SimClassTrialLessonContent() {
                   <button
                     className="btn"
                     style={{ background: '#f1f5f9', borderColor: '#e2e8f0', color: '#64748b', marginBottom: '8px' }}
-                    onClick={openPromptHistory}
-                  >
-                    📝 Prompt History
-                  </button>
-                  <button
-                    className="btn"
-                    style={{ background: '#f1f5f9', borderColor: '#e2e8f0', color: '#64748b', marginBottom: '8px' }}
                     onClick={exportConfig}
                   >
                     💾 Export Config
@@ -518,16 +508,56 @@ function SimClassTrialLessonContent() {
                 <div className="empty-state-subtext">在下方輸入框中輸入您的訊息</div>
               </div>
             ) : (
-              chatHistory.map((message, index) => (
-                <div key={index} className={`message ${message.role === 'user' ? 'user' : 'assistant'}`}>
-                  <div className="message-avatar">{message.role === 'user' ? '你' : '學生'}</div>
-                  <div className="message-content">
-                    {message.content.split('\n').map((line, lineIndex) => (
-                      <p key={lineIndex}>{line}</p>
-                    ))}
+              <>
+                {/* 前情提要 */}
+                {preludeCount > 0 &&
+                  chatHistory.slice(0, preludeCount).map((message, index) => (
+                    <div
+                      key={`prelude-${index}`}
+                      className={`message ${message.role === 'user' ? 'user' : 'assistant'}`}
+                    >
+                      <div className="message-avatar">{message.role === 'user' ? '你' : '學生'}</div>
+                      <div className="message-content">
+                        {message.content.split('\n').map((line, lineIndex) => (
+                          <p key={lineIndex}>{line}</p>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+
+                {/* 正式分隔線：前情提要與後續對話 */}
+                {preludeCount > 0 && (
+                  <div
+                    className="chat-separator"
+                    role="separator"
+                    aria-label="前情提要分隔線"
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      margin: '16px 0',
+                      color: 'var(--muted)',
+                      fontSize: '12px',
+                    }}
+                  >
+                    <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
+                    <div style={{ whiteSpace: 'nowrap' }}>前情提要結束，以下開始與學生互動</div>
+                    <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
                   </div>
-                </div>
-              ))
+                )}
+
+                {/* 後續對話 */}
+                {chatHistory.slice(preludeCount).map((message, index) => (
+                  <div key={`chat-${index}`} className={`message ${message.role === 'user' ? 'user' : 'assistant'}`}>
+                    <div className="message-avatar">{message.role === 'user' ? '你' : '學生'}</div>
+                    <div className="message-content">
+                      {message.content.split('\n').map((line, lineIndex) => (
+                        <p key={lineIndex}>{line}</p>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </>
             )}
             {isThinking && (
               <div className="message assistant">
@@ -592,43 +622,6 @@ function SimClassTrialLessonContent() {
                     </button>
                   ))}
                 </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {isPromptHistoryOpen && (
-          <div className="chapter-dialog-overlay" role="dialog" aria-modal="true" style={{ display: 'flex' }}>
-            <div className="chapter-dialog">
-              <div className="chapter-dialog-header">
-                <h3 className="chapter-dialog-title">Prompt History</h3>
-                <button className="chapter-dialog-close" onClick={closePromptHistory} aria-label="關閉 Prompt History">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <line x1="18" y1="6" x2="6" y2="18"></line>
-                    <line x1="6" y1="6" x2="18" y2="18"></line>
-                  </svg>
-                </button>
-              </div>
-              <div className="chapter-dialog-content">
-                {promptHistoryView.length === 0 ? (
-                  <div className="empty-sidebar">
-                    <div className="empty-sidebar-icon">📝</div>
-                    <div className="empty-sidebar-text">尚無 Prompt 記錄</div>
-                    <div className="empty-sidebar-subtext">開始使用 AI 功能後會顯示記錄</div>
-                  </div>
-                ) : (
-                  <div className="prompt-history-content">
-                    {promptHistoryView.map((record) => (
-                      <div key={record.timestamp} className="prompt-history-item">
-                        <div className="prompt-history-header">
-                          <span className="prompt-history-time">{record.formattedTimestamp}</span>
-                          <span className="prompt-history-bot">{record.displayBotType}</span>
-                        </div>
-                        <pre className="prompt-history-json">{record.formattedJson}</pre>
-                      </div>
-                    ))}
-                  </div>
-                )}
               </div>
             </div>
           </div>

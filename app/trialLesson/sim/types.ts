@@ -22,14 +22,6 @@ export interface ChatHistoryEntry {
   content: string;
 }
 
-export interface PromptHistoryRecord {
-  timestamp: number;
-  botType: BotType | string;
-  url: string;
-  requestBody: unknown;
-  response: unknown;
-}
-
 export interface FlashMessage {
   type: 'success' | 'error';
   message: string;
@@ -41,7 +33,7 @@ export interface UseTrialLessonChatResult {
   currentBot: BotType;
   connectionStatus: ConnectionStatus;
   chatHistory: ChatHistoryEntry[];
-  promptHistory: PromptHistoryRecord[];
+  preludeCount: number;
   scriptwriterResponse: DirectorInput | null;
   systemMessage: string;
   systemUserBrief: string[];
@@ -49,7 +41,6 @@ export interface UseTrialLessonChatResult {
   systemChecklist: string[];
   chapterNumber: number;
   isChapterDialogOpen: boolean;
-  isPromptHistoryOpen: boolean;
   isJsonCollapsed: boolean;
   isThinking: boolean;
   isCreatingStudent: boolean;
@@ -60,9 +51,6 @@ export interface UseTrialLessonChatResult {
   canSummarize: boolean;
   chapterInfo: { title: string; goal: string } | undefined;
   chapterOptions: Array<{ number: number; title: string; goal: string; selected: boolean }>;
-  promptHistoryView: Array<
-    PromptHistoryRecord & { formattedTimestamp: string; displayBotType: string; formattedJson: string }
-  >;
   scriptwriterJson: string | null;
   chatInputRef: RefObject<HTMLTextAreaElement>;
   exportLinkRef: RefObject<HTMLAnchorElement>;
@@ -80,8 +68,6 @@ export interface UseTrialLessonChatResult {
   handleImportClick: () => void;
   openChapterDialog: () => void;
   closeChapterDialog: () => void;
-  openPromptHistory: () => void;
-  closePromptHistory: () => void;
   selectChapter: (chapterNumber: number) => void;
   toggleJsonCollapsed: () => void;
   dismissFlash: () => void;

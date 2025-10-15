@@ -10,6 +10,7 @@ import {
   getUserBrief,
   getDialog,
   getCheckListForTeacher,
+  getScriptedChatHistory,
 } from '@/lib/aiRole/director/utils';
 import type { DirectorInput } from '@/lib/aiRole/student/types';
 import type {
@@ -20,11 +21,10 @@ import type {
   OpenAIMessageContent,
   OpenAIChatMessage,
   ChatHistoryEntry,
-  PromptHistoryRecord,
   FlashMessage,
   UseTrialLessonChatResult,
 } from './types';
-import { CHAPTER_GOALS, BOT_LABELS } from './constants';
+import { CHAPTER_GOALS } from './constants';
 
 export function useTrialLessonChat(): UseTrialLessonChatResult {
   const router = useRouter();
@@ -36,7 +36,7 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('disconnected');
 
   const [chatHistory, setChatHistory] = useState<ChatHistoryEntry[]>([]);
-  const [promptHistory, setPromptHistory] = useState<PromptHistoryRecord[]>([]);
+  const [preludeCount, setPreludeCount] = useState<number>(0);
   const [scriptwriterResponse, setScriptwriterResponse] = useState<DirectorInput | null>(null);
   const [systemMessage, setSystemMessage] = useState('');
   const [systemUserBrief, setSystemUserBrief] = useState<string[]>([]);
@@ -45,7 +45,6 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
 
   const [chapterNumber, setChapterNumber] = useState<number>(1);
   const [isChapterDialogOpen, setIsChapterDialogOpen] = useState(false);
-  const [isPromptHistoryOpen, setIsPromptHistoryOpen] = useState(false);
   const [isJsonCollapsed, setIsJsonCollapsed] = useState(false);
 
   const [isThinking, setIsThinking] = useState(false);
@@ -107,6 +106,14 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
       setSystemDialog(getDialog(scriptwriterResponse, chapterNumber).split('\n'));
       setSystemChecklist(getCheckListForTeacher(chapterNumber).split('\n'));
       setScriptwriterJson(JSON.stringify(scriptwriterResponse, null, 2));
+      // 若聊天室目前為空，插入前情提要（劇本對話），並記錄前情數量
+      setChatHistory((prev) => {
+        if (prev.length > 0) return prev;
+        const scripted = getScriptedChatHistory(scriptwriterResponse, chapterNumber);
+        if (!Array.isArray(scripted) || scripted.length === 0) return prev;
+        setPreludeCount(scripted.length);
+        return [...scripted];
+      });
     }
   }, [scriptwriterResponse, chapterNumber]);
 
@@ -144,26 +151,6 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
         selected: Number(number) === chapterNumber,
       })),
     [chapterNumber]
-  );
-
-  const promptHistoryView = useMemo(
-    () =>
-      promptHistory.map((record) => ({
-        ...record,
-        formattedTimestamp: new Date(record.timestamp).toLocaleString('zh-TW'),
-        displayBotType: BOT_LABELS[record.botType] ?? record.botType,
-        formattedJson: JSON.stringify(
-          {
-            botType: record.botType,
-            url: record.url,
-            requestBody: record.requestBody,
-            response: record.response ?? null,
-          },
-          null,
-          2
-        ),
-      })),
-    [promptHistory]
   );
 
   const autoResizeTextarea = useCallback(() => {
@@ -216,22 +203,6 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
     [scriptwriterResponse, chapterNumber, getChatMessagesText]
   );
 
-  const recordPromptHistory = useCallback(
-    (botType: BotType | string, url: string, requestBody: unknown, response: unknown = null) => {
-      setPromptHistory((prev) => [...prev, { timestamp: Date.now(), botType, url, requestBody, response }]);
-    },
-    []
-  );
-
-  const updateLastPromptResponse = useCallback((resp: unknown) => {
-    setPromptHistory((prev) => {
-      if (prev.length === 0) return prev;
-      const copy = [...prev];
-      copy[copy.length - 1] = { ...copy[copy.length - 1], response: resp };
-      return copy;
-    });
-  }, []);
-
   const callOpenAI = useCallback(
     async (
       botType: BotType = 'student',
@@ -254,7 +225,6 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
       }
 
       const body = { variables, input: preparedInput };
-      recordPromptHistory(botType, url, body);
 
       const resp = await fetch(url, {
         method: 'POST',
@@ -272,13 +242,12 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
         throw new Error(`API 錯誤: ${resp.status} - ${message}`);
       }
       const data = await resp.json();
-      updateLastPromptResponse(data.raw || data);
       return {
         result: data.result ?? '',
         judgeResult: data.judgeResult,
       };
     },
-    [getVariables, recordPromptHistory, updateLastPromptResponse]
+    [getVariables]
   );
 
   const startScriptwriter = useCallback(async () => {
@@ -307,15 +276,13 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
       setScriptwriterResponse(parsedRole);
       setScriptwriterJson(JSON.stringify(parsedRole, null, 2));
 
-      recordPromptHistory('scriptwriter', '/api/students/random', { method: 'GET' }, data);
-
       setWorkflowStep('student');
       setSystemMessage(getTeacherHintText(parsedRole, chapterNumber));
       setSystemUserBrief(getUserBrief(parsedRole, chapterNumber).split('\n'));
       setSystemDialog(getDialog(parsedRole, chapterNumber).split('\n'));
       setSystemChecklist(getCheckListForTeacher(chapterNumber).split('\n'));
 
-      setFlash({ type: 'success', message: '已載入新的學生角色' });
+      // setFlash({ type: 'success', message: '已載入新的學生角色' });
     } catch (e) {
       const message = e instanceof Error ? e.message : '未知錯誤';
       setFlash({ type: 'error', message: `載入學生角色失敗: ${message}` });
@@ -323,7 +290,7 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
     } finally {
       setIsCreatingStudent(false);
     }
-  }, [chapterNumber, recordPromptHistory]);
+  }, [chapterNumber]);
 
   const sendMessage = useCallback(async () => {
     const el = chatInputRef.current;
@@ -387,7 +354,6 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
 
     setScriptwriterResponse(null);
     setScriptwriterJson(null);
-    setPromptHistory([]);
   }, []);
 
   const exportConfig = useCallback(() => {
@@ -430,8 +396,6 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
 
   const openChapterDialog = useCallback(() => setIsChapterDialogOpen(true), []);
   const closeChapterDialog = useCallback(() => setIsChapterDialogOpen(false), []);
-  const openPromptHistory = useCallback(() => setIsPromptHistoryOpen(true), []);
-  const closePromptHistory = useCallback(() => setIsPromptHistoryOpen(false), []);
 
   const selectChapter = useCallback((n: number) => {
     setChapterNumber(n);
@@ -450,7 +414,7 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
     currentBot,
     connectionStatus,
     chatHistory,
-    promptHistory,
+    preludeCount,
     scriptwriterResponse,
     systemMessage,
     systemUserBrief,
@@ -458,7 +422,6 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
     systemChecklist,
     chapterNumber,
     isChapterDialogOpen,
-    isPromptHistoryOpen,
     isJsonCollapsed,
     isThinking,
     isCreatingStudent,
@@ -469,7 +432,6 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
     canSummarize,
     chapterInfo,
     chapterOptions,
-    promptHistoryView,
     scriptwriterJson,
     chatInputRef,
     exportLinkRef,
@@ -484,8 +446,6 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
     handleImportClick,
     openChapterDialog,
     closeChapterDialog,
-    openPromptHistory,
-    closePromptHistory,
     selectChapter,
     toggleJsonCollapsed,
     dismissFlash,
