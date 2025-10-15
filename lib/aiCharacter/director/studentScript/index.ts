@@ -3,8 +3,8 @@ import 'server-only';
 import { randomUUID } from 'crypto';
 import { DIRECTOR_PROMPTS } from './prompts';
 import { getScripts } from '../utils/getScript';
-import { createRoleAsk } from '@/lib/aiRole/utils/createRoleAsk';
-import { GoogleSpreadsheet, AIGenStudentModel } from '@/lib/database';
+import { createRoleAsk } from '@/lib/aiCharacter/utils/createRoleAsk';
+import { AIGenStudentsRepo } from '@/lib/repository/studentScript';
 
 export class StudentRoleStoreEmptyError extends Error {
   constructor(message: string = '目前沒有可用的學生角色，請先產生角色。') {
@@ -50,21 +50,6 @@ const scriptWriterAsk = createRoleAsk({
 // 以記憶體快取保存目前的學生角色（資料來源轉為 Google Spreadsheet）
 let memoryRoles: StoredRole[] = [];
 
-// 取得 Google Spreadsheet 連線（延遲建立）
-let sheetDb: GoogleSpreadsheet | null = null;
-async function getDb(): Promise<GoogleSpreadsheet> {
-  if (!sheetDb) {
-    sheetDb = new GoogleSpreadsheet({
-      GOOGLE_SHEETS_ID: process.env.GOOGLE_SHEETS_ID!,
-      GOOGLE_CLIENT_EMAIL: process.env.GOOGLE_CLIENT_EMAIL!,
-      GOOGLE_PRIVATE_KEY: process.env.GOOGLE_PRIVATE_KEY!,
-    });
-    await sheetDb.connect();
-    await sheetDb.createModel(AIGenStudentModel);
-  }
-  return sheetDb;
-}
-
 async function readRoles(): Promise<StoredRole[]> {
   return Array.isArray(memoryRoles) ? memoryRoles : [];
 }
@@ -75,8 +60,7 @@ async function writeRoles(roles: StoredRole[]): Promise<void> {
 
 // 從 Google Spreadsheet 載入資料至記憶體（在 server 啟動或刷新後呼叫）
 export async function loadRolesFromSpreadsheet(): Promise<void> {
-  const db = await getDb();
-  const rows = await db.list(AIGenStudentModel, { orderBy: 'created_at' });
+  const rows = await AIGenStudentsRepo.list({ orderBy: 'created_at' });
   const mapped: StoredRole[] = rows.map((r) => ({ id: r.id, raw: r.raw, createdAt: r.created_at }));
   await writeRoles(mapped);
 }
@@ -144,15 +128,12 @@ export async function getRandomStudentRole(): Promise<RandomRoleResponse> {
     throw new StudentRoleStoreEmptyError();
   }
 
-  // 過濾出可被 JSON.parse 的有效資料（避免舊資料格式錯誤）
   const validIndices: number[] = [];
   for (let i = 0; i < roles.length; i++) {
     try {
       JSON.parse(roles[i].raw);
       validIndices.push(i);
-    } catch {
-      // skip invalid
-    }
+    } catch {}
   }
 
   if (validIndices.length === 0) {
@@ -208,27 +189,18 @@ export async function appendStudentRoles(count: number = DEFAULT_BATCH_SIZE) {
     throw new StudentRoleInvalidCountError();
   }
 
-  // 確保資料初始化
   await ensureRolesLoaded();
 
-  const db = await getDb();
   const currentRoles = await readRoles();
 
   let added = 0;
-
-  // 逐筆建立並即時寫入 Spreadsheet，單筆失敗不中斷
   for (let i = 0; i < count; i++) {
     try {
       const role = await createStudentRole();
-
-      // 寫入 Spreadsheet 成功後再更新記憶體
-      await db.appendRow(AIGenStudentModel, {
+      await AIGenStudentsRepo.create({
         id: role.id,
         raw: role.raw,
-        created_at: role.createdAt,
-        updated_at: role.createdAt,
       });
-
       currentRoles.push(role);
       await writeRoles(currentRoles);
       added++;
@@ -239,7 +211,6 @@ export async function appendStudentRoles(count: number = DEFAULT_BATCH_SIZE) {
     }
   }
 
-  // 以 Spreadsheet 為權威來源，重新載入記憶體
   await loadRolesFromSpreadsheet();
 
   const finalRoles = await readRoles();
@@ -251,14 +222,8 @@ export async function appendStudentRoles(count: number = DEFAULT_BATCH_SIZE) {
 
 export async function clearStudentRoles() {
   await writeRoles([]);
-
-  // 清空 Google Spreadsheet 上的資料
-  const db = await getDb();
-  await db.clearModel(AIGenStudentModel);
-
-  // 重新載入記憶體（應為空）
+  await AIGenStudentsRepo.clearAll();
   await loadRolesFromSpreadsheet();
-
   return { total: 0 };
 }
 

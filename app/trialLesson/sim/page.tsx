@@ -7,19 +7,16 @@ import { useTrialLessonChat } from './aiChatInterface';
 
 function SimClassTrialLessonContent() {
   const {
-    adminMode,
     workflowStep,
     connectionStatus,
     chatHistory,
     preludeCount,
-    scriptwriterResponse,
     systemMessage,
     systemUserBrief,
     systemDialog,
     systemChecklist,
     chapterNumber,
     isChapterDialogOpen,
-    isJsonCollapsed,
     isThinking,
     isCreatingStudent,
     isSummarizing,
@@ -28,17 +25,14 @@ function SimClassTrialLessonContent() {
     canSummarize,
     chapterInfo,
     chapterOptions,
-    scriptwriterJson,
     chatInputRef,
     autoResizeTextarea,
     startScriptwriter,
     sendMessage,
     generateSummary,
     clearChat,
-    openChapterDialog,
     closeChapterDialog,
     selectChapter,
-    toggleJsonCollapsed,
     dismissFlash,
   } = useTrialLessonChat();
 

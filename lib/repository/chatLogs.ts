@@ -1,7 +1,7 @@
-import type { ChatLog, ModelDef } from '../types';
-import { ChatLogModel } from '../types';
-import type { DB } from '../types';
-import { withDB } from '../client';
+import type { ChatLog, ModelDef } from '../database/types';
+import { ChatLogModel } from '../database/types';
+import type { DB } from '../database/types';
+import { withDB } from '../database/client';
 
 export const ChatLogsRepo = {
   model: ChatLogModel as ModelDef<ChatLog>,

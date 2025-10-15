@@ -10,4 +10,3 @@ export function getCoachAIParams(input: DirectorInput, partN: number): CoachAIPa
     check_list: getCheckListForAI(partN),
   };
 }
-

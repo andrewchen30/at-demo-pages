@@ -68,6 +68,11 @@ export interface DB {
    * 建立 Model 對應的工作表（若不存在）
    */
   createModel<T>(model: ModelDef<T>): Promise<void>;
+
+  /**
+   * 清空指定 Model 的所有資料（保留並重建表頭）
+   */
+  clearModel<T>(model: ModelDef<T>): Promise<void>;
 }
 
 /**

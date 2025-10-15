@@ -1,5 +1,5 @@
 import type { RefObject } from 'react';
-import type { DirectorInput } from '@/lib/aiRole/student/types';
+import type { DirectorInput } from '@/lib/aiCharacter/student/types';
 
 export type BotType = 'student' | 'coach';
 export type WorkflowStep = 'idle' | 'scriptwriter' | 'student';
@@ -28,20 +28,17 @@ export interface FlashMessage {
 }
 
 export interface UseTrialLessonChatResult {
-  adminMode: boolean;
   workflowStep: WorkflowStep;
   currentBot: BotType;
   connectionStatus: ConnectionStatus;
   chatHistory: ChatHistoryEntry[];
   preludeCount: number;
-  scriptwriterResponse: DirectorInput | null;
   systemMessage: string;
   systemUserBrief: string[];
   systemDialog: string[];
   systemChecklist: string[];
   chapterNumber: number;
   isChapterDialogOpen: boolean;
-  isJsonCollapsed: boolean;
   isThinking: boolean;
   isCreatingStudent: boolean;
   isSummarizing: boolean;
@@ -50,7 +47,6 @@ export interface UseTrialLessonChatResult {
   canSummarize: boolean;
   chapterInfo: { title: string; goal: string } | undefined;
   chapterOptions: Array<{ number: number; title: string; goal: string; selected: boolean }>;
-  scriptwriterJson: string | null;
   chatInputRef: RefObject<HTMLTextAreaElement>;
   autoResizeTextarea: () => void;
   startScriptwriter: () => Promise<void>;
@@ -60,9 +56,7 @@ export interface UseTrialLessonChatResult {
     coachResult: string;
   }>;
   clearChat: () => void;
-  openChapterDialog: () => void;
   closeChapterDialog: () => void;
   selectChapter: (chapterNumber: number) => void;
-  toggleJsonCollapsed: () => void;
   dismissFlash: () => void;
 }

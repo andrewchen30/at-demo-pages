@@ -1,4 +1,4 @@
-import type { DirectorInput } from '@/lib/aiRole/student/types';
+import type { DirectorInput } from '@/lib/aiCharacter/student/types';
 import type { ChatHistoryEntry, MessageRole } from '@/app/trialLesson/sim/types';
 
 /**

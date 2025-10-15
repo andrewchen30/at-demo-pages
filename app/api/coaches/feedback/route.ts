@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
-import { coachRole, judgeRole } from '@/lib/aiRole';
-import { getCheckListForAI } from '@/lib/aiRole/director/utils';
+import { coachRole, judgeRole } from '@/lib/aiCharacter';
+import { getCheckListForAI } from '@/lib/aiCharacter/director/utils';
 
 type FeedbackRequestBody = {
   chatHistory?: unknown;

@@ -176,6 +176,10 @@ export default function AdminPage() {
                 {clearState === 'loading' ? '清除中...' : '清除學生角色快取'}
               </button>
             </div>
+            <div className="mt-2 text-sm text-slate-500">
+              按下「清除學生角色快取」會直接清空 Google Spreadsheet
+              上的學生角色資料，並重新載入伺服器的快取，確保資料與顯示一致。
+            </div>
             <div className="mt-4 text-sm text-slate-500">
               <div>資料庫中的角色數量：{total ?? '載入中...'}</div>
               <div>模擬環境中將從資料庫中隨機選擇角色使用。</div>

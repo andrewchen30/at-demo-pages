@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
-import { directorRole } from '@/lib/aiRole';
-import { ensureRolesLoaded } from '@/lib/aiRole/director/studentRoleScript';
+import { directorRole } from '@/lib/aiCharacter';
+import { ensureRolesLoaded } from '@/lib/aiCharacter/director/studentScript';
 
 function normalizeCount(value: unknown): number | undefined {
   if (typeof value === 'undefined') {

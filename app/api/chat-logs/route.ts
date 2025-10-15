@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import type { ChatLog } from '@/lib/database';
-import { ChatLogsRepo } from '@/lib/database/repository/chatLogs';
+import { ChatLogsRepo } from '@/lib/repository/chatLogs';
 
 // 初始化資料庫連接
 // 已由 Repository 封裝 DB 連線與 createModel

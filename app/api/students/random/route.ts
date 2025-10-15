@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
-import { directorRole } from '@/lib/aiRole';
-import { ensureRolesLoaded } from '@/lib/aiRole/director/studentRoleScript';
+import { directorRole } from '@/lib/aiCharacter';
+import { ensureRolesLoaded } from '@/lib/aiCharacter/director/studentScript';
 
 export async function GET() {
   try {

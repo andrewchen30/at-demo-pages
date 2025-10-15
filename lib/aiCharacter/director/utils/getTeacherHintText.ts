@@ -2,15 +2,8 @@ import type { DirectorInput, PersonaEntry } from '../../student/types';
 import { getCheckListForTeacher } from './getCheckListForTeacher';
 
 const BRIEF_TEMPLATE: readonly string[][] = [
-  [
-    '姓名：{name}',
-    '基本資料：{job}', '科目：{subject}、{usage_scenario_tag}'
-  ],
-  [
-    '姓名：{name}',
-    '基本資料：{job}、{usage_context}、{past_experience}', 
-    '學習動機：{extrinsic_motivation}'
-  ],
+  ['姓名：{name}', '基本資料：{job}', '科目：{subject}、{usage_scenario_tag}'],
+  ['姓名：{name}', '基本資料：{job}、{usage_context}、{past_experience}', '學習動機：{extrinsic_motivation}'],
   [
     '姓名：{name}',
     '基本資料：{job}、{usage_context}',
@@ -37,7 +30,7 @@ const BRIEF_TEMPLATE: readonly string[][] = [
 
 const DEFAULT_PARAMS = {
   subject: '英文',
-}
+};
 
 function fillTemplate(template: string, persona: PersonaEntry[]): string {
   const lookup: Record<string, string> = DEFAULT_PARAMS;
@@ -69,4 +62,3 @@ export function getTeacherHintText(input: DirectorInput, partN: number): string 
     partN
   )}\n\n【檢查重點】\n${getCheckListForTeacher(partN)}`;
 }
-

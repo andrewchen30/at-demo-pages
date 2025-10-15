@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { extractAIResponseText } from '@/lib/aiRole/utils/extractResponseText';
+import { extractAIResponseText } from '@/lib/aiCharacter/utils/extractResponseText';
 
 import type { AskFunction, AskResult } from '../types';
 

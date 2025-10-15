@@ -49,11 +49,9 @@ const templates = [
   },
 ];
 
-
 const DEFAULT_PARAMS = {
   subject: '英文',
-}
-
+};
 
 // Build a flat key→value map from persona.persona[*].information_key → information
 function buildPersonaMap(persona) {
@@ -71,7 +69,6 @@ const ALIASES = {
   // placeholder : persona information_key
   // Add more if your templates introduce new placeholder labels
 };
-
 
 // Replace {placeholders} in a string using the map (with alias support)
 function replacePlaceholders(str, dataMap, aliases = ALIASES) {

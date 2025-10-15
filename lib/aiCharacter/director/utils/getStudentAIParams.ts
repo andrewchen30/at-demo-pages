@@ -25,4 +25,3 @@ export function getStudentAIParams(input: DirectorInput, partN: number): Student
     dialog: getDialog(input, partN),
   };
 }
-
