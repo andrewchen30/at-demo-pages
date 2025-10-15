@@ -81,7 +81,7 @@ function SimClassTrialLessonContent() {
     const hours = String(taipei.getHours()).padStart(2, '0');
     const minutes = String(taipei.getMinutes()).padStart(2, '0');
     const seconds = String(taipei.getSeconds()).padStart(2, '0');
-    return `${year}-${month}-${day}-${hours}-${minutes}-${seconds}`;
+    return `${year}/${month}/${day} ${hours}:${minutes}:${seconds}`;
   };
 
   // 格式化系統提示為純文字
@@ -128,32 +128,36 @@ function SimClassTrialLessonContent() {
   // 格式化對話記錄
   const formatChatHistory = useCallback((history: typeof chatHistory): string => {
     const baseTime = new Date();
-    return history
-      .map((msg, index) => {
-        // 為每則訊息添加索引對應的秒數差異，讓時間戳記有所區別
-        const msgTime = new Date(baseTime.getTime() + index * 1000);
-        const timestamp = formatDateTime(msgTime);
+    const lines: string[] = [];
 
-        // 檢查是否為教練總結
-        const isCoachFeedback = msg.content.includes('教練總結');
+    history.forEach((msg, index) => {
+      // 為每則訊息添加索引對應的秒數差異，讓時間戳記有所區別
+      const msgTime = new Date(baseTime.getTime() + index * 1000);
+      const timestamp = formatDateTime(msgTime);
 
-        // 決定角色名稱
-        let role = msg.role === 'user' ? '老師' : '學生';
-        if (isCoachFeedback) {
-          role = '教練';
-        }
+      // 檢查是否為教練總結
+      const isCoachFeedback = msg.content.includes('教練總結');
 
-        // 將訊息內容中的換行改為分號
-        const content = msg.content.replace(/\n/g, ';');
+      // 決定角色名稱
+      let role = msg.role === 'user' ? '老師' : '學生';
+      if (isCoachFeedback) {
+        role = '教練';
+      }
 
-        // 如果是教練總結，前後加上分隔線
-        if (isCoachFeedback) {
-          return `=====\n${timestamp}-${role}-${content}\n=====`;
-        }
+      // 將訊息內容中的換行改為分號
+      const content = msg.content.replace(/\n/g, ';');
 
-        return `${timestamp}-${role}-${content}`;
-      })
-      .join('\n');
+      // 如果是教練總結，前後加上分隔線（獨立的行）
+      if (isCoachFeedback) {
+        lines.push('=====');
+        lines.push(`[${role}] (${timestamp}): ${content}`);
+        lines.push('=====');
+      } else {
+        lines.push(`[${role}] (${timestamp}): ${content}`);
+      }
+    });
+
+    return lines.join('\n');
   }, []);
 
   // 建立 ChatLog 記錄
@@ -167,6 +171,11 @@ function SimClassTrialLessonContent() {
 
         // 格式化系統提示
         const formattedSystemPrompt = formatSystemPrompt();
+
+        // 輸出格式化後的內容供檢查
+        console.log('=== 格式化的 chat_history ===');
+        console.log(formattedChatHistory);
+        console.log('=== 換行符號數量 ===', (formattedChatHistory.match(/\n/g) || []).length);
 
         const response = await fetch('/api/chat-logs', {
           method: 'POST',
