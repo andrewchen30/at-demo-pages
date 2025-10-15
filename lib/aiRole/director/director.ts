@@ -7,6 +7,7 @@ import {
   getStudentRoleCount,
   StudentRoleStoreEmptyError,
   StudentRoleInvalidCountError,
+  ensureRolesLoaded,
 } from './studentRoleScript';
 
 export const directorRole: AIRole & {
@@ -29,3 +30,10 @@ export const directorRole: AIRole & {
   StudentRoleStoreEmptyError,
   StudentRoleInvalidCountError,
 };
+
+// 模組初始化時嘗試載入資料（失敗時靜默，首次使用時會再載入）
+(async () => {
+  try {
+    await ensureRolesLoaded();
+  } catch {}
+})();

@@ -452,7 +452,7 @@ export default function GuideBookPage() {
     setIsNameDialogOpen(true);
   };
 
-  // 簡單的 Markdown 渲染函數
+  // 簡單的 Markdown 渲染函數（以 Tailwind 呈現）
   const renderMarkdown = (markdown: string) => {
     const lines = markdown.trim().split('\n');
     const elements: JSX.Element[] = [];
@@ -464,19 +464,22 @@ export default function GuideBookPage() {
       // 標題
       if (line.startsWith('## ')) {
         elements.push(
-          <h2 key={key++} className="guide-h2">
+          <h2
+            key={key++}
+            className="text-[28px] font-bold text-slate-800 mt-8 mb-4 pb-3 border-b-2 border-slate-200 first:mt-0"
+          >
             {line.replace('## ', '')}
           </h2>
         );
       } else if (line.startsWith('### ')) {
         elements.push(
-          <h3 key={key++} className="guide-h3">
+          <h3 key={key++} className="text-[22px] font-semibold text-slate-800 my-6">
             {line.replace('### ', '')}
           </h3>
         );
       } else if (line.startsWith('#### ')) {
         elements.push(
-          <h4 key={key++} className="guide-h4">
+          <h4 key={key++} className="text-[18px] font-semibold text-slate-800 my-5">
             {line.replace('#### ', '')}
           </h4>
         );
@@ -490,9 +493,11 @@ export default function GuideBookPage() {
           j++;
         }
         elements.push(
-          <ul key={key++} className="guide-ul">
+          <ul key={key++} className="my-4 pl-6 list-disc">
             {listItems.map((item, idx) => (
-              <li key={idx}>{item}</li>
+              <li key={idx} className="text-base leading-8 text-slate-800 my-2">
+                {item}
+              </li>
             ))}
           </ul>
         );
@@ -505,7 +510,7 @@ export default function GuideBookPage() {
       // 一般段落
       else {
         elements.push(
-          <p key={key++} className="guide-p">
+          <p key={key++} className="text-base leading-8 text-slate-800 my-3">
             {line}
           </p>
         );
@@ -517,42 +522,78 @@ export default function GuideBookPage() {
 
   return (
     <>
-      <main className="guide-page">
-        <div className="guide-container">
+      <main className="min-h-screen bg-gradient-to-b from-slate-50 to-white pb-[100px]">
+        <div className="flex w-full min-h-[calc(100vh-100px)] md:flex-row flex-col">
           {/* 左側側邊欄 */}
-          <aside className="guide-sidebar">
-            <div className="guide-sidebar-header">
-              <h2 className="guide-sidebar-title">體驗課培訓主題</h2>
+          <aside className="md:w-[320px] w-full bg-white md:border-r border-slate-200 md:sticky md:top-0 md:h-[calc(100vh-100px)] md:flex md:flex-col md:overflow-hidden">
+            <div className="px-6 pt-8 pb-6 border-b border-slate-200">
+              <h2 className="text-[20px] font-bold text-slate-800 m-0">體驗課培訓主題</h2>
             </div>
-            <div className="guide-cards-container">
+            <div className="p-4 flex md:flex-col flex-row gap-3 md:flex-1 md:overflow-y-auto overflow-x-auto">
               {Object.entries(CHAPTER_GOALS).map(([number, info]) => (
                 <button
                   key={number}
-                  className={`guide-card ${Number(number) === selectedChapter ? 'active' : ''}`}
+                  className={`min-w-[240px] md:min-w-0 flex flex-col items-start gap-2.5 p-4 bg-white border rounded-2xl cursor-pointer transition text-left w-full shadow-[0_1px_4px_rgba(0,0,0,0.04)] ${
+                    Number(number) === selectedChapter
+                      ? 'bg-gradient-to-br from-blue-600 to-blue-700 border-blue-700 shadow-[0_6px_18px_rgba(59,130,246,0.22)]'
+                      : 'border-slate-200 hover:border-blue-500 hover:shadow-[0_2px_10px_rgba(59,130,246,0.12)] hover:-translate-y-0.5'
+                  }`}
                   onClick={() => setSelectedChapter(Number(number))}
                 >
-                  <div className="guide-card-header">
-                    <span className="guide-card-number">Part {number}</span>
+                  <div className="w-full flex items-center justify-between">
+                    <span
+                      className={`inline-block text-[11px] font-bold px-2.5 py-1 rounded-md uppercase tracking-[0.5px] ${
+                        Number(number) === selectedChapter ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
+                      }`}
+                    >
+                      Part {number}
+                    </span>
                   </div>
-                  <div className="guide-card-title">{info.title}</div>
-                  <div className="guide-card-goal">{info.goal}</div>
+                  <div
+                    className={`text-[15px] font-semibold leading-[1.4] ${
+                      Number(number) === selectedChapter ? 'text-white' : 'text-slate-800'
+                    }`}
+                  >
+                    {info.title}
+                  </div>
+                  <div
+                    className={`text-[13px] leading-6 ${
+                      Number(number) === selectedChapter ? 'text-white/85' : 'text-slate-500'
+                    }`}
+                  >
+                    {info.goal}
+                  </div>
                 </button>
               ))}
+            </div>
+            {/* 老師姓名設定（移至側邊欄左下角） */}
+            <div className="px-6 pb-6 pt-4 border-t border-slate-200">
+              <div className="flex items-center gap-4 flex-wrap bg-blue-50/80 border border-blue-600/20 rounded-[14px] px-5 py-3 shadow-[inset_0_1px_2px_rgba(255,255,255,0.6)]">
+                <div className="text-xs font-bold tracking-[0.04em] text-blue-600">老師姓名</div>
+                <div className="text-base font-semibold text-slate-800 min-w-[120px]">{teacherName || '尚未設定'}</div>
+                <button
+                  type="button"
+                  className="bg-white border border-blue-600/35 text-blue-600 text-sm font-semibold px-4 py-2 rounded-full transition hover:bg-blue-600/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-300"
+                  onClick={handleEditName}
+                >
+                  {teacherName ? '變更' : '設定'}
+                </button>
+              </div>
             </div>
           </aside>
 
           {/* 右側內容區 */}
-          <div className="guide-content-area">
-            <div className="guide-content-inner">
+          <div className="flex-1 overflow-y-auto bg-slate-50">
+            <div className="max-w-[900px] mx-auto p-12 md:p-8">
               {/* 大標題 */}
-              <header className="guide-header">
-                <h1 className="guide-title">{currentContent.title}</h1>
+              <header className="mb-8">
+                <h1 className="text-[36px] font-bold text-slate-800 m-0 leading-[1.2]">{currentContent.title}</h1>
               </header>
 
               {/* YouTube 影片 */}
-              <div className="guide-video-container">
+              <div className="relative w-full pb-[56.25%] mb-10 rounded-2xl overflow-hidden shadow-[0_8px_24px_rgba(0,0,0,0.1)]">
                 <iframe
-                  className="guide-video"
+                  className="absolute inset-0 w-full h-full border-0"
                   src={currentContent.videoUrl}
                   title={currentContent.title}
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -561,57 +602,45 @@ export default function GuideBookPage() {
               </div>
 
               {/* Markdown 內容 */}
-              <article className="guide-article">{renderMarkdown(currentContent.content)}</article>
+              <article className="bg-white rounded-2xl p-10 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
+                {renderMarkdown(currentContent.content)}
+              </article>
             </div>
           </div>
         </div>
 
         {/* 底部固定 Bar */}
-        <div className="guide-bottom-bar">
-          <div className="guide-bottom-bar-content">
-            <div className="guide-teacher-info">
-              <div className="guide-teacher-label">老師姓名</div>
-              <div className="guide-teacher-name">{teacherName || '尚未設定'}</div>
-              <button type="button" className="guide-teacher-edit-btn" onClick={handleEditName}>
-                {teacherName ? '變更' : '設定'}
-              </button>
-            </div>
+        <div className="fixed bottom-0 left-0 right-0 md:left-[320px] bg-white/90 backdrop-blur-md border-t border-slate-200 flex items-center justify-center shadow-[0_-6px_24px_rgba(0,0,0,0.06)] z-[100] p-4 md:h-[88px]">
+          <div className="w-[min(1160px,calc(100%-64px))] flex items-center justify-center gap-4 md:flex-row flex-col">
             <Link
               href={`/trialLesson/sim?chapter=${selectedChapter}`}
-              className="guide-practice-btn"
+              className="group inline-flex items-center justify-center gap-3 px-8 py-3 bg-gradient-to-b from-blue-600 to-blue-700 text-white text-base font-semibold rounded-full no-underline transition shadow-[0_8px_20px_rgba(37,99,235,0.35)] border border-white/20 hover:brightness-105 w-auto max-w-full"
               onClick={handlePracticeClick}
             >
-              <span className="practice-btn-icon">🎯</span>
-              <span className="practice-btn-text">
-                <span className="practice-btn-main">立即開始練習</span>
-                <span className="practice-btn-sub">
-                  Chapter {selectedChapter} - {chapterInfo?.title}
-                </span>
+              <span className="whitespace-nowrap">立刻開始</span>
+              <span className="text-sm opacity-90 hidden md:inline">
+                Chapter {selectedChapter} - {chapterInfo?.title}
               </span>
-              <span className="practice-btn-arrow">→</span>
+              <span className="text-[18px] font-bold transition-transform group-hover:translate-x-1.5">→</span>
             </Link>
           </div>
         </div>
       </main>
 
       {isNameDialogOpen && (
-        <div className="chapter-dialog-overlay" role="dialog" aria-modal="true" style={{ display: 'flex' }}>
-          <div className="chapter-dialog">
-            <div className="chapter-dialog-header">
-              <h3 className="chapter-dialog-title">👋 歡迎使用 AI 教學工具</h3>
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1000]"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="bg-white rounded-xl shadow-2xl max-w-[500px] w-[90%] overflow-hidden">
+            <div className="p-5 border-b border-slate-200">
+              <h3 className="text-lg font-semibold text-slate-800 m-0">👋 歡迎使用 AI 教學工具</h3>
             </div>
-            <div className="chapter-dialog-content">
-              <form onSubmit={handleNameSubmit} style={{ padding: '20px' }}>
-                <div style={{ marginBottom: '20px' }}>
-                  <label
-                    htmlFor="guide-teacher-name"
-                    style={{
-                      display: 'block',
-                      marginBottom: '8px',
-                      fontWeight: '500',
-                      fontSize: '14px',
-                    }}
-                  >
+            <div className="p-5">
+              <form onSubmit={handleNameSubmit}>
+                <div className="mb-5">
+                  <label htmlFor="guide-teacher-name" className="block mb-2 font-medium text-sm">
                     請輸入您的名字
                   </label>
                   <input
@@ -622,39 +651,13 @@ export default function GuideBookPage() {
                     placeholder="請輸入名字"
                     required
                     autoFocus
-                    style={{
-                      width: '100%',
-                      padding: '12px',
-                      border: '1px solid #e2e8f0',
-                      borderRadius: '8px',
-                      fontSize: '14px',
-                      outline: 'none',
-                      transition: 'border-color 0.2s',
-                    }}
-                    onFocus={(e) => (e.target.style.borderColor = '#3b82f6')}
-                    onBlur={(e) => (e.target.style.borderColor = '#e2e8f0')}
+                    className="w-full p-3 border border-slate-200 rounded-lg text-sm outline-none transition focus:border-blue-500"
                   />
-                  <p
-                    style={{
-                      marginTop: '8px',
-                      fontSize: '12px',
-                      color: '#64748b',
-                      lineHeight: '1.5',
-                    }}
-                  >
-                    💡 請輸入與 AmazingTalker 站上相同的名字
-                  </p>
+                  <p className="mt-2 text-xs text-slate-500 leading-6">💡 請輸入與 AmazingTalker 站上相同的名字</p>
                 </div>
                 <button
                   type="submit"
-                  className="btn"
-                  style={{
-                    width: '100%',
-                    background: 'linear-gradient(180deg, #3b82f6, #2563eb)',
-                    padding: '12px',
-                    fontSize: '14px',
-                    fontWeight: '500',
-                  }}
+                  className="w-full bg-gradient-to-b from-blue-500 to-blue-600 text-white px-4 py-3 rounded-lg text-sm font-medium"
                 >
                   確認
                 </button>
@@ -663,530 +666,6 @@ export default function GuideBookPage() {
           </div>
         </div>
       )}
-
-      <style jsx>{`
-        .guide-page {
-          min-height: 100vh;
-          background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
-          padding-bottom: 100px;
-        }
-
-        .guide-container {
-          display: flex;
-          max-width: 1400px;
-          margin: 0 auto;
-          min-height: calc(100vh - 100px);
-        }
-
-        /* 左側側邊欄 */
-        .guide-sidebar {
-          width: 320px;
-          background: #ffffff;
-          border-right: 1px solid var(--border);
-          position: sticky;
-          top: 0;
-          height: calc(100vh - 100px);
-          overflow-y: auto;
-        }
-
-        .guide-sidebar-header {
-          padding: 32px 24px 24px;
-          border-bottom: 1px solid var(--border);
-        }
-
-        .guide-sidebar-title {
-          font-size: 20px;
-          font-weight: 700;
-          color: var(--text);
-          margin: 0;
-        }
-
-        .guide-cards-container {
-          padding: 20px;
-          display: flex;
-          flex-direction: column;
-          gap: 16px;
-        }
-
-        .guide-card {
-          display: flex;
-          flex-direction: column;
-          align-items: flex-start;
-          gap: 12px;
-          padding: 20px;
-          background: #ffffff;
-          border: 2px solid var(--border);
-          border-radius: 16px;
-          cursor: pointer;
-          transition: all 0.3s ease;
-          text-align: left;
-          width: 100%;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-        }
-
-        .guide-card:hover {
-          border-color: #3b82f6;
-          box-shadow: 0 4px 16px rgba(59, 130, 246, 0.15);
-          transform: translateY(-2px);
-        }
-
-        .guide-card.active {
-          background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-          border-color: #2563eb;
-          box-shadow: 0 8px 24px rgba(59, 130, 246, 0.25);
-        }
-
-        .guide-card-header {
-          width: 100%;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-        }
-
-        .guide-card-number {
-          display: inline-block;
-          font-size: 11px;
-          font-weight: 700;
-          padding: 4px 10px;
-          border-radius: 6px;
-          background: #f1f5f9;
-          color: #64748b;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-        }
-
-        .guide-card.active .guide-card-number {
-          background: rgba(255, 255, 255, 0.2);
-          color: white;
-        }
-
-        .guide-card-title {
-          font-size: 16px;
-          font-weight: 600;
-          line-height: 1.4;
-          color: var(--text);
-        }
-
-        .guide-card.active .guide-card-title {
-          color: white;
-        }
-
-        .guide-card-goal {
-          font-size: 13px;
-          line-height: 1.5;
-          color: var(--muted);
-        }
-
-        .guide-card.active .guide-card-goal {
-          color: rgba(255, 255, 255, 0.85);
-        }
-
-        /* 右側內容區 */
-        .guide-content-area {
-          flex: 1;
-          overflow-y: auto;
-          background: var(--panel);
-        }
-
-        .guide-content-inner {
-          max-width: 900px;
-          margin: 0 auto;
-          padding: 48px 32px;
-        }
-
-        .guide-header {
-          margin-bottom: 32px;
-        }
-
-        .guide-title {
-          font-size: 36px;
-          font-weight: 700;
-          color: var(--text);
-          margin: 0;
-          line-height: 1.2;
-        }
-
-        /* YouTube 影片 */
-        .guide-video-container {
-          position: relative;
-          width: 100%;
-          padding-bottom: 56.25%; /* 16:9 比例 */
-          margin-bottom: 40px;
-          border-radius: 16px;
-          overflow: hidden;
-          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-        }
-
-        .guide-video {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          border: none;
-        }
-
-        /* Markdown 內容樣式 */
-        .guide-article {
-          background: #ffffff;
-          border-radius: 16px;
-          padding: 40px;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-        }
-
-        .guide-article :global(.guide-h2) {
-          font-size: 28px;
-          font-weight: 700;
-          color: var(--text);
-          margin: 32px 0 16px 0;
-          padding-bottom: 12px;
-          border-bottom: 2px solid var(--border);
-        }
-
-        .guide-article :global(.guide-h2:first-child) {
-          margin-top: 0;
-        }
-
-        .guide-article :global(.guide-h3) {
-          font-size: 22px;
-          font-weight: 600;
-          color: var(--text);
-          margin: 24px 0 12px 0;
-        }
-
-        .guide-article :global(.guide-h4) {
-          font-size: 18px;
-          font-weight: 600;
-          color: var(--text);
-          margin: 20px 0 10px 0;
-        }
-
-        .guide-article :global(.guide-p) {
-          font-size: 16px;
-          line-height: 1.8;
-          color: var(--text);
-          margin: 12px 0;
-        }
-
-        .guide-article :global(.guide-ul) {
-          margin: 16px 0;
-          padding-left: 24px;
-        }
-
-        .guide-article :global(.guide-ul li) {
-          font-size: 16px;
-          line-height: 1.8;
-          color: var(--text);
-          margin: 8px 0;
-          list-style-type: disc;
-        }
-
-        /* 底部固定 Bar */
-        .guide-bottom-bar {
-          position: fixed;
-          bottom: 0;
-          left: 0;
-          right: 0;
-          height: 100px;
-          background: linear-gradient(180deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.98) 50%, #ffffff 100%);
-          backdrop-filter: blur(10px);
-          border-top: 2px solid #e0e7ff;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.08);
-          z-index: 100;
-        }
-
-        .guide-bottom-bar-content {
-          width: min(1160px, 100% - 64px);
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 24px;
-        }
-
-        .guide-teacher-info {
-          display: flex;
-          align-items: center;
-          gap: 16px;
-          flex-wrap: wrap;
-          padding: 16px 20px;
-          background: rgba(59, 130, 246, 0.08);
-          border: 1px solid rgba(37, 99, 235, 0.2);
-          border-radius: 14px;
-          box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.6);
-        }
-
-        .guide-teacher-label {
-          font-size: 12px;
-          font-weight: 700;
-          letter-spacing: 0.4px;
-          color: #2563eb;
-        }
-
-        .guide-teacher-name {
-          font-size: 16px;
-          font-weight: 600;
-          color: var(--text);
-          min-width: 120px;
-        }
-
-        .guide-teacher-edit-btn {
-          background: #ffffff;
-          border: 1px solid rgba(37, 99, 235, 0.35);
-          color: #2563eb;
-          font-size: 14px;
-          font-weight: 600;
-          padding: 8px 18px;
-          border-radius: 9999px;
-          cursor: pointer;
-          transition: all 0.2s ease;
-        }
-
-        .guide-teacher-edit-btn:hover {
-          background: rgba(37, 99, 235, 0.12);
-          border-color: #2563eb;
-        }
-
-        .guide-teacher-edit-btn:focus-visible {
-          outline: 3px solid rgba(37, 99, 235, 0.3);
-          outline-offset: 2px;
-        }
-
-        .guide-practice-btn {
-          display: inline-flex !important;
-          flex-direction: row !important;
-          align-items: center !important;
-          justify-content: center !important;
-          flex-wrap: nowrap !important;
-          gap: 16px;
-          padding: 22px 48px;
-          background: linear-gradient(135deg, #f59e0b 0%, #ea580c 50%, #dc2626 100%);
-          color: white;
-          font-size: 20px;
-          font-weight: 700;
-          border-radius: 16px;
-          text-decoration: none;
-          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-          box-shadow: 0 12px 40px rgba(239, 68, 68, 0.4), 0 4px 12px rgba(0, 0, 0, 0.15),
-            inset 0 -2px 8px rgba(0, 0, 0, 0.1);
-          border: 3px solid #ffffff;
-          position: relative;
-          overflow: hidden;
-          animation: pulse-glow 2s ease-in-out infinite;
-          width: auto;
-          max-width: 100%;
-          flex-shrink: 0;
-        }
-
-        @keyframes pulse-glow {
-          0%,
-          100% {
-            box-shadow: 0 12px 40px rgba(239, 68, 68, 0.4), 0 4px 12px rgba(0, 0, 0, 0.15),
-              inset 0 -2px 8px rgba(0, 0, 0, 0.1);
-          }
-          50% {
-            box-shadow: 0 16px 50px rgba(239, 68, 68, 0.6), 0 6px 16px rgba(0, 0, 0, 0.2),
-              inset 0 -2px 8px rgba(0, 0, 0, 0.1);
-          }
-        }
-
-        .guide-practice-btn::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: -100%;
-          width: 100%;
-          height: 100%;
-          background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-          transition: left 0.6s ease;
-        }
-
-        .guide-practice-btn:hover::before {
-          left: 100%;
-        }
-
-        .guide-practice-btn:hover {
-          transform: translateY(-4px) scale(1.02);
-          box-shadow: 0 20px 60px rgba(239, 68, 68, 0.5), 0 8px 20px rgba(0, 0, 0, 0.2),
-            inset 0 -2px 8px rgba(0, 0, 0, 0.1);
-          animation: none;
-        }
-
-        .guide-practice-btn:active {
-          transform: translateY(-2px) scale(1);
-        }
-
-        .practice-btn-icon {
-          display: inline-block;
-          font-size: 28px;
-          animation: bounce 1.5s ease-in-out infinite;
-          flex-shrink: 0;
-          line-height: 1;
-          vertical-align: middle;
-        }
-
-        @keyframes bounce {
-          0%,
-          100% {
-            transform: translateY(0);
-          }
-          50% {
-            transform: translateY(-4px);
-          }
-        }
-
-        .practice-btn-text {
-          display: inline-flex;
-          flex-direction: column;
-          align-items: flex-start;
-          justify-content: center;
-          gap: 4px;
-          flex-shrink: 0;
-          vertical-align: middle;
-          padding: 0 12px;
-        }
-
-        .practice-btn-main {
-          display: block;
-          font-size: 20px;
-          font-weight: 800;
-          letter-spacing: 0.5px;
-          text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-          white-space: nowrap;
-          line-height: 1.3;
-        }
-
-        .practice-btn-sub {
-          display: block;
-          font-size: 13px;
-          font-weight: 500;
-          opacity: 0.95;
-          letter-spacing: 0.3px;
-          white-space: nowrap;
-          line-height: 1.3;
-        }
-
-        .practice-btn-arrow {
-          display: inline-block;
-          font-size: 24px;
-          font-weight: 700;
-          transition: transform 0.3s ease;
-          flex-shrink: 0;
-          line-height: 1;
-          vertical-align: middle;
-        }
-
-        .guide-practice-btn:hover .practice-btn-arrow {
-          transform: translateX(6px);
-        }
-
-        /* 響應式設計 */
-        @media (max-width: 1024px) {
-          .guide-sidebar {
-            width: 280px;
-          }
-
-          .guide-content-inner {
-            padding: 32px 24px;
-          }
-
-          .guide-title {
-            font-size: 28px;
-          }
-
-          .guide-bottom-bar-content {
-            width: calc(100% - 48px);
-            gap: 16px;
-          }
-
-          .guide-teacher-info {
-            padding: 14px 18px;
-          }
-        }
-
-        @media (max-width: 768px) {
-          .guide-container {
-            flex-direction: column;
-          }
-
-          .guide-sidebar {
-            width: 100%;
-            position: static;
-            height: auto;
-            border-right: none;
-            border-bottom: 1px solid var(--border);
-          }
-
-          .guide-cards-container {
-            flex-direction: row;
-            overflow-x: auto;
-            padding-bottom: 8px;
-          }
-
-          .guide-card {
-            min-width: 260px;
-            flex-shrink: 0;
-          }
-
-          .guide-content-inner {
-            padding: 24px 16px;
-          }
-
-          .guide-article {
-            padding: 24px;
-          }
-
-          .guide-bottom-bar {
-            height: auto;
-            padding: 16px;
-          }
-
-          .guide-bottom-bar-content {
-            flex-direction: column;
-            align-items: stretch;
-            width: 100%;
-            gap: 12px;
-          }
-
-          .guide-teacher-info {
-            width: 100%;
-            justify-content: space-between;
-            gap: 12px;
-          }
-
-          .guide-teacher-name {
-            flex: 1;
-            min-width: auto;
-          }
-
-          .guide-practice-btn {
-            width: 100%;
-            gap: 12px;
-            padding: 18px 28px;
-            font-size: 16px;
-            border-width: 2px;
-            justify-content: space-between !important;
-          }
-
-          .practice-btn-icon {
-            font-size: 24px;
-          }
-
-          .practice-btn-main {
-            font-size: 16px;
-          }
-
-          .practice-btn-sub {
-            font-size: 11px;
-          }
-
-          .practice-btn-arrow {
-            font-size: 20px;
-          }
-        }
-      `}</style>
     </>
   );
 }

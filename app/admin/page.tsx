@@ -14,9 +14,9 @@ const ADMIN_TOOLS = [
     accent: 'linear-gradient(90deg, #8b5cf6, #7c3aed)',
   },
   {
-    href: '/admin/database-test',
-    title: 'Google Spreadsheet 資料庫測試',
-    description: '測試 Google Spreadsheet 輕量級資料庫的 CRUD 功能，包含新增、讀取、更新與 Upsert 操作。',
+    href: 'https://docs.google.com/spreadsheets/d/1zFuwHybj2ny4n8vVk7BlZJqUMUKCpxZ44GhqxQc_9N8/edit?gid=88030258#gid=88030258',
+    title: 'Google Spreadsheet 資料庫入口',
+    description: '開啟 Google Sheet 資料庫入口（管理資料與檢視表單）。',
     accent: 'linear-gradient(90deg, #10b981, #059669)',
   },
 ];

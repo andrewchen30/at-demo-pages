@@ -27,5 +27,5 @@
  */
 
 export { GoogleSpreadsheet } from './googleSpreadsheet';
-export type { DB, ModelDef, ChatLog } from './types';
-export { ChatLogModel } from './types';
+export type { DB, ModelDef, ChatLog, AIGenStudent } from './types';
+export { ChatLogModel, AIGenStudentModel } from './types';

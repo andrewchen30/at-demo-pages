@@ -351,6 +351,49 @@ export class GoogleSpreadsheet implements DB {
     });
   }
 
+  /**
+   * 清空指定 Model 的所有資料（保留並重建表頭）
+   */
+  async clearModel<T>(model: ModelDef<T>): Promise<void> {
+    if (!this.sheetsClient) {
+      throw new Error('Not connected. Call connect() first.');
+    }
+
+    await this.retryOnError(async () => {
+      // 找到目標工作表 sheetId
+      const meta = await this.sheetsClient!.spreadsheets.get({ spreadsheetId: this.spreadsheetId });
+      const target = meta.data.sheets?.find((s) => s.properties?.title === model.sheet);
+
+      if (target?.properties?.sheetId != null) {
+        const sheetId = target.properties.sheetId!;
+        // 刪除該工作表
+        await this.sheetsClient!.spreadsheets.batchUpdate({
+          spreadsheetId: this.spreadsheetId,
+          requestBody: {
+            requests: [{ deleteSheet: { sheetId } }, { addSheet: { properties: { title: model.sheet } } }],
+          },
+        });
+      } else {
+        // 若不存在則新增
+        await this.sheetsClient!.spreadsheets.batchUpdate({
+          spreadsheetId: this.spreadsheetId,
+          requestBody: {
+            requests: [{ addSheet: { properties: { title: model.sheet } } }],
+          },
+        });
+      }
+
+      // 重建表頭
+      const headers = model.columns.map(String);
+      await this.sheetsClient!.spreadsheets.values.update({
+        spreadsheetId: this.spreadsheetId,
+        range: `${model.sheet}!A1`,
+        valueInputOption: 'RAW',
+        requestBody: { values: [headers] },
+      });
+    });
+  }
+
   // === 輔助方法 ===
 
   /**

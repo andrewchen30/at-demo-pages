@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { directorRole } from '@/lib/aiRole';
+import { ensureRolesLoaded } from '@/lib/aiRole/director/studentRoleScript';
 
 function normalizeCount(value: unknown): number | undefined {
   if (typeof value === 'undefined') {
@@ -36,6 +37,7 @@ export async function POST(request: Request) {
 
   try {
     const result = await directorRole.appendStudentRoles(count);
+    await ensureRolesLoaded();
     return NextResponse.json(result);
   } catch (error) {
     if (error instanceof directorRole.StudentRoleInvalidCountError) {

@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server';
 
 import { directorRole } from '@/lib/aiRole';
+import { ensureRolesLoaded } from '@/lib/aiRole/director/studentRoleScript';
 
 export async function GET() {
   try {
+    await ensureRolesLoaded();
     const role = await directorRole.getRandomStudentRole();
     return NextResponse.json(role);
   } catch (error) {

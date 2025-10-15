@@ -325,7 +325,7 @@ function SimClassTrialLessonContent() {
           </Link>
 
           {/* 檢查清單卡片 */}
-          <div className="bg-white border border-slate-200 rounded-xl flex flex-col overflow-hidden flex-1 min-h-0">
+          <div className="bg-white border border-slate-200 rounded-xl flex flex-col overflow-hidden flex-none">
             <div className="p-4 border-b border-slate-200 flex items-center justify-between flex-shrink-0">
               <div className="flex flex-col gap-1">
                 <div className="text-base font-semibold text-slate-800">檢查清單</div>
@@ -351,7 +351,7 @@ function SimClassTrialLessonContent() {
                 </svg>
               </button>
             </div>
-            <div className="flex-1 overflow-y-auto p-4">
+            <div className="overflow-y-auto p-4 max-h-[280px]">
               {!systemMessage ? (
                 <div className="text-center text-slate-500 p-10">
                   <div className="text-3xl mb-3">📝</div>
@@ -377,7 +377,7 @@ function SimClassTrialLessonContent() {
           </div>
 
           {/* 教練回饋卡片 */}
-          <div className="bg-white border border-slate-200 rounded-xl flex flex-col overflow-hidden">
+          <div className="bg-white border border-slate-200 rounded-xl flex flex-col overflow-hidden flex-1 min-h-0">
             <div className="p-4 border-b border-slate-200 flex items-center justify-between flex-shrink-0">
               <div className="flex flex-col gap-1">
                 <div className="text-base font-semibold text-slate-800">教練回饋</div>
@@ -482,8 +482,10 @@ function SimClassTrialLessonContent() {
                         {message.role === 'user' ? '你' : '學生'}
                       </div>
                       <div
-                        className={`rounded-xl border border-slate-200 px-4 py-3 leading-6 text-slate-800 bg-white ${
-                          message.role === 'user' ? 'bg-emerald-500 text-white border-emerald-300/30' : ''
+                        className={`rounded-xl border px-4 py-3 leading-6 ${
+                          message.role === 'user'
+                            ? 'bg-emerald-500 text-white border-emerald-300/30'
+                            : 'bg-white text-slate-800 border-slate-200'
                         }`}
                       >
                         {message.content.split('\n').map((line, lineIndex) => (
@@ -522,8 +524,10 @@ function SimClassTrialLessonContent() {
                       {message.role === 'user' ? '你' : '學生'}
                     </div>
                     <div
-                      className={`rounded-xl border border-slate-200 px-4 py-3 leading-6 text-slate-800 bg-white ${
-                        message.role === 'user' ? 'bg-emerald-500 text-white border-emerald-300/30' : ''
+                      className={`rounded-xl border px-4 py-3 leading-6 ${
+                        message.role === 'user'
+                          ? 'bg-emerald-500 text-white border-emerald-300/30'
+                          : 'bg-white text-slate-800 border-slate-200'
                       }`}
                     >
                       {message.content.split('\n').map((line, lineIndex) => (
@@ -575,10 +579,9 @@ function SimClassTrialLessonContent() {
 
         {isChapterDialogOpen && (
           <div
-            className="fixed inset-0 bg-black/50 hidden items-center justify-center z-[1000]"
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1000]"
             role="dialog"
             aria-modal="true"
-            style={{ display: 'flex' }}
           >
             <div className="bg-white rounded-xl shadow-2xl max-w-[500px] w-[90%] max-h-[80vh] overflow-hidden">
               <div className="p-5 border-b border-slate-200 flex items-center justify-between">
