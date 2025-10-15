@@ -7,7 +7,19 @@ export async function GET() {
   try {
     await ensureRolesLoaded();
     const role = await directorRole.getRandomStudentRole();
-    return NextResponse.json(role);
+    // 將 raw 解析為物件回傳，避免前端再度 JSON.parse 出錯
+    let parsed: unknown = role.role;
+    try {
+      parsed = JSON.parse(role.role);
+    } catch {
+      // 保留原字串，以利除錯
+    }
+    return NextResponse.json({
+      role: parsed,
+      total: role.total,
+      createdAt: role.createdAt,
+      index: role.index,
+    });
   } catch (error) {
     if (error instanceof directorRole.StudentRoleStoreEmptyError) {
       return NextResponse.json({ error: { message: error.message } }, { status: 404 });

@@ -33,7 +33,7 @@ type RandomRoleResponse = {
   index: number;
 };
 
-const DEFAULT_BATCH_SIZE = 10;
+const DEFAULT_BATCH_SIZE = 5;
 
 const SCRIPTWRITER_PROMPT = '以下是腳本內容，請用 JSON 格式回覆我：';
 
@@ -144,14 +144,29 @@ export async function getRandomStudentRole(): Promise<RandomRoleResponse> {
     throw new StudentRoleStoreEmptyError();
   }
 
-  const randomIndex = Math.floor(Math.random() * roles.length);
-  const role = roles[randomIndex];
+  // 過濾出可被 JSON.parse 的有效資料（避免舊資料格式錯誤）
+  const validIndices: number[] = [];
+  for (let i = 0; i < roles.length; i++) {
+    try {
+      JSON.parse(roles[i].raw);
+      validIndices.push(i);
+    } catch {
+      // skip invalid
+    }
+  }
+
+  if (validIndices.length === 0) {
+    throw new Error('目前沒有有效的學生角色資料，請先重新產生。');
+  }
+
+  const idx = validIndices[Math.floor(Math.random() * validIndices.length)];
+  const role = roles[idx];
 
   return {
     role: role.raw,
     total: roles.length,
     createdAt: role.createdAt,
-    index: randomIndex,
+    index: idx,
   };
 }
 

@@ -417,11 +417,9 @@ export class GoogleSpreadsheet implements DB {
 
     let str = String(value);
 
-    // 截斷過長字串
-    if (str.length > 2000) {
-      str = str.substring(0, 2000);
-    }
-
+    // 不再截斷字串，以避免破壞 JSON 結構。
+    // Google Sheets 每個儲存格最大約 50,000 字元，超過時才考慮處理。
+    // 若將來需要安全上限，可調整為接近上限的值（例如 45000），但本案保留完整內容。
     return str;
   }
 
