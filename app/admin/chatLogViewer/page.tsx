@@ -59,7 +59,9 @@ export default function ChatLogViewerPage() {
       setFilteredLogs(logsWithParsedMessages);
 
       // 提取所有不重複的 teacher_name
-      const teachers = Array.from(new Set(logsWithParsedMessages.map((log: ChatLogRecord) => log.teacher_name))).sort();
+      const teachers = Array.from(
+        new Set(logsWithParsedMessages.map((log: ChatLogRecord) => log.teacher_name as string))
+      ).sort() as string[];
       setAvailableTeachers(teachers);
 
       // 自動選擇第一個
