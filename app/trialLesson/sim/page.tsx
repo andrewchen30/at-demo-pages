@@ -1,6 +1,7 @@
 'use client';
 
 import { FormEvent, Suspense, useCallback, useEffect, useState } from 'react';
+import Link from 'next/link';
 
 import { useTrialLessonChat } from './aiChatInterface';
 
@@ -56,6 +57,8 @@ function SimClassTrialLessonContent() {
   const [chatLogId, setChatLogId] = useState('');
   const [chatLogCreated, setChatLogCreated] = useState(false);
   const [judgeResult, setJudgeResult] = useState<string>('');
+  const [coachResult, setCoachResult] = useState<string>('');
+  const [isChecklistVisible, setIsChecklistVisible] = useState(true);
 
   // 生成 UUID
   const generateUUID = (): string => {
@@ -86,55 +89,52 @@ function SimClassTrialLessonContent() {
   };
 
   // 格式化系統提示為純文字
-  const formatSystemPrompt = useCallback(
-    (includeJudgeResult: boolean = false): string => {
-      const sections: string[] = [];
+  const formatSystemPrompt = useCallback((): string => {
+    const sections: string[] = [];
 
-      // 章節資訊
-      if (chapterInfo) {
-        sections.push(`=== 章節資訊 ===`);
-        sections.push(`標題: ${chapterInfo.title}`);
-        sections.push(`目標: ${chapterInfo.goal}`);
-        sections.push('');
-      }
+    // 章節資訊
+    if (chapterInfo) {
+      sections.push(`=== 章節資訊 ===`);
+      sections.push(`標題: ${chapterInfo.title}`);
+      sections.push(`目標: ${chapterInfo.goal}`);
+      sections.push('');
+    }
 
-      // 背景資訊
-      if (systemUserBrief.length > 0) {
-        sections.push(`=== 背景資訊 ===`);
-        systemUserBrief.forEach((item) => {
-          sections.push(item);
-        });
-        sections.push('');
-      }
+    // 背景資訊
+    if (systemUserBrief.length > 0) {
+      sections.push(`=== 背景資訊 ===`);
+      systemUserBrief.forEach((item) => {
+        sections.push(item);
+      });
+      sections.push('');
+    }
 
-      // 對話內容（只在非第一章時顯示）
-      if (chapterNumber !== 1 && systemDialog.length > 0) {
-        sections.push(`=== 對話內容 ===`);
-        systemDialog.forEach((item) => {
-          sections.push(item);
-        });
-        sections.push('');
-      }
+    // 對話內容（只在非第一章時顯示）
+    if (chapterNumber !== 1 && systemDialog.length > 0) {
+      sections.push(`=== 對話內容 ===`);
+      systemDialog.forEach((item) => {
+        sections.push(item);
+      });
+      sections.push('');
+    }
 
-      // 檢查重點
-      if (systemChecklist.length > 0) {
-        sections.push(`=== 檢查重點 ===`);
-        systemChecklist.forEach((item) => {
-          sections.push(item);
-        });
-      }
+    // 檢查重點
+    if (systemChecklist.length > 0) {
+      sections.push(`=== 檢查重點 ===`);
+      systemChecklist.forEach((item) => {
+        sections.push(item);
+      });
+    }
 
-      // Judge Result（如果有的話）
-      if (includeJudgeResult && judgeResult) {
-        sections.push('');
-        sections.push('=== Judge Result ===');
-        sections.push(judgeResult);
-      }
+    // Judge Result（如果有的話）
+    if (!!judgeResult) {
+      sections.push('');
+      sections.push('=== Judge Result ===');
+      sections.push(judgeResult);
+    }
 
-      return sections.join('\n');
-    },
-    [chapterInfo, chapterNumber, systemUserBrief, systemDialog, systemChecklist, judgeResult]
-  );
+    return sections.join('\n');
+  }, [chapterInfo, chapterNumber, systemUserBrief, systemDialog, systemChecklist, judgeResult]);
 
   // 格式化對話記錄
   const formatChatHistory = useCallback((history: typeof chatHistory): string => {
@@ -176,7 +176,7 @@ function SimClassTrialLessonContent() {
     async (teacherName: string, chatLogId: string) => {
       try {
         const formattedChatHistory = formatChatHistory(chatHistory);
-        const formattedSystemPrompt = formatSystemPrompt(false);
+        const formattedSystemPrompt = formatSystemPrompt();
 
         const response = await fetch('/api/chat-logs', {
           method: 'POST',
@@ -210,7 +210,7 @@ function SimClassTrialLessonContent() {
     async (chatLogId: string, includeJudgeResult: boolean = false) => {
       try {
         const formattedChatHistory = formatChatHistory(chatHistory);
-        const formattedSystemPrompt = formatSystemPrompt(includeJudgeResult);
+        const formattedSystemPrompt = formatSystemPrompt();
 
         const response = await fetch('/api/chat-logs', {
           method: 'PATCH',
@@ -300,7 +300,8 @@ function SimClassTrialLessonContent() {
   const handleGenerateSummary = useCallback(async () => {
     const result = await generateSummary();
     if (result) {
-      setJudgeResult(result);
+      setJudgeResult(result.judgeResult);
+      setCoachResult(result.coachResult);
     }
   }, [generateSummary]);
 
@@ -377,48 +378,95 @@ function SimClassTrialLessonContent() {
             </>
           )}
 
-          <div className="workflow-status">
-            {/* <div className="workflow-status-header">AI Bot 狀態</div> */}
-            <div className="workflow-status-item">
-              <span className="workflow-status-name">目前章節</span>
-              <span className="bot-status scriptwriter">
-                {chapterInfo ? `${chapterInfo.title}` : `章節 ${chapterNumber}`}
-              </span>
+          {/* 回到選單按鈕 */}
+          <Link href="/trialLesson/guideBook" className="back-to-menu-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M19 12H5M12 19l-7-7 7-7" />
+            </svg>
+            <span>回到選單</span>
+          </Link>
+
+          {/* 檢查清單卡片 */}
+          <div className="sidebar-card">
+            <div className="sidebar-card-header">
+              <div className="sidebar-card-header-content">
+                <div className="sidebar-card-title">檢查清單</div>
+                <div className="sidebar-card-subtitle">{chapterInfo?.title ?? `章節 ${chapterNumber}`}</div>
+              </div>
+              <button
+                className="sidebar-card-toggle-btn"
+                title={isChecklistVisible ? '隱藏檢查清單' : '顯示檢查清單'}
+                onClick={() => setIsChecklistVisible(!isChecklistVisible)}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  {isChecklistVisible ? (
+                    <>
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                      <circle cx="12" cy="12" r="3"></circle>
+                    </>
+                  ) : (
+                    <>
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                      <line x1="1" y1="1" x2="23" y2="23"></line>
+                    </>
+                  )}
+                </svg>
+              </button>
             </div>
-            <div className="workflow-status-item">
-              <span className="workflow-status-name">聊天狀態</span>
-              <span className={`bot-status ${connectionStatus === 'connected' ? 'active' : ''}`}>{statusText}</span>
-            </div>
-            <div className="workflow-status-item">
-              <span className="workflow-status-name">教練 Bot</span>
-              <span className="bot-status coach">{isSummarizing ? '產生中' : '待機中'}</span>
+            <div className="sidebar-card-content">
+              {!systemMessage ? (
+                <div className="empty-sidebar">
+                  <div className="empty-sidebar-icon">📝</div>
+                  <div className="empty-sidebar-text">等待編劇產生檢查清單</div>
+                  <div className="empty-sidebar-subtext">點擊「更換」開始</div>
+                </div>
+              ) : isChecklistVisible ? (
+                <div className="system-message">
+                  <div className="system-message-content">
+                    {systemChecklist.map((item, index) => (
+                      <li key={index}>{item}</li>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="empty-sidebar">
+                  <div className="empty-sidebar-icon">👁️</div>
+                  <div className="empty-sidebar-text">檢查清單已隱藏</div>
+                  <div className="empty-sidebar-subtext">點擊右上角按鈕顯示</div>
+                </div>
+              )}
             </div>
           </div>
 
-          <div className="section">
-            <div className="section-content">
+          {/* 教練回饋卡片 */}
+          <div className="sidebar-card">
+            <div className="sidebar-card-header">
+              <div className="sidebar-card-header-content">
+                <div className="sidebar-card-title">教練回饋</div>
+              </div>
               <button
-                className="btn"
-                style={{
-                  background: 'linear-gradient(180deg, #a855f7, #9333ea)',
-                  marginBottom: '8px',
-                }}
-                onClick={startScriptwriter}
-                disabled={isCreatingStudent || isSummarizing || isThinking}
-              >
-                {isCreatingStudent ? '載入學生角色中...' : '🎲 新的學生角色'}
-              </button>
-              <button
-                className="btn"
-                style={{ background: 'linear-gradient(180deg, #3b82f6, #2563eb)', marginBottom: '8px' }}
+                className="sidebar-card-action-btn"
                 onClick={handleGenerateSummary}
                 disabled={!canSummarize || isCreatingStudent || isSummarizing || isThinking}
+                title="取得教練回饋"
               >
-                {isSummarizing ? '教練總結中...' : '教練總結'}
+                {isSummarizing ? '產生中...' : '取得回饋'}
               </button>
-              {/* <button className="btn secondary" onClick={clearChat} disabled={isCreatingStudent || isSummarizing || isThinking}>
-                清除對話
-              </button> */}
+            </div>
+            <div className="sidebar-card-content">
+              {!coachResult ? (
+                <div className="empty-sidebar">
+                  <div className="empty-sidebar-icon">💬</div>
+                  <div className="empty-sidebar-text">尚無教練回饋</div>
+                  <div className="empty-sidebar-subtext">點擊右上角按鈕取得回饋</div>
+                </div>
+              ) : (
+                <div className="feedback-content">
+                  {coachResult.split('\n').map((line, i) => (
+                    <p key={i}>{line}</p>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -435,17 +483,34 @@ function SimClassTrialLessonContent() {
           </div>
 
           {flash && (
-            <div
-              role="alert"
-              className={`flash-message ${flash.type}`}
-              style={{ marginBottom: '12px', cursor: 'pointer' }}
-              onClick={dismissFlash}
-            >
+            <div role="alert" className={`flash-message ${flash.type}`} onClick={dismissFlash}>
               {flash.message}
             </div>
           )}
 
           <div className="chat-messages">
+            {/* 學生資訊卡片 */}
+            {systemUserBrief.length > 0 && (
+              <div className="student-info-card">
+                <div className="student-info-header">
+                  <h3 className="student-info-title">學生資訊</h3>
+                  <button
+                    className="student-info-change-btn"
+                    onClick={startScriptwriter}
+                    disabled={isCreatingStudent || isSummarizing || isThinking}
+                    title="更換學生角色"
+                  >
+                    更換
+                  </button>
+                </div>
+                <div className="student-info-content">
+                  {systemUserBrief.map((item, index) => (
+                    <p key={index}>{item}</p>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {chatHistory.length === 0 ? (
               <div className="empty-state">
                 <div className="empty-state-icon">🤖</div>
@@ -499,73 +564,6 @@ function SimClassTrialLessonContent() {
               </button>
             </div>
           </form>
-        </div>
-
-        <div className="right-sidebar">
-          <div className="sidebar-header">
-            <div className="sidebar-header-content">
-              <div className="sidebar-title">{chapterInfo?.title ?? `章節 ${chapterNumber}`}</div>
-              <div className="sidebar-subtitle">目標：{chapterInfo?.goal ?? '尚未選擇章節'}</div>
-            </div>
-            {/* <button className="chapter-switch-btn" title="切換章節" onClick={openChapterDialog}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M12 20h9"></path>
-                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
-              </svg>
-            </button> */}
-          </div>
-          <div className="sidebar-content">
-            {!systemMessage ? (
-              <div className="empty-sidebar">
-                <div className="empty-sidebar-icon">📝</div>
-                <div className="empty-sidebar-text">等待編劇產生系統訊息</div>
-                <div className="empty-sidebar-subtext">點擊「🎲 新的學生角色」開始</div>
-              </div>
-            ) : (
-              <div className="system-message">
-                <div className="system-message-header">
-                  <div className="system-message-icon">S</div>
-                  <div className="system-message-title">系統提示</div>
-                </div>
-
-                <div className="system-message-title">【背景資訊】</div>
-                <div className="system-message-content">
-                  {systemUserBrief.map((item, index) => (
-                    <li key={index}>{item}</li>
-                  ))}
-                </div>
-                {chapterNumber !== 1 && (
-                  <>
-                    <div className="system-message-title">【對話內容】</div>
-                    <div className="system-message-content">
-                      {systemDialog.map((item, index) => (
-                        <li key={index}>{item}</li>
-                      ))}
-                    </div>
-                  </>
-                )}
-                <div className="system-message-title">【檢查重點】</div>
-                <div className="system-message-content">
-                  {systemChecklist.map((item, index) => (
-                    <li key={index}>{item}</li>
-                  ))}
-                </div>
-
-                {/* <div className="system-message-content">{systemMessage}</div> */}
-              </div>
-            )}
-
-            {/* {scriptwriterResponse && (
-              <div className="json-section">
-                <button className="json-toggle" type="button" onClick={toggleJsonCollapsed}>
-                  {isJsonCollapsed ? '展開學生角色 JSON' : '收合學生角色 JSON'}
-                </button>
-                {!isJsonCollapsed && scriptwriterJson && (
-                  <pre className="json-content">{scriptwriterJson}</pre>
-                )}
-              </div>
-            )} */}
-          </div>
         </div>
 
         {isChapterDialogOpen && (

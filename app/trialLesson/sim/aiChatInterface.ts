@@ -51,7 +51,6 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
   const [isThinking, setIsThinking] = useState(false);
   const [isCreatingStudent, setIsCreatingStudent] = useState(false);
   const [isSummarizing, setIsSummarizing] = useState(false);
-  const [isLastMessageCoach, setIsLastMessageCoach] = useState(false);
 
   const [flash, setFlash] = useState<FlashMessage | null>(null);
   const [importedFileName, setImportedFileName] = useState('');
@@ -69,16 +68,16 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    const urlPart = searchParams?.get('part');
-    if (urlPart && Number.isInteger(Number(urlPart)) && CHAPTER_GOALS[Number(urlPart)]) {
-      setChapterNumber(Number(urlPart));
-      localStorage.setItem('selectedNumber', String(urlPart));
+    const urlChapter = searchParams?.get('chapter');
+    if (urlChapter && Number.isInteger(Number(urlChapter)) && CHAPTER_GOALS[Number(urlChapter)]) {
+      setChapterNumber(Number(urlChapter));
+      localStorage.setItem('selectedNumber', String(urlChapter));
     } else {
       const stored = localStorage.getItem('selectedNumber');
       const parsed = stored ? Number(stored) : 1;
       setChapterNumber(CHAPTER_GOALS[parsed] ? parsed : 1);
       const params = new URLSearchParams(window.location.search);
-      params.set('part', String(CHAPTER_GOALS[parsed] ? parsed : 1));
+      params.set('chapter', String(CHAPTER_GOALS[parsed] ? parsed : 1));
       router.replace(`${window.location.pathname}?${params.toString()}`);
     }
   }, [router, searchParams]);
@@ -89,7 +88,7 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
 
     localStorage.setItem('selectedNumber', String(chapterNumber));
     const params = new URLSearchParams(window.location.search);
-    params.set('part', String(chapterNumber));
+    params.set('chapter', String(chapterNumber));
     router.replace(`${window.location.pathname}?${params.toString()}`);
 
     if (scriptwriterResponse) {
@@ -126,10 +125,6 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
     }
   }, []);
 
-  useEffect(() => {
-    setIsLastMessageCoach(getIsLastMessageCoach());
-  }, [chatHistory]);
-
   const chapterInfo = CHAPTER_GOALS[chapterNumber];
 
   const statusText = useMemo(() => {
@@ -138,7 +133,7 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
     return '未連接';
   }, [connectionStatus]);
 
-  const canSummarize = chatHistory.length > 0 && !isLastMessageCoach;
+  const canSummarize = chatHistory.length > 0;
 
   const chapterOptions = useMemo(
     () =>
@@ -179,12 +174,10 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
   }, []);
 
   const getChatMessages = useCallback((): OpenAIChatMessage[] => {
-    return chatHistory
-      .filter((m) => !m.content.includes('教練總結'))
-      .map((msg) => ({
-        role: msg.role,
-        content: [{ type: msg.role === 'user' ? 'input_text' : 'output_text', text: msg.content }],
-      }));
+    return chatHistory.map((msg) => ({
+      role: msg.role,
+      content: [{ type: msg.role === 'user' ? 'input_text' : 'output_text', text: msg.content }],
+    }));
   }, [chatHistory]);
 
   const appendUserMessage = useCallback((messages: OpenAIChatMessage[], message: string): OpenAIChatMessage[] => {
@@ -198,19 +191,7 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
   }, []);
 
   const getChatMessagesText = useCallback((): string => {
-    return chatHistory
-      .filter((m) => !m.content.includes('教練總結'))
-      .map((m) => `${m.role === 'user' ? '老師' : '學生'}: ${m.content}`)
-      .join('\n');
-  }, [chatHistory]);
-
-  const getIsLastMessageCoach = useCallback((): boolean => {
-    const lastMessage = chatHistory.at(-1);
-    if (!lastMessage || !lastMessage.content) {
-      return false;
-    }
-
-    return lastMessage.content.includes('教練總結');
+    return chatHistory.map((m) => `${m.role === 'user' ? '老師' : '學生'}: ${m.content}`).join('\n');
   }, [chatHistory]);
 
   const getVariables = useCallback(
@@ -371,7 +352,10 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
     }
   }, [autoResizeTextarea, callOpenAI, getChatMessages, appendUserMessage]);
 
-  const generateSummary = useCallback(async (): Promise<string | undefined> => {
+  const generateSummary = useCallback(async (): Promise<{
+    judgeResult: string;
+    coachResult: string;
+  }> => {
     if (chatHistory.length === 0) {
       setFlash({ type: 'error', message: '沒有對話記錄可以總結' });
       return;
@@ -379,8 +363,11 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
     setIsSummarizing(true);
     try {
       const response = await callOpenAI('coach');
-      setChatHistory((prev) => [...prev, { role: 'assistant', content: `📋 **教練總結**\n\n${response.result}` }]);
-      return response.judgeResult;
+      // 只返回文字版本的回饋，不加到聊天記錄中
+      return {
+        judgeResult: response.judgeResult,
+        coachResult: response.result,
+      };
     } catch (e) {
       const text = e instanceof Error ? e.message : '未知錯誤';
       setFlash({ type: 'error', message: `教練 Bot 錯誤: ${text}` });

@@ -70,7 +70,10 @@ export interface UseTrialLessonChatResult {
   autoResizeTextarea: () => void;
   startScriptwriter: () => Promise<void>;
   sendMessage: () => Promise<void>;
-  generateSummary: () => Promise<string | undefined>;
+  generateSummary: () => Promise<{
+    judgeResult: string;
+    coachResult: string;
+  }>;
   clearChat: () => void;
   exportConfig: () => void;
   importConfig: (file: File | null) => void;

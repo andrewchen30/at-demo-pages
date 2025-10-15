@@ -126,7 +126,7 @@ a {
 
 .container {
   display: grid;
-  grid-template-columns: 350px 1fr 390px;
+  grid-template-columns: 440px 1fr;
   min-height: 100vh;
   gap: 1px;
   background: var(--border);
@@ -151,6 +151,140 @@ a {
   padding: 20px;
   overflow-y: auto;
   border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* 回到選單按鈕 */
+.back-to-menu-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.back-to-menu-btn:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.back-to-menu-btn svg {
+  flex-shrink: 0;
+}
+
+/* 側邊欄卡片 */
+.sidebar-card {
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  flex: 1;
+  min-height: 0;
+}
+
+.sidebar-card-header {
+  padding: 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.sidebar-card-header-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sidebar-card-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.sidebar-card-subtitle {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.sidebar-card-toggle-btn {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--muted);
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.sidebar-card-toggle-btn:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: var(--text);
+}
+
+.sidebar-card-action-btn {
+  background: linear-gradient(180deg, #3b82f6, #2563eb);
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.sidebar-card-action-btn:hover:not(:disabled) {
+  filter: brightness(1.05);
+}
+
+.sidebar-card-action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.sidebar-card-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+}
+
+.feedback-content {
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--text);
+}
+
+.feedback-content p {
+  margin: 4px 0;
+}
+
+.feedback-content p:first-child {
+  margin-top: 0;
+}
+
+.feedback-content p:last-child {
+  margin-bottom: 0;
 }
 
 .section {
@@ -1062,6 +1196,134 @@ a {
   overflow-y: auto;
 }
 
+.flash-message {
+  position: fixed;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  min-width: 320px;
+  max-width: 500px;
+  padding: 16px 24px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.5;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  backdrop-filter: blur(8px);
+  animation: slideUp 0.3s ease-out;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.flash-message:hover {
+  transform: translateX(-50%) translateY(-2px);
+  box-shadow: 0 12px 20px -3px rgba(0, 0, 0, 0.15), 0 6px 8px -2px rgba(0, 0, 0, 0.08);
+}
+
+.flash-message.success {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.95), rgba(22, 163, 74, 0.95));
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.flash-message.error {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.95), rgba(220, 38, 38, 0.95));
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.flash-message.warning {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.95), rgba(217, 119, 6, 0.95));
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.flash-message.info {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.95), rgba(37, 99, 235, 0.95));
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+/* 學生資訊卡片 */
+.student-info-card {
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  margin: 0 auto 20px auto;
+  max-width: 600px;
+  width: 100%;
+  align-self: center;
+}
+
+.student-info-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.student-info-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
+}
+
+.student-info-change-btn {
+  background: #f8fafc;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.student-info-change-btn:hover:not(:disabled) {
+  background: #e2e8f0;
+  border-color: #cbd5e1;
+}
+
+.student-info-change-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.student-info-content {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text);
+}
+
+.student-info-content p {
+  margin: 8px 0;
+}
+
+.student-info-content p:first-child {
+  margin-top: 0;
+}
+
+.student-info-content p:last-child {
+  margin-bottom: 0;
+}
+
 @media (max-width: 768px) {
   .container {
     grid-template-columns: 1fr;
@@ -1076,5 +1338,9 @@ a {
   .right-sidebar {
     max-height: 200px;
     overflow-y: auto;
+  }
+
+  .student-info-card {
+    max-width: 100%;
   }
 }
