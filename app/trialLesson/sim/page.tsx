@@ -289,11 +289,6 @@ function SimClassTrialLessonContent() {
 
     if (teacherMessages.length > 3 && !coachResult && !showFeedbackTooltip) {
       setShowFeedbackTooltip(true);
-      // 5 秒後自動隱藏 tooltip
-      const timer = setTimeout(() => {
-        setShowFeedbackTooltip(false);
-      }, 5000);
-      return () => clearTimeout(timer);
     }
   }, [chatHistory, preludeCount, coachResult, showFeedbackTooltip]);
 
