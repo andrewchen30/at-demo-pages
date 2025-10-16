@@ -9,7 +9,6 @@ import { GUIDE_CONTENT } from '@/app/trialLesson/guideBook/guideContent';
 function SimClassTrialLessonContent() {
   const {
     workflowStep,
-    connectionStatus,
     chatHistory,
     preludeCount,
     systemMessage,
@@ -21,10 +20,8 @@ function SimClassTrialLessonContent() {
     isCreatingStudent,
     isSummarizing,
     flash,
-    statusText,
     canSummarize,
     chapterInfo,
-    chapterOptions,
     chatInputRef,
     autoResizeTextarea,
     startScriptwriter,
