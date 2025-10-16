@@ -1,11 +1,11 @@
 'use client';
 
-import { FormEvent, MouseEvent, useEffect, useState } from 'react';
+import { FormEvent, MouseEvent, Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { GUIDE_CONTENT } from './guideContent';
 
-export default function GuideBookPage() {
+function GuideBookContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [selectedChapter, setSelectedChapter] = useState<number>(1);
@@ -280,5 +280,30 @@ export default function GuideBookPage() {
         </div>
       )}
     </>
+  );
+}
+
+export default function GuideBookPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
+          <div className="flex w-full min-h-[calc(100vh-100px)] md:flex-row flex-col">
+            <aside className="md:w-[320px] w-full bg-white md:border-r border-slate-200 md:sticky md:top-0 md:h-[calc(100vh-100px)] md:flex md:flex-col md:overflow-hidden">
+              <div className="px-6 pt-8 pb-6 border-b border-slate-200">
+                <h2 className="text-[20px] font-bold text-slate-800 m-0">體驗課培訓主題</h2>
+              </div>
+            </aside>
+            <div className="flex-1 overflow-y-auto bg-slate-50">
+              <div className="max-w-[900px] mx-auto p-12 md:p-8">
+                <div className="text-lg font-semibold text-slate-800">載入中...</div>
+              </div>
+            </div>
+          </div>
+        </main>
+      }
+    >
+      <GuideBookContent />
+    </Suspense>
   );
 }
