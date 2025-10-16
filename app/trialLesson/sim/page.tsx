@@ -319,7 +319,7 @@ function SimClassTrialLessonContent() {
     }
   }, [generateSummary, chatHistory, preludeCount]);
 
-  // 關閉教練回饋 popout
+  // 關閉回饋紀錄 popout
   const closeCoachFeedbackPopout = useCallback(() => {
     setIsCoachFeedbackPopoutVisible(false);
   }, []);
@@ -371,16 +371,16 @@ function SimClassTrialLessonContent() {
             <span>回到選單</span>
           </Link>
 
-          {/* 檢查清單卡片 */}
+          {/* 重點提示卡片 */}
           <div className="bg-white border border-slate-200 rounded-xl flex flex-col overflow-hidden flex-none">
             <div className="p-4 border-b border-slate-200 flex items-center justify-between flex-shrink-0">
               <div className="flex flex-col gap-1">
-                <div className="text-base font-semibold text-slate-800">檢查清單</div>
+                <div className="text-base font-semibold text-slate-800">重點提示</div>
                 <div className="text-xs text-slate-500">{chapterInfo?.title ?? `章節 ${chapterNumber}`}</div>
               </div>
               <button
                 className="bg-white border border-slate-200 rounded-lg w-9 h-9 inline-flex items-center justify-center cursor-pointer text-slate-500 transition-all hover:bg-slate-50 hover:border-slate-300 hover:text-slate-800 flex-shrink-0"
-                title={isChecklistVisible ? '隱藏檢查清單' : '顯示檢查清單'}
+                title={isChecklistVisible ? '隱藏重點提示' : '顯示重點提示'}
                 onClick={() => setIsChecklistVisible(!isChecklistVisible)}
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -402,7 +402,7 @@ function SimClassTrialLessonContent() {
               {!systemMessage ? (
                 <div className="text-center text-slate-500 p-10">
                   <div className="text-3xl mb-3">📝</div>
-                  <div className="text-[15px] font-semibold mb-1">等待編劇產生檢查清單</div>
+                  <div className="text-[15px] font-semibold mb-1">等待編劇產生重點提示</div>
                   <div className="text-sm">點擊「更換」開始</div>
                 </div>
               ) : isChecklistVisible ? (
@@ -416,25 +416,25 @@ function SimClassTrialLessonContent() {
               ) : (
                 <div className="text-center text-slate-500 p-10">
                   <div className="text-3xl mb-3">👁️</div>
-                  <div className="text-[15px] font-semibold mb-1">檢查清單已隱藏</div>
+                  <div className="text-[15px] font-semibold mb-1">重點提示已隱藏</div>
                   <div className="text-sm">點擊右上角按鈕顯示</div>
                 </div>
               )}
             </div>
           </div>
 
-          {/* 教練回饋卡片 */}
+          {/* 回饋紀錄卡片 */}
           <div className="bg-white border border-slate-200 rounded-xl flex flex-col overflow-hidden flex-1 min-h-0">
             <div className="p-4 border-b border-slate-200 flex items-center justify-between flex-shrink-0">
               <div className="flex flex-col gap-1">
-                <div className="text-base font-semibold text-slate-800">前次教練回饋</div>
+                <div className="text-base font-semibold text-slate-800">回饋紀錄</div>
               </div>
             </div>
             <div className="flex-1 overflow-y-auto p-4">
               {!coachResult ? (
                 <div className="text-center text-slate-500 p-10">
                   <div className="text-3xl mb-3">💬</div>
-                  <div className="text-[15px] font-semibold mb-1">尚無教練回饋</div>
+                  <div className="text-[15px] font-semibold mb-1">尚無回饋紀錄</div>
                   <div className="text-sm">在聊天室下方點擊「取得回饋」按鈕</div>
                 </div>
               ) : (
@@ -677,17 +677,20 @@ function SimClassTrialLessonContent() {
               id="experience-popout-title"
               className="relative text-[26px] font-bold text-slate-800 tracking-wide mb-3"
             >
-              體驗課開始！
+              體驗課即將開始！
             </h2>
-            <p className="relative text-[15px] text-slate-600 leading-7 mb-7">
-              與模擬學生展開對話，體驗 AmazingTalker 體驗課的完整流程。
+            <p className="relative text-[15px] text-slate-600 leading-7 mb-4">
+              有一位學生已經準備好上課囉！練習結束後，別忘了點「獲得建議」，教練會建議你怎麼做得更好！
+            </p>
+            <p className="relative text-[13px] text-slate-500 leading-6 mb-7 italic">
+              *對話只能支援文字，請勿傳送圖片、連結或影片呦。
             </p>
             <button
               type="button"
               className="relative w-full rounded-full px-6 py-3.5 bg-gradient-to-br from-blue-500 to-blue-600 text-white text-[15px] font-semibold shadow-[0_18px_30px_-15px_rgba(37,99,235,0.75)] transition hover:-translate-y-0.5 hover:brightness-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-400 active:translate-y-0"
               onClick={() => setIsExperiencePopoutVisible(false)}
             >
-              開始模擬練習
+              開始練習
             </button>
           </div>
         </div>
@@ -701,12 +704,12 @@ function SimClassTrialLessonContent() {
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-xl shadow-md">
                   🎓
                 </div>
-                <h2 className="text-xl font-bold text-slate-800">教練回饋</h2>
+                <h2 className="text-xl font-bold text-slate-800">回饋紀錄</h2>
               </div>
               <button
                 className="w-9 h-9 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-800 transition-all flex items-center justify-center"
                 onClick={closeCoachFeedbackPopout}
-                aria-label="關閉教練回饋"
+                aria-label="關閉回饋紀錄"
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <line x1="18" y1="6" x2="6" y2="18"></line>
