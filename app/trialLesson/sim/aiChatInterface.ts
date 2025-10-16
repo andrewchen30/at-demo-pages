@@ -68,9 +68,9 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
     const urlChapter = searchParams?.get('chapter');
     if (urlChapter && Number.isInteger(Number(urlChapter)) && CHAPTER_GOALS[Number(urlChapter)]) {
       setChapterNumber(Number(urlChapter));
-      localStorage.setItem('selectedNumber', String(urlChapter));
+      localStorage.setItem('chapter', String(urlChapter));
     } else {
-      const stored = localStorage.getItem('selectedNumber');
+      const stored = localStorage.getItem('chapter');
       const parsed = stored ? Number(stored) : 1;
       setChapterNumber(CHAPTER_GOALS[parsed] ? parsed : 1);
       const params = new URLSearchParams(window.location.search);
@@ -83,7 +83,7 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
     if (typeof window === 'undefined') return;
     if (!CHAPTER_GOALS[chapterNumber]) return;
 
-    localStorage.setItem('selectedNumber', String(chapterNumber));
+    localStorage.setItem('chapter', String(chapterNumber));
     const params = new URLSearchParams(window.location.search);
     params.set('chapter', String(chapterNumber));
     router.replace(`${window.location.pathname}?${params.toString()}`);
@@ -124,7 +124,7 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    const stored = localStorage.getItem('selectedNumber');
+    const stored = localStorage.getItem('chapter');
     if (!stored) {
       setIsChapterDialogOpen(true);
     }

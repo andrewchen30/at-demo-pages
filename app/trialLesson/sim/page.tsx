@@ -334,7 +334,7 @@ function SimClassTrialLessonContent() {
     const nextChapter = chapterNumber + 1;
     if (CHAPTER_GOALS[nextChapter]) {
       // 導航到教戰手冊頁面，並設定下一個章節
-      localStorage.setItem('selectedNumber', String(nextChapter));
+      localStorage.setItem('chapter', String(nextChapter));
       window.location.href = '/trialLesson/guideBook?chapter=' + nextChapter;
     } else {
       // 已經是最後一章，返回教戰手冊首頁
