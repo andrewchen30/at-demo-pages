@@ -477,7 +477,7 @@ function SimClassTrialLessonContent() {
 
           <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-4">
             {/* 學生資訊卡片 */}
-            {systemUserBrief.length > 0 && (
+            {(systemUserBrief.length > 0 || isCreatingStudent) && (
               <div className="bg-white border border-slate-200 rounded-xl p-5 mx-auto mb-5 max-w-[600px] w-full self-center">
                 <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-200">
                   <h3 className="text-base font-semibold text-slate-800 m-0">學生背景資訊</h3>
@@ -490,11 +490,20 @@ function SimClassTrialLessonContent() {
                     換一個學生
                   </button>
                 </div>
-                <div className="text-sm leading-6 text-slate-800">
-                  {systemUserBrief.map((item, index) => (
-                    <p key={index}>{item}</p>
-                  ))}
-                </div>
+                {isCreatingStudent && systemUserBrief.length === 0 ? (
+                  <div className="space-y-3 animate-pulse">
+                    <div className="h-4 bg-slate-200 rounded w-3/4"></div>
+                    <div className="h-4 bg-slate-200 rounded w-full"></div>
+                    <div className="h-4 bg-slate-200 rounded w-5/6"></div>
+                    <div className="h-4 bg-slate-200 rounded w-4/5"></div>
+                  </div>
+                ) : (
+                  <div className="text-sm leading-6 text-slate-800">
+                    {systemUserBrief.map((item, index) => (
+                      <p key={index}>{item}</p>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
@@ -546,33 +555,36 @@ function SimClassTrialLessonContent() {
                 )}
 
                 {/* 後續對話 */}
-                {chatHistory.slice(preludeCount).map((message, index) => (
-                  <div
-                    key={`chat-${index}`}
-                    className={`flex gap-3 max-w-[80%] ${
-                      message.role === 'user' ? 'self-end flex-row-reverse' : 'self-start'
-                    }`}
-                  >
+                {chatHistory
+                  .slice(preludeCount)
+                  .filter((message) => message.role !== 'coach')
+                  .map((message, index) => (
                     <div
-                      className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0 ${
-                        message.role === 'user' ? 'bg-emerald-500 text-white' : 'bg-blue-500 text-white'
+                      key={`chat-${index}`}
+                      className={`flex gap-3 max-w-[80%] ${
+                        message.role === 'user' ? 'self-end flex-row-reverse' : 'self-start'
                       }`}
                     >
-                      {message.role === 'user' ? '你' : '生'}
+                      <div
+                        className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0 ${
+                          message.role === 'user' ? 'bg-emerald-500 text-white' : 'bg-blue-500 text-white'
+                        }`}
+                      >
+                        {message.role === 'user' ? '你' : '生'}
+                      </div>
+                      <div
+                        className={`rounded-xl border px-4 py-3 leading-6 ${
+                          message.role === 'user'
+                            ? 'bg-emerald-500 text-white border-emerald-300/30'
+                            : 'bg-white text-slate-800 border-slate-200'
+                        }`}
+                      >
+                        {message.content.split('\n').map((line, lineIndex) => (
+                          <p key={lineIndex}>{line}</p>
+                        ))}
+                      </div>
                     </div>
-                    <div
-                      className={`rounded-xl border px-4 py-3 leading-6 ${
-                        message.role === 'user'
-                          ? 'bg-emerald-500 text-white border-emerald-300/30'
-                          : 'bg-white text-slate-800 border-slate-200'
-                      }`}
-                    >
-                      {message.content.split('\n').map((line, lineIndex) => (
-                        <p key={lineIndex}>{line}</p>
-                      ))}
-                    </div>
-                  </div>
-                ))}
+                  ))}
               </>
             )}
             {isThinking && (
@@ -636,28 +648,52 @@ function SimClassTrialLessonContent() {
           <div className="relative w-[min(420px,100%)] bg-gradient-to-br from-white via-slate-50 to-blue-50 rounded-2xl p-10 text-center shadow-2xl [box-shadow:0_25px_50px_-12px_rgba(15,23,42,0.35),inset_0_0_0_1px_rgba(148,163,184,0.18)] overflow-hidden">
             <div className="absolute -left-20 -top-28 w-60 h-60 rounded-full bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.25),transparent_70%)] pointer-events-none" />
             <div className="absolute -right-24 -bottom-36 w-56 h-56 rounded-full bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.18),transparent_70%)] pointer-events-none" />
-            <div className="relative w-16 h-16 mx-auto mb-5 rounded-full bg-gradient-to-br from-sky-400 to-indigo-500 flex items-center justify-center text-3xl text-white shadow-[0_12px_20px_-8px_rgba(99,102,241,0.5)]">
-              ✨
-            </div>
-            <h2
-              id="experience-popout-title"
-              className="relative text-[26px] font-bold text-slate-800 tracking-wide mb-3"
-            >
-              體驗課即將開始！
-            </h2>
-            <p className="relative text-[15px] text-slate-600 leading-7 mb-4">
-              有一位學生已經準備好上課囉！練習結束後，別忘了點「獲得建議」，教練會建議你怎麼做得更好！
-            </p>
-            <p className="relative text-[13px] text-slate-500 leading-6 mb-7 italic">
-              *對話只能支援文字，請勿傳送圖片、連結或影片呦。
-            </p>
-            <button
-              type="button"
-              className="relative w-full rounded-full px-6 py-3.5 bg-gradient-to-br from-blue-500 to-blue-600 text-white text-[15px] font-semibold shadow-[0_18px_30px_-15px_rgba(37,99,235,0.75)] transition hover:-translate-y-0.5 hover:brightness-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-400 active:translate-y-0"
-              onClick={() => setIsExperiencePopoutVisible(false)}
-            >
-              開始練習
-            </button>
+            {isCreatingStudent ? (
+              <>
+                <div className="relative w-16 h-16 mx-auto mb-5 rounded-full bg-gradient-to-br from-sky-400 to-indigo-500 flex items-center justify-center text-3xl text-white shadow-[0_12px_20px_-8px_rgba(99,102,241,0.5)] animate-pulse">
+                  <div className="w-10 h-10 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
+                </div>
+                <h2
+                  id="experience-popout-title"
+                  className="relative text-[26px] font-bold text-slate-800 tracking-wide mb-3"
+                >
+                  正在為您準備學生...
+                </h2>
+                <p className="relative text-[15px] text-slate-600 leading-7 mb-4">
+                  我們正在為您準備一位學生，請稍候片刻
+                </p>
+                <div className="relative flex justify-center items-center gap-1.5 mb-7">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-[bounce_1s_infinite_0ms]" />
+                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-[bounce_1s_infinite_150ms]" />
+                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-[bounce_1s_infinite_300ms]" />
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="relative w-16 h-16 mx-auto mb-5 rounded-full bg-gradient-to-br from-sky-400 to-indigo-500 flex items-center justify-center text-3xl text-white shadow-[0_12px_20px_-8px_rgba(99,102,241,0.5)]">
+                  ✨
+                </div>
+                <h2
+                  id="experience-popout-title"
+                  className="relative text-[26px] font-bold text-slate-800 tracking-wide mb-3"
+                >
+                  體驗課即將開始！
+                </h2>
+                <p className="relative text-[15px] text-slate-600 leading-7 mb-4">
+                  有一位學生已經準備好上課囉！練習結束後，別忘了點「獲得建議」，教練會建議你怎麼做得更好！
+                </p>
+                <p className="relative text-[13px] text-slate-500 leading-6 mb-7 italic">
+                  *對話只能支援文字，請勿傳送圖片、連結或影片呦。
+                </p>
+                <button
+                  type="button"
+                  className="relative w-full rounded-full px-6 py-3.5 bg-gradient-to-br from-blue-500 to-blue-600 text-white text-[15px] font-semibold shadow-[0_18px_30px_-15px_rgba(37,99,235,0.75)] transition hover:-translate-y-0.5 hover:brightness-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-400 active:translate-y-0"
+                  onClick={() => setIsExperiencePopoutVisible(false)}
+                >
+                  開始練習
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}
