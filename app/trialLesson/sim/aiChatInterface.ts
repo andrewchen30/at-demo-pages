@@ -62,57 +62,46 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
     setAdminMode(admin);
   }, [searchParams]);
 
+  // 從 URL 同步 chapter 到 state，如果 URL 沒有參數則預設為 1
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
     const urlChapter = searchParams?.get('chapter');
-    if (urlChapter && Number.isInteger(Number(urlChapter)) && CHAPTER_GOALS[Number(urlChapter)]) {
-      setChapterNumber(Number(urlChapter));
-      localStorage.setItem('chapter', String(urlChapter));
-    } else {
-      const stored = localStorage.getItem('chapter');
-      const parsed = stored ? Number(stored) : 1;
-      setChapterNumber(CHAPTER_GOALS[parsed] ? parsed : 1);
+    const parsed = urlChapter ? Number(urlChapter) : NaN;
+    const isValid = Number.isInteger(parsed) && CHAPTER_GOALS[parsed];
+    const finalChapter = isValid ? parsed : 1;
+
+    // 只在 chapter 真的不同時才更新 state
+    if (finalChapter !== chapterNumber) {
+      setChapterNumber(finalChapter);
+    }
+
+    // 如果 URL 沒有 chapter 參數或參數無效，更新 URL
+    if (!isValid) {
       const params = new URLSearchParams(window.location.search);
-      params.set('chapter', String(CHAPTER_GOALS[parsed] ? parsed : 1));
+      params.set('chapter', String(finalChapter));
       router.replace(`${window.location.pathname}?${params.toString()}`);
     }
-  }, [router, searchParams]);
+  }, [searchParams, router, chapterNumber]);
 
+  // 當 scriptwriterResponse 或 chapter 改變時，更新系統訊息和前情提要
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    if (!CHAPTER_GOALS[chapterNumber]) return;
+    if (!scriptwriterResponse || !CHAPTER_GOALS[chapterNumber]) return;
 
-    localStorage.setItem('chapter', String(chapterNumber));
-    const params = new URLSearchParams(window.location.search);
-    params.set('chapter', String(chapterNumber));
-    router.replace(`${window.location.pathname}?${params.toString()}`);
+    setWorkflowStep('student');
+    setSystemMessage(getTeacherHintText(scriptwriterResponse, chapterNumber));
+    setSystemUserBrief(getUserBrief(scriptwriterResponse, chapterNumber).split('\n'));
+    setSystemDialog(getDialog(scriptwriterResponse, chapterNumber).split('\n'));
+    setSystemChecklist(getCheckListForTeacher(chapterNumber).split('\n'));
 
-    if (scriptwriterResponse) {
-      setSystemMessage(getTeacherHintText(scriptwriterResponse, chapterNumber));
-      setSystemUserBrief(getUserBrief(scriptwriterResponse, chapterNumber).split('\n'));
-      setSystemDialog(getDialog(scriptwriterResponse, chapterNumber).split('\n'));
-      setSystemChecklist(getCheckListForTeacher(chapterNumber).split('\n'));
-    }
-  }, [chapterNumber, router, scriptwriterResponse]);
-
-  useEffect(() => {
-    if (scriptwriterResponse) {
-      setWorkflowStep('student');
-      setSystemMessage(getTeacherHintText(scriptwriterResponse, chapterNumber));
-      setSystemUserBrief(getUserBrief(scriptwriterResponse, chapterNumber).split('\n'));
-      setSystemDialog(getDialog(scriptwriterResponse, chapterNumber).split('\n'));
-      setSystemChecklist(getCheckListForTeacher(chapterNumber).split('\n'));
-      // scriptwriterJson 已移除
-      // 若聊天室目前為空，插入前情提要（劇本對話），並記錄前情數量
-      setChatHistory((prev) => {
-        if (prev.length > 0) return prev;
-        const scripted = getScriptedChatHistory(scriptwriterResponse, chapterNumber);
-        if (!Array.isArray(scripted) || scripted.length === 0) return prev;
-        setPreludeCount(scripted.length);
-        return [...scripted];
-      });
-    }
+    // 若聊天室目前為空，插入前情提要（劇本對話），並記錄前情數量
+    setChatHistory((prev) => {
+      if (prev.length > 0) return prev;
+      const scripted = getScriptedChatHistory(scriptwriterResponse, chapterNumber);
+      if (!Array.isArray(scripted) || scripted.length === 0) return prev;
+      setPreludeCount(scripted.length);
+      return [...scripted];
+    });
   }, [scriptwriterResponse, chapterNumber]);
 
   useEffect(() => {
@@ -120,15 +109,6 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
     const timer = setTimeout(() => setFlash(null), 3000);
     return () => clearTimeout(timer);
   }, [flash]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    const stored = localStorage.getItem('chapter');
-    if (!stored) {
-      setIsChapterDialogOpen(true);
-    }
-  }, []);
 
   const chapterInfo = CHAPTER_GOALS[chapterNumber];
 
@@ -360,10 +340,19 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
   const openChapterDialog = useCallback(() => setIsChapterDialogOpen(true), []);
   const closeChapterDialog = useCallback(() => setIsChapterDialogOpen(false), []);
 
-  const selectChapter = useCallback((n: number) => {
-    setChapterNumber(n);
-    setIsChapterDialogOpen(false);
-  }, []);
+  const selectChapter = useCallback(
+    (n: number) => {
+      if (typeof window === 'undefined') return;
+
+      // 更新 URL，useEffect 會自動同步到 state
+      const params = new URLSearchParams(window.location.search);
+      params.set('chapter', String(n));
+      router.replace(`${window.location.pathname}?${params.toString()}`);
+
+      setIsChapterDialogOpen(false);
+    },
+    [router]
+  );
 
   // 移除 JSON 摺疊切換
 
