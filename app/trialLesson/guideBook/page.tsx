@@ -2,6 +2,7 @@
 
 import { FormEvent, MouseEvent, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { CHAPTER_GOALS } from '@/app/trialLesson/sim/constants';
 
 // Demo 內容資料
@@ -411,6 +412,8 @@ const GUIDE_CONTENT: Record<
 };
 
 export default function GuideBookPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [selectedChapter, setSelectedChapter] = useState<number>(1);
   const [isNameDialogOpen, setIsNameDialogOpen] = useState(false);
   const [teacherName, setTeacherName] = useState('');
@@ -421,19 +424,18 @@ export default function GuideBookPage() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    // 初始化：從 URL query 讀取 chapter，若無則預設為 1 並寫回 URL
-    try {
+    // 依據 URL query 同步 selectedChapter；若無或非法，預設為 1 並 replace 到 URL
+    const chapterParam = searchParams.get('chapter');
+    const parsed = chapterParam ? parseInt(chapterParam, 10) : NaN;
+    const maxChapter = Object.keys(CHAPTER_GOALS).length;
+    const isValid = Number.isInteger(parsed) && parsed >= 1 && parsed <= maxChapter;
+    const finalChapter = isValid ? parsed : 1;
+    setSelectedChapter(finalChapter);
+    if (!isValid || chapterParam === null) {
       const url = new URL(window.location.href);
-      const chapterParam = url.searchParams.get('chapter');
-      const parsed = chapterParam ? Number(chapterParam) : NaN;
-      const isValid = Number.isInteger(parsed) && parsed >= 1 && parsed <= Object.keys(CHAPTER_GOALS).length;
-      const initialChapter = isValid ? parsed : 1;
-      setSelectedChapter(initialChapter);
-      if (!isValid || chapterParam === null) {
-        url.searchParams.set('chapter', String(initialChapter));
-        window.history.replaceState(null, '', url.toString());
-      }
-    } catch {}
+      url.searchParams.set('chapter', String(finalChapter));
+      router.replace(url.pathname + '?' + url.searchParams.toString());
+    }
 
     const storedName = localStorage.getItem('teacherName');
     if (storedName) {
@@ -442,37 +444,17 @@ export default function GuideBookPage() {
     } else {
       setIsNameDialogOpen(true);
     }
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
-  // 監聽瀏覽器返回/前進，保持 state 與 URL 同步
-  useEffect(() => {
+  // 點擊章節時更新 URL 的 chapter（push 以支援返回）
+  const handleChapterClick = (nextChapter: number) => {
+    setSelectedChapter(nextChapter);
     if (typeof window === 'undefined') return;
-    const handler = () => {
-      try {
-        const url = new URL(window.location.href);
-        const chapterParam = url.searchParams.get('chapter');
-        const parsed = chapterParam ? Number(chapterParam) : NaN;
-        const isValid = Number.isInteger(parsed) && parsed >= 1 && parsed <= Object.keys(CHAPTER_GOALS).length;
-        setSelectedChapter(isValid ? parsed : 1);
-      } catch {}
-    };
-    window.addEventListener('popstate', handler);
-    return () => window.removeEventListener('popstate', handler);
-  }, []);
-
-  // 當 selectedChapter 改變時，將 chapter 寫入 URL（pushState 以便可返回）
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    try {
-      const url = new URL(window.location.href);
-      const currentParam = url.searchParams.get('chapter');
-      const nextValue = String(selectedChapter);
-      if (currentParam !== nextValue) {
-        url.searchParams.set('chapter', nextValue);
-        window.history.pushState(null, '', url.toString());
-      }
-    } catch {}
-  }, [selectedChapter]);
+    const url = new URL(window.location.href);
+    url.searchParams.set('chapter', String(nextChapter));
+    router.push(url.pathname + '?' + url.searchParams.toString());
+  };
 
   const handleNameSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -582,7 +564,7 @@ export default function GuideBookPage() {
                       ? 'bg-gradient-to-br from-blue-600 to-blue-700 border-blue-700 shadow-[0_6px_18px_rgba(59,130,246,0.22)]'
                       : 'border-slate-200 hover:border-blue-500 hover:shadow-[0_2px_10px_rgba(59,130,246,0.12)] hover:-translate-y-0.5'
                   }`}
-                  onClick={() => setSelectedChapter(Number(number))}
+                  onClick={() => handleChapterClick(Number(number))}
                 >
                   <div className="w-full flex items-center justify-between">
                     <span
