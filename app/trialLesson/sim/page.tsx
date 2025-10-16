@@ -74,94 +74,114 @@ function SimClassTrialLessonContent() {
   };
 
   // 格式化系統提示為純文字
-  const formatSystemPrompt = useCallback((): string => {
-    const sections: string[] = [];
+  const buildBackgroundInfo = useCallback(
+    (overrides?: { judgeResult?: string; coachFeedback?: string }): string => {
+      const sections: string[] = [];
 
-    // 章節資訊
-    if (chapterInfo) {
-      sections.push(`=== 章節資訊 ===`);
-      sections.push(`標題: ${chapterInfo.title}`);
-      sections.push(`目標: ${chapterInfo.goal}`);
-      sections.push('');
-    }
-
-    // 背景資訊
-    if (systemUserBrief.length > 0) {
-      sections.push(`=== 背景資訊 ===`);
-      systemUserBrief.forEach((item) => {
-        sections.push(item);
-      });
-      sections.push('');
-    }
-
-    // 對話內容（只在非第一章時顯示）
-    if (chapterNumber !== 1 && systemDialog.length > 0) {
-      sections.push(`=== 對話內容 ===`);
-      systemDialog.forEach((item) => {
-        sections.push(item);
-      });
-      sections.push('');
-    }
-
-    // 檢查重點
-    if (systemChecklist.length > 0) {
-      sections.push(`=== 檢查重點 ===`);
-      systemChecklist.forEach((item) => {
-        sections.push(item);
-      });
-    }
-
-    // Judge Result（如果有的話）
-    if (!!judgeResult) {
-      sections.push('');
-      sections.push('=== Judge Result ===');
-      sections.push(judgeResult);
-    }
-
-    return sections.join('\n');
-  }, [chapterInfo, chapterNumber, systemUserBrief, systemDialog, systemChecklist, judgeResult]);
-
-  // 格式化對話記錄
-  const formatChatHistory = useCallback((history: typeof chatHistory): string => {
-    const baseTime = new Date();
-    const lines: string[] = [];
-
-    history.forEach((msg, index) => {
-      // 為每則訊息添加索引對應的秒數差異，讓時間戳記有所區別
-      const msgTime = new Date(baseTime.getTime() + index * 1000);
-      const timestamp = formatDateTime(msgTime);
-
-      // 檢查是否為教練總結
-      const isCoachFeedback = msg.content.includes('教練總結');
-
-      // 決定角色名稱
-      let role = msg.role === 'user' ? '老師' : '學生';
-      if (isCoachFeedback) {
-        role = '教練';
+      if (chapterInfo) {
+        sections.push(`=== 章節資訊 ===`);
+        sections.push(`標題: ${chapterInfo.title}`);
+        sections.push(`目標: ${chapterInfo.goal}`);
+        sections.push('');
       }
 
-      // 將訊息內容中的換行改為分號
-      const content = msg.content.replace(/\n/g, ';');
-
-      // 如果是教練總結，前後加上分隔線（獨立的行）
-      if (isCoachFeedback) {
-        lines.push('=====');
-        lines.push(`[${role}] (${timestamp}): ${content}`);
-        lines.push('=====');
-      } else {
-        lines.push(`[${role}] (${timestamp}): ${content}`);
+      if (systemUserBrief.length > 0) {
+        sections.push(`=== 背景資訊 ===`);
+        systemUserBrief.forEach((item) => {
+          sections.push(item);
+        });
+        sections.push('');
       }
-    });
 
-    return lines.join('\n');
-  }, []);
+      if (chapterNumber !== 1 && systemDialog.length > 0) {
+        sections.push(`=== 對話內容 ===`);
+        systemDialog.forEach((item) => {
+          sections.push(item);
+        });
+        sections.push('');
+      }
+
+      if (systemChecklist.length > 0) {
+        sections.push(`=== 檢查重點 ===`);
+        systemChecklist.forEach((item) => {
+          sections.push(item);
+        });
+      }
+
+      const finalJudgeResult = overrides?.judgeResult ?? judgeResult;
+      if (finalJudgeResult) {
+        sections.push('');
+        sections.push('=== Judge Result ===');
+        sections.push(finalJudgeResult);
+      }
+
+      const finalCoachFeedback = (overrides?.coachFeedback ?? coachResult)?.trim();
+      if (finalCoachFeedback) {
+        sections.push('');
+        sections.push('=== Coach Feedback ===');
+        sections.push(finalCoachFeedback);
+      }
+
+      return sections.join('\n');
+    },
+    [chapterInfo, chapterNumber, systemUserBrief, systemDialog, systemChecklist, judgeResult, coachResult]
+  );
+
+  const buildChatHistoryString = useCallback(
+    (history: typeof chatHistory, overrides?: { coachFeedback?: string }): string => {
+      const baseTime = new Date();
+      const lines: string[] = [];
+
+      history.forEach((msg, index) => {
+        const msgTime = new Date(baseTime.getTime() + index * 1000);
+        const timestamp = formatDateTime(msgTime);
+
+        const role = msg.role === 'user' ? '老師' : '學生';
+        const content = msg.content.replace(/\r?\n/g, '\n').trim();
+
+        lines.push(`[${role}] (${timestamp}): ${content}`);
+      });
+
+      const finalCoachFeedback = (overrides?.coachFeedback ?? coachResult)?.trim();
+      if (finalCoachFeedback) {
+        const feedbackTime = new Date(baseTime.getTime() + history.length * 1000);
+        const timestamp = formatDateTime(feedbackTime);
+        const normalizedFeedback = finalCoachFeedback.replace(/\r?\n/g, '\n').trim();
+
+        lines.push(`[教練] (${timestamp}): 教練總結`);
+        if (normalizedFeedback) {
+          normalizedFeedback.split('\n').forEach((line) => {
+            if (line.trim()) {
+              lines.push(line.trim());
+            }
+          });
+        }
+      }
+
+      return lines.join('\n');
+    },
+    [formatDateTime, coachResult]
+  );
+
+  const computeChatCount = useCallback(
+    (history: typeof chatHistory, overrides?: { coachFeedback?: string }): number => {
+      const finalCoachFeedback = (overrides?.coachFeedback ?? coachResult)?.trim();
+      return history.length + (finalCoachFeedback ? 1 : 0);
+    },
+    [coachResult]
+  );
 
   // 建立 ChatLog 記錄
   const createChatLog = useCallback(
-    async (teacherName: string, chatLogId: string) => {
+    async (
+      teacherName: string,
+      chatLogId: string,
+      overrides?: { judgeResult?: string; coachFeedback?: string }
+    ) => {
       try {
-        const formattedChatHistory = formatChatHistory(chatHistory);
-        const formattedSystemPrompt = formatSystemPrompt();
+        const formattedChatHistory = buildChatHistoryString(chatHistory, overrides);
+        const formattedSystemPrompt = buildBackgroundInfo(overrides);
+        const chatCount = computeChatCount(chatHistory, overrides);
 
         const response = await fetch('/api/chat-logs', {
           method: 'POST',
@@ -172,7 +192,7 @@ function SimClassTrialLessonContent() {
             chat_log_id: chatLogId,
             teacher_name: teacherName,
             chat_history: formattedChatHistory,
-            chat_count: chatHistory.length,
+            chat_count: chatCount,
             background_info: formattedSystemPrompt,
           }),
         });
@@ -187,15 +207,19 @@ function SimClassTrialLessonContent() {
         console.error('建立 ChatLog 記錄時發生錯誤:', error);
       }
     },
-    [chatHistory, formatChatHistory, formatSystemPrompt]
+    [chatHistory, buildChatHistoryString, buildBackgroundInfo, computeChatCount]
   );
 
   // 更新 ChatLog 記錄
   const updateChatLog = useCallback(
-    async (chatLogId: string, includeJudgeResult: boolean = false) => {
+    async (
+      chatLogId: string,
+      overrides?: { judgeResult?: string; coachFeedback?: string }
+    ) => {
       try {
-        const formattedChatHistory = formatChatHistory(chatHistory);
-        const formattedSystemPrompt = formatSystemPrompt();
+        const formattedChatHistory = buildChatHistoryString(chatHistory, overrides);
+        const formattedSystemPrompt = buildBackgroundInfo(overrides);
+        const chatCount = computeChatCount(chatHistory, overrides);
 
         const response = await fetch('/api/chat-logs', {
           method: 'PATCH',
@@ -205,7 +229,7 @@ function SimClassTrialLessonContent() {
           body: JSON.stringify({
             chat_log_id: chatLogId,
             chat_history: formattedChatHistory,
-            chat_count: chatHistory.length,
+            chat_count: chatCount,
             background_info: formattedSystemPrompt,
           }),
         });
@@ -218,7 +242,7 @@ function SimClassTrialLessonContent() {
         console.error('更新 ChatLog 記錄時發生錯誤:', error);
       }
     },
-    [chatHistory, formatChatHistory, formatSystemPrompt]
+    [chatHistory, buildChatHistoryString, buildBackgroundInfo, computeChatCount]
   );
 
   // 初始化：生成 chat_log_id 和檢查老師名字
@@ -268,14 +292,9 @@ function SimClassTrialLessonContent() {
         }
       }
     } else {
-      // 如果已建立 ChatLog，只在有新的 assistant 訊息時更新（避免過於頻繁）
-      // 這樣可以確保每次對話完成（包括教練總結）都會更新記錄
       const lastMessage = chatHistory[chatHistory.length - 1];
       if (chatLogId && lastMessage && lastMessage.role === 'assistant') {
-        // 檢查是否為教練總結
-        const isCoachFeedback = lastMessage.content.includes('教練總結');
-        // 如果是教練總結，在 background_info 中包含 judge_result
-        updateChatLog(chatLogId, isCoachFeedback);
+        updateChatLog(chatLogId);
       }
     }
   }, [chatHistory, chatLogCreated, teacherName, chatLogId, createChatLog, updateChatLog]);
@@ -313,8 +332,31 @@ function SimClassTrialLessonContent() {
       setJudgeResult(result.judgeResult);
       setCoachResult(result.coachResult);
       setIsCoachFeedbackPopoutVisible(true);
+
+      if (chatLogId) {
+        if (chatLogCreated) {
+          await updateChatLog(chatLogId, {
+            judgeResult: result.judgeResult,
+            coachFeedback: result.coachResult,
+          });
+        } else if (teacherName) {
+          await createChatLog(teacherName, chatLogId, {
+            judgeResult: result.judgeResult,
+            coachFeedback: result.coachResult,
+          });
+        }
+      }
     }
-  }, [generateSummary, chatHistory, preludeCount]);
+  }, [
+    generateSummary,
+    chatHistory,
+    preludeCount,
+    chatLogId,
+    chatLogCreated,
+    teacherName,
+    updateChatLog,
+    createChatLog,
+  ]);
 
   // 關閉回饋紀錄 popout
   const closeCoachFeedbackPopout = useCallback(() => {
