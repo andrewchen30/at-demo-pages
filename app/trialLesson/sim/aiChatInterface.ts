@@ -30,10 +30,7 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // 移除 adminMode 對外回傳，但內部仍可依網址參數切行為（若未來需要可完全刪除）
-  const [adminMode, setAdminMode] = useState(false);
   const [workflowStep, setWorkflowStep] = useState<WorkflowStep>('idle');
-  const [currentBot] = useState<BotType>('student');
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('disconnected');
 
   const [chatHistory, setChatHistory] = useState<ChatHistoryEntry[]>([]);
@@ -55,11 +52,6 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
   // 移除 scriptwriterJson 對外回傳
 
   const chatInputRef = useRef<HTMLTextAreaElement | null>(null);
-
-  useEffect(() => {
-    const admin = searchParams?.get('admin') === 'true';
-    setAdminMode(admin);
-  }, [searchParams]);
 
   // 從 URL 同步 chapter 到 state，如果 URL 沒有參數則預設為 1
   useEffect(() => {
@@ -110,12 +102,6 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
   }, [flash]);
 
   const chapterInfo = GUIDE_CONTENT[chapterNumber];
-
-  const statusText = useMemo(() => {
-    if (connectionStatus === 'connected') return '已連接';
-    if (connectionStatus === 'thinking') return '思考中...';
-    return '未連接';
-  }, [connectionStatus]);
 
   const canSummarize = chatHistory.length > 0;
 
@@ -339,7 +325,6 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
 
   return {
     workflowStep,
-    currentBot,
     connectionStatus,
     chatHistory,
     preludeCount,
@@ -352,7 +337,6 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
     isCreatingStudent,
     isSummarizing,
     flash,
-    statusText,
     canSummarize,
     chapterInfo,
     chapterOptions,

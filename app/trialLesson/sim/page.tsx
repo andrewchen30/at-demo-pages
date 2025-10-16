@@ -21,7 +21,6 @@ function SimClassTrialLessonContent() {
     isCreatingStudent,
     isSummarizing,
     flash,
-    statusText,
     canSummarize,
     chapterInfo,
     chapterOptions,

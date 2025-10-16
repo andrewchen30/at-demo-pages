@@ -29,7 +29,6 @@ export interface FlashMessage {
 
 export interface UseTrialLessonChatResult {
   workflowStep: WorkflowStep;
-  currentBot: BotType;
   connectionStatus: ConnectionStatus;
   chatHistory: ChatHistoryEntry[];
   preludeCount: number;
@@ -42,7 +41,6 @@ export interface UseTrialLessonChatResult {
   isCreatingStudent: boolean;
   isSummarizing: boolean;
   flash: FlashMessage | null;
-  statusText: string;
   canSummarize: boolean;
   chapterInfo: { title: string; goal: string; sidebarTitle: string } | undefined;
   chapterOptions: Array<{ number: number; title: string; goal: string; selected: boolean }>;
