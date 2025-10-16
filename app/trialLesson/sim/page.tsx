@@ -505,8 +505,8 @@ function SimClassTrialLessonContent() {
                         message.role === 'user' ? 'self-end flex-row-reverse' : 'self-start'
                       }`}
                     >
-                      <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold bg-emerald-500 text-white">
-                        {message.role === 'user' ? '你' : '學生'}
+                      <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold bg-emerald-500 text-white flex-shrink-0">
+                        {message.role === 'user' ? '你' : '生'}
                       </div>
                       <div
                         className={`rounded-xl border px-4 py-3 leading-6 ${
@@ -544,11 +544,11 @@ function SimClassTrialLessonContent() {
                     }`}
                   >
                     <div
-                      className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${
+                      className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0 ${
                         message.role === 'user' ? 'bg-emerald-500 text-white' : 'bg-blue-500 text-white'
                       }`}
                     >
-                      {message.role === 'user' ? '你' : '學生'}
+                      {message.role === 'user' ? '你' : '生'}
                     </div>
                     <div
                       className={`rounded-xl border px-4 py-3 leading-6 ${
@@ -567,8 +567,8 @@ function SimClassTrialLessonContent() {
             )}
             {isThinking && (
               <div className="flex gap-3 max-w-[80%] self-start">
-                <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold bg-blue-500 text-white">
-                  學生
+                <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold bg-blue-500 text-white flex-shrink-0">
+                  生
                 </div>
                 <div className="flex items-center gap-2 text-slate-500 text-sm px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl max-w-[200px]">
                   <span>思考中</span>
