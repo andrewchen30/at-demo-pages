@@ -4,6 +4,7 @@ import { FormEvent, Suspense, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 
 import { useTrialLessonChat } from './aiChatInterface';
+import { CHAPTER_GOALS } from './constants';
 
 function SimClassTrialLessonContent() {
   const {
@@ -43,6 +44,8 @@ function SimClassTrialLessonContent() {
   const [coachResult, setCoachResult] = useState<string>('');
   const [isChecklistVisible, setIsChecklistVisible] = useState(true);
   const [isExperiencePopoutVisible, setIsExperiencePopoutVisible] = useState(true);
+  const [isCoachFeedbackPopoutVisible, setIsCoachFeedbackPopoutVisible] = useState(false);
+  const [showFeedbackTooltip, setShowFeedbackTooltip] = useState(false);
 
   // 生成 UUID
   const generateUUID = (): string => {
@@ -279,14 +282,61 @@ function SimClassTrialLessonContent() {
     }
   }, [chatHistory, chatLogCreated, teacherName, chatLogId, createChatLog, updateChatLog]);
 
+  // 監聽老師發送的訊息數量，超過 3 句時顯示 tooltip
+  useEffect(() => {
+    // 計算老師發送的訊息數量（排除前情提要）
+    const teacherMessages = chatHistory.slice(preludeCount).filter((msg) => msg.role === 'user');
+
+    if (teacherMessages.length > 3 && !coachResult && !showFeedbackTooltip) {
+      setShowFeedbackTooltip(true);
+      // 5 秒後自動隱藏 tooltip
+      const timer = setTimeout(() => {
+        setShowFeedbackTooltip(false);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [chatHistory, preludeCount, coachResult, showFeedbackTooltip]);
+
+  // 檢查 judgeResult 是否全部成功
+  const checkAllJudgeSuccess = useCallback((judgeResultText: string): boolean => {
+    if (!judgeResultText) return false;
+
+    return !judgeResultText.includes('✘');
+  }, []);
+
   // 處理教練總結按鈕
   const handleGenerateSummary = useCallback(async () => {
+    setShowFeedbackTooltip(false); // 隱藏 tooltip
     const result = await generateSummary();
     if (result) {
       setJudgeResult(result.judgeResult);
       setCoachResult(result.coachResult);
+      setIsCoachFeedbackPopoutVisible(true);
     }
   }, [generateSummary]);
+
+  // 關閉教練回饋 popout
+  const closeCoachFeedbackPopout = useCallback(() => {
+    setIsCoachFeedbackPopoutVisible(false);
+  }, []);
+
+  // 繼續練習（關閉 popout）
+  const handleContinuePractice = useCallback(() => {
+    closeCoachFeedbackPopout();
+  }, [closeCoachFeedbackPopout]);
+
+  // 前往下一個主題
+  const handleNextChapter = useCallback(() => {
+    const nextChapter = chapterNumber + 1;
+    if (CHAPTER_GOALS[nextChapter]) {
+      // 導航到教戰手冊頁面，並設定下一個章節
+      localStorage.setItem('selectedNumber', String(nextChapter));
+      window.location.href = '/trialLesson/guideBook';
+    } else {
+      // 已經是最後一章，返回教戰手冊首頁
+      window.location.href = '/trialLesson/guideBook';
+    }
+  }, [chapterNumber]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -374,23 +424,15 @@ function SimClassTrialLessonContent() {
           <div className="bg-white border border-slate-200 rounded-xl flex flex-col overflow-hidden flex-1 min-h-0">
             <div className="p-4 border-b border-slate-200 flex items-center justify-between flex-shrink-0">
               <div className="flex flex-col gap-1">
-                <div className="text-base font-semibold text-slate-800">教練回饋</div>
+                <div className="text-base font-semibold text-slate-800">前次教練回饋</div>
               </div>
-              <button
-                className="bg-gradient-to-b from-blue-500 to-blue-600 rounded-lg px-4 py-2 text-[13px] font-medium text-white transition-all hover:brightness-105 disabled:opacity-50 disabled:cursor-not-allowed"
-                onClick={handleGenerateSummary}
-                disabled={!canSummarize || isCreatingStudent || isSummarizing || isThinking}
-                title="取得教練回饋"
-              >
-                {isSummarizing ? '產生中...' : '取得回饋'}
-              </button>
             </div>
             <div className="flex-1 overflow-y-auto p-4">
               {!coachResult ? (
                 <div className="text-center text-slate-500 p-10">
                   <div className="text-3xl mb-3">💬</div>
                   <div className="text-[15px] font-semibold mb-1">尚無教練回饋</div>
-                  <div className="text-sm">點擊右上角按鈕取得回饋</div>
+                  <div className="text-sm">在聊天室下方點擊「取得回饋」按鈕</div>
                 </div>
               ) : (
                 <div className="text-sm leading-[1.4] text-slate-800">
@@ -405,17 +447,8 @@ function SimClassTrialLessonContent() {
 
         <div className="flex flex-col h-screen bg-slate-50">
           <div className="p-5 border-b border-slate-200 bg-white">
-            <div className="text-lg font-semibold text-slate-800">AI 互動介面</div>
-            <div className="text-xs text-slate-500 mt-1">
-              <span className="inline-flex items-center gap-1">
-                <span
-                  className={`w-2 h-2 rounded-full ${
-                    connectionStatus === 'connected' ? 'bg-emerald-500' : 'bg-slate-300'
-                  }`}
-                ></span>
-                <span>{statusText}</span>
-              </span>
-            </div>
+            <div className="text-lg font-semibold text-slate-800">{chapterInfo?.title ?? `章節 ${chapterNumber}`}</div>
+            <div className="text-xs text-slate-500 mt-1">目標：{chapterInfo?.goal ?? ''}</div>
           </div>
 
           {flash && (
@@ -567,6 +600,23 @@ function SimClassTrialLessonContent() {
               >
                 {isThinking ? '發送中...' : '發送'}
               </button>
+              <div className="relative">
+                <button
+                  type="button"
+                  className="bg-gradient-to-b from-blue-500 to-blue-600 text-white px-5 py-3 rounded-xl text-sm font-medium transition-all min-w-[100px] hover:brightness-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={handleGenerateSummary}
+                  disabled={!canSummarize || isCreatingStudent || isSummarizing || isThinking}
+                  onMouseEnter={() => setShowFeedbackTooltip(false)}
+                >
+                  {isSummarizing ? '產生中...' : '取得回饋'}
+                </button>
+                {showFeedbackTooltip && (
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-slate-800 text-white text-xs rounded-lg whitespace-nowrap shadow-lg animate-[slideUp_0.3s_ease-out] pointer-events-none z-10">
+                    點擊取得回饋
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-px border-4 border-transparent border-t-slate-800"></div>
+                  </div>
+                )}
+              </div>
             </div>
           </form>
         </div>
@@ -636,6 +686,65 @@ function SimClassTrialLessonContent() {
             >
               開始模擬練習
             </button>
+          </div>
+        </div>
+      )}
+      {isCoachFeedbackPopoutVisible && coachResult && (
+        <div className="fixed inset-0 flex items-center justify-center p-6 bg-slate-900/50 backdrop-blur-sm z-[1300]">
+          <div className="relative w-[min(700px,90%)] max-h-[85vh] bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col">
+            {/* 標題列 */}
+            <div className="p-6 border-b border-slate-200 flex items-center justify-between bg-gradient-to-r from-blue-50 to-white flex-shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-xl shadow-md">
+                  🎓
+                </div>
+                <h2 className="text-xl font-bold text-slate-800">教練回饋</h2>
+              </div>
+              <button
+                className="w-9 h-9 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-800 transition-all flex items-center justify-center"
+                onClick={closeCoachFeedbackPopout}
+                aria-label="關閉教練回饋"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+
+            {/* 內容區域 */}
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-5">
+                <div className="text-sm leading-7 text-slate-800 whitespace-pre-wrap">
+                  {coachResult.split('\n').map((line, i) => (
+                    <p key={i} className="mb-2">
+                      {line}
+                    </p>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* 按鈕區域 */}
+            <div className="p-6 border-t border-slate-200 bg-slate-50 flex-shrink-0">
+              {checkAllJudgeSuccess(judgeResult) ? (
+                <button
+                  type="button"
+                  className="w-full rounded-xl px-6 py-4 bg-gradient-to-br from-emerald-500 to-emerald-600 text-white text-base font-semibold shadow-lg transition hover:-translate-y-0.5 hover:brightness-105 active:translate-y-0"
+                  onClick={handleNextChapter}
+                >
+                  🎉 前往下一個主題
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="w-full rounded-xl px-6 py-4 bg-gradient-to-br from-blue-500 to-blue-600 text-white text-base font-semibold shadow-lg transition hover:-translate-y-0.5 hover:brightness-105 active:translate-y-0"
+                  onClick={handleContinuePractice}
+                >
+                  💪 繼續練習
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}

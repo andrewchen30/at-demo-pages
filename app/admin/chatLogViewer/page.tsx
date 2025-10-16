@@ -592,7 +592,7 @@ export default function ChatLogViewerPage() {
                             }}
                           >
                             <span style={{ fontSize: '18px' }}>🎯</span>
-                            <span>教練回饋</span>
+                            <span>最終教練回饋</span>
                           </div>
                           {selectedLog.messages
                             .filter((message) => message.role === 'coach')
