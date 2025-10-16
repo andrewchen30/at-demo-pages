@@ -114,7 +114,7 @@ function SimClassTrialLessonContent() {
     // Judge Result（如果有的話）
     if (!!judgeResult) {
       sections.push('');
-      sections.push('=== Judge Result ===');
+      sections.push('=== 最終裁判結果 ===');
       sections.push(judgeResult);
     }
 
