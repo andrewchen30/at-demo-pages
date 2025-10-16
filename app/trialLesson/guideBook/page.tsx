@@ -3,7 +3,6 @@
 import { FormEvent, MouseEvent, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { CHAPTER_GOALS } from '@/app/trialLesson/sim/constants';
 import { GUIDE_CONTENT } from './guideContent';
 
 export default function GuideBookPage() {
@@ -15,14 +14,13 @@ export default function GuideBookPage() {
   const [nameInputValue, setNameInputValue] = useState('');
 
   const currentContent = GUIDE_CONTENT[selectedChapter];
-  const chapterInfo = CHAPTER_GOALS[selectedChapter];
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
     // 依據 URL query 同步 selectedChapter；若無或非法，預設為 1 並 replace 到 URL
     const chapterParam = searchParams.get('chapter');
     const parsed = chapterParam ? parseInt(chapterParam, 10) : NaN;
-    const maxChapter = Object.keys(CHAPTER_GOALS).length;
+    const maxChapter = Object.keys(GUIDE_CONTENT).length;
     const isValid = Number.isInteger(parsed) && parsed >= 1 && parsed <= maxChapter;
     const finalChapter = isValid ? parsed : 1;
     setSelectedChapter(finalChapter);
@@ -151,38 +149,29 @@ export default function GuideBookPage() {
               <h2 className="text-[20px] font-bold text-slate-800 m-0">體驗課培訓主題</h2>
             </div>
             <div className="p-4 flex md:flex-col flex-row gap-3 md:flex-1 md:overflow-y-auto overflow-x-auto">
-              {Object.entries(CHAPTER_GOALS).map(([number, info]) => (
+              {Object.entries(GUIDE_CONTENT).map(([number, content]) => (
                 <button
                   key={number}
-                  className={`min-w-[240px] md:min-w-0 flex flex-col items-start gap-2.5 p-4 bg-white border rounded-2xl cursor-pointer transition text-left w-full shadow-[0_1px_4px_rgba(0,0,0,0.04)] ${
+                  className={`min-w-[240px] md:min-w-0 flex flex-row items-center gap-3 p-4 bg-white border rounded-2xl cursor-pointer transition text-left w-full shadow-[0_1px_4px_rgba(0,0,0,0.04)] ${
                     Number(number) === selectedChapter
                       ? 'bg-gradient-to-br from-blue-600 to-blue-700 border-blue-700 shadow-[0_6px_18px_rgba(59,130,246,0.22)]'
                       : 'border-slate-200 hover:border-blue-500 hover:shadow-[0_2px_10px_rgba(59,130,246,0.12)] hover:-translate-y-0.5'
                   }`}
                   onClick={() => handleChapterClick(Number(number))}
                 >
-                  <div className="w-full flex items-center justify-between">
-                    <span
-                      className={`inline-block text-[11px] font-bold px-2.5 py-1 rounded-md uppercase tracking-[0.5px] ${
-                        Number(number) === selectedChapter ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
-                      }`}
-                    >
-                      Part {number}
-                    </span>
-                  </div>
+                  <span
+                    className={`inline-block text-[11px] font-bold px-2.5 py-1 rounded-md tracking-[0.5px] flex-shrink-0 ${
+                      Number(number) === selectedChapter ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
+                    }`}
+                  >
+                    主題 {number}
+                  </span>
                   <div
                     className={`text-[15px] font-semibold leading-[1.4] ${
                       Number(number) === selectedChapter ? 'text-white' : 'text-slate-800'
                     }`}
                   >
-                    {info.title}
-                  </div>
-                  <div
-                    className={`text-[13px] leading-6 ${
-                      Number(number) === selectedChapter ? 'text-white/85' : 'text-slate-500'
-                    }`}
-                  >
-                    {info.goal}
+                    {content.sidebarTitle}
                   </div>
                 </button>
               ))}
@@ -208,7 +197,10 @@ export default function GuideBookPage() {
             <div className="max-w-[900px] mx-auto p-12 md:p-8">
               {/* 大標題 */}
               <header className="mb-8">
-                <h1 className="text-[36px] font-bold text-slate-800 m-0 leading-[1.2]">{currentContent.title}</h1>
+                <h1 className="text-[36px] font-bold text-slate-800 m-0 leading-[1.2] mb-3">
+                  主題 {selectedChapter} {currentContent.sidebarTitle}
+                </h1>
+                <p className="text-[18px] text-slate-600 leading-[1.6] m-0">{currentContent.goal}</p>
               </header>
 
               {/* YouTube 影片 */}
@@ -240,7 +232,7 @@ export default function GuideBookPage() {
             >
               <span className="whitespace-nowrap">立刻開始</span>
               <span className="text-sm opacity-90 hidden md:inline">
-                Chapter {selectedChapter} - {chapterInfo?.title}
+                主題 {selectedChapter} - {currentContent.sidebarTitle}
               </span>
               <span className="text-[18px] font-bold transition-transform group-hover:translate-x-1.5">→</span>
             </Link>
