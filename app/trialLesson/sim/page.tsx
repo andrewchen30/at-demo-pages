@@ -131,20 +131,21 @@ function SimClassTrialLessonContent() {
       const msgTime = new Date(baseTime.getTime() + index * 1000);
       const timestamp = formatDateTime(msgTime);
 
-      // 檢查是否為教練總結
-      const isCoachFeedback = msg.content.includes('教練總結');
-
-      // 決定角色名稱
-      let role = msg.role === 'user' ? '老師' : '學生';
-      if (isCoachFeedback) {
+      // 根據訊息角色決定角色名稱
+      let role: string;
+      if (msg.role === 'user') {
+        role = '老師';
+      } else if (msg.role === 'coach') {
         role = '教練';
+      } else {
+        role = '學生';
       }
 
       // 將訊息內容中的換行改為分號
       const content = msg.content.replace(/\n/g, ';');
 
-      // 如果是教練總結，前後加上分隔線（獨立的行）
-      if (isCoachFeedback) {
+      // 如果是教練回饋，前後加上分隔線（獨立的行）
+      if (msg.role === 'coach') {
         lines.push('=====');
         lines.push(`[${role}] (${timestamp}): ${content}`);
         lines.push('=====');
@@ -163,6 +164,9 @@ function SimClassTrialLessonContent() {
         const formattedChatHistory = formatChatHistory(chatHistory);
         const formattedSystemPrompt = formatSystemPrompt();
 
+        console.log('建立 ChatLog - 對話記錄預覽 (前 200 字):', formattedChatHistory.substring(0, 200));
+        console.log('建立 ChatLog - 訊息總數:', chatHistory.length);
+
         const response = await fetch('/api/chat-logs', {
           method: 'POST',
           headers: {
@@ -179,6 +183,7 @@ function SimClassTrialLessonContent() {
 
         const result = await response.json();
         if (result.success) {
+          console.log('成功建立 ChatLog 記錄');
           setChatLogCreated(true);
         } else {
           console.error('建立 ChatLog 記錄失敗:', result.error);
@@ -192,10 +197,13 @@ function SimClassTrialLessonContent() {
 
   // 更新 ChatLog 記錄
   const updateChatLog = useCallback(
-    async (chatLogId: string, includeJudgeResult: boolean = false) => {
+    async (chatLogId: string) => {
       try {
         const formattedChatHistory = formatChatHistory(chatHistory);
         const formattedSystemPrompt = formatSystemPrompt();
+
+        console.log('更新 ChatLog - 對話記錄預覽 (前 200 字):', formattedChatHistory.substring(0, 200));
+        console.log('更新 ChatLog - 訊息總數:', chatHistory.length);
 
         const response = await fetch('/api/chat-logs', {
           method: 'PATCH',
@@ -213,6 +221,8 @@ function SimClassTrialLessonContent() {
         const result = await response.json();
         if (!result.success) {
           console.error('更新 ChatLog 記錄失敗:', result.error);
+        } else {
+          console.log('成功更新 ChatLog 記錄');
         }
       } catch (error) {
         console.error('更新 ChatLog 記錄時發生錯誤:', error);
@@ -250,35 +260,35 @@ function SimClassTrialLessonContent() {
       // 檢查條件：
       // 1. 有老師名字
       // 2. 有 chat_log_id
-      // 3. chatHistory 至少有 2 則訊息（1 則用戶 + 1 則 AI）
+      // 3. chatHistory 長度超過前情提要的數量（表示有新的對話）
       // 4. 最後一則訊息是 assistant（確保 AI 已完成回覆）
       if (
         teacherName &&
         chatLogId &&
-        chatHistory.length >= 2 &&
+        chatHistory.length > preludeCount &&
         chatHistory[chatHistory.length - 1]?.role === 'assistant'
       ) {
-        // 檢查是否有至少一對完整對話（user -> assistant）
-        const hasUserMessage = chatHistory.some((msg) => msg.role === 'user');
-        const hasAssistantMessage = chatHistory.some((msg) => msg.role === 'assistant');
+        // 確保前情提要之後至少有一對新的對話（user -> assistant）
+        const newMessages = chatHistory.slice(preludeCount);
+        const hasNewUserMessage = newMessages.some((msg) => msg.role === 'user');
+        const hasNewAssistantMessage = newMessages.some((msg) => msg.role === 'assistant');
 
-        if (hasUserMessage && hasAssistantMessage) {
-          console.log('偵測到第一次對話完成，建立 ChatLog 記錄');
+        if (hasNewUserMessage && hasNewAssistantMessage) {
+          console.log('偵測到老師第一次新對話完成，建立 ChatLog 記錄');
+          console.log('對話總數:', chatHistory.length, '前情提要數:', preludeCount);
           createChatLog(teacherName, chatLogId);
         }
       }
     } else {
-      // 如果已建立 ChatLog，只在有新的 assistant 訊息時更新（避免過於頻繁）
-      // 這樣可以確保每次對話完成（包括教練總結）都會更新記錄
+      // 如果已建立 ChatLog，在有新的 assistant 或 coach 訊息時更新
       const lastMessage = chatHistory[chatHistory.length - 1];
-      if (chatLogId && lastMessage && lastMessage.role === 'assistant') {
-        // 檢查是否為教練總結
-        const isCoachFeedback = lastMessage.content.includes('教練總結');
-        // 如果是教練總結，在 background_info 中包含 judge_result
-        updateChatLog(chatLogId, isCoachFeedback);
+      if (chatLogId && lastMessage && (lastMessage.role === 'assistant' || lastMessage.role === 'coach')) {
+        console.log('更新 ChatLog 記錄，最新訊息角色:', lastMessage.role);
+        console.log('對話總數:', chatHistory.length);
+        updateChatLog(chatLogId);
       }
     }
-  }, [chatHistory, chatLogCreated, teacherName, chatLogId, createChatLog, updateChatLog]);
+  }, [chatHistory, chatLogCreated, teacherName, chatLogId, preludeCount, createChatLog, updateChatLog]);
 
   // 監聽老師發送的訊息數量，超過 3 句時顯示 tooltip
   useEffect(() => {

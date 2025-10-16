@@ -40,12 +40,12 @@ export function getScriptedChatHistory(input: DirectorInput, partN: number): Cha
 
       // 判斷 MessageRole
       // 老師 -> user, 學生 -> assistant
-      const role: MessageRole = roleName === '老師' ? 'user' : 'assistant';
+      const role: 'user' | 'assistant' = roleName === '老師' ? 'user' : 'assistant';
 
       return {
         role,
         content: content.trim(),
-      };
+      } as ChatHistoryEntry;
     })
     .filter((entry): entry is ChatHistoryEntry => entry !== null);
 

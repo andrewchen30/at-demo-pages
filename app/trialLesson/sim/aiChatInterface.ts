@@ -138,24 +138,30 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
   }, []);
 
   const getChatMessages = useCallback((): OpenAIChatMessage[] => {
-    return chatHistory.map((msg) => ({
-      role: msg.role,
-      content: [{ type: msg.role === 'user' ? 'input_text' : 'output_text', text: msg.content }],
-    }));
+    // 過濾掉 coach 訊息，因為 OpenAI API 不支援這個角色
+    return chatHistory
+      .filter((msg) => msg.role !== 'coach')
+      .map((msg) => ({
+        role: msg.role as 'user' | 'assistant',
+        content: [{ type: msg.role === 'user' ? 'input_text' : 'output_text', text: msg.content }],
+      }));
   }, [chatHistory]);
 
   const appendUserMessage = useCallback((messages: OpenAIChatMessage[], message: string): OpenAIChatMessage[] => {
     return [
       ...messages,
       {
-        role: 'user' as MessageRole,
+        role: 'user',
         content: [{ type: 'input_text', text: message }],
       },
     ];
   }, []);
 
   const getChatMessagesText = useCallback((): string => {
-    return chatHistory.map((m) => `${m.role === 'user' ? '老師' : '學生'}: ${m.content}`).join('\n');
+    return chatHistory
+      .filter((m) => m.role !== 'coach') // 過濾掉教練訊息，只包含老師和學生的對話
+      .map((m) => `${m.role === 'user' ? '老師' : '學生'}: ${m.content}`)
+      .join('\n');
   }, [chatHistory]);
 
   const getVariables = useCallback(
@@ -307,7 +313,11 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
     setIsSummarizing(true);
     try {
       const response = await callOpenAI('coach');
-      // 只返回文字版本的回饋，不加到聊天記錄中
+
+      // 將教練回饋添加到聊天記錄中，以便能夠同步到 Google Spreadsheet
+      const coachMessage = `教練總結\n${response.result}`;
+      setChatHistory((prev) => [...prev, { role: 'coach', content: coachMessage }]);
+
       return {
         judgeResult: response.judgeResult,
         coachResult: response.result,

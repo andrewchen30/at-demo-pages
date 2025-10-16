@@ -3,8 +3,8 @@ import type { DirectorInput } from '@/lib/aiCharacter/student/types';
 
 export type BotType = 'student' | 'coach';
 export type WorkflowStep = 'idle' | 'scriptwriter' | 'student';
-export type MessageRole = 'user' | 'assistant';
-export type DisplayRole = MessageRole | 'coach';
+export type MessageRole = 'user' | 'assistant' | 'coach';
+export type DisplayRole = MessageRole;
 export type ConnectionStatus = 'connected' | 'disconnected' | 'thinking';
 
 export interface OpenAIMessageContent {
@@ -13,7 +13,7 @@ export interface OpenAIMessageContent {
 }
 
 export interface OpenAIChatMessage {
-  role: MessageRole;
+  role: 'user' | 'assistant';
   content: OpenAIMessageContent[];
 }
 
