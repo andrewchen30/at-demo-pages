@@ -24,7 +24,7 @@ import type {
   FlashMessage,
   UseTrialLessonChatResult,
 } from './types';
-import { CHAPTER_GOALS } from './constants';
+import { GUIDE_CONTENT } from '@/app/trialLesson/guideBook/guideContent';
 
 export function useTrialLessonChat(): UseTrialLessonChatResult {
   const router = useRouter();
@@ -45,7 +45,6 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
   const [systemChecklist, setSystemChecklist] = useState<string[]>([]);
 
   const [chapterNumber, setChapterNumber] = useState<number>(1);
-  const [isChapterDialogOpen, setIsChapterDialogOpen] = useState(false);
   // 移除 JSON 摺疊功能
 
   const [isThinking, setIsThinking] = useState(false);
@@ -68,7 +67,7 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
 
     const urlChapter = searchParams?.get('chapter');
     const parsed = urlChapter ? Number(urlChapter) : NaN;
-    const isValid = Number.isInteger(parsed) && CHAPTER_GOALS[parsed];
+    const isValid = Number.isInteger(parsed) && GUIDE_CONTENT[parsed];
     const finalChapter = isValid ? parsed : 1;
 
     // 只在 chapter 真的不同時才更新 state
@@ -86,7 +85,7 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
 
   // 當 scriptwriterResponse 或 chapter 改變時，更新系統訊息和前情提要
   useEffect(() => {
-    if (!scriptwriterResponse || !CHAPTER_GOALS[chapterNumber]) return;
+    if (!scriptwriterResponse || !GUIDE_CONTENT[chapterNumber]) return;
 
     setWorkflowStep('student');
     setSystemMessage(getTeacherHintText(scriptwriterResponse, chapterNumber));
@@ -110,7 +109,7 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
     return () => clearTimeout(timer);
   }, [flash]);
 
-  const chapterInfo = CHAPTER_GOALS[chapterNumber];
+  const chapterInfo = GUIDE_CONTENT[chapterNumber];
 
   const statusText = useMemo(() => {
     if (connectionStatus === 'connected') return '已連接';
@@ -122,7 +121,7 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
 
   const chapterOptions = useMemo(
     () =>
-      Object.entries(CHAPTER_GOALS).map(([number, info]) => ({
+      Object.entries(GUIDE_CONTENT).map(([number, info]) => ({
         number: Number(number),
         title: info.title,
         goal: info.goal,
@@ -336,26 +335,6 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
 
   // 移除 export/import 相關功能（已不再使用）
 
-  // 開啟章節選單方法改為內部使用，不對外暴露
-  const openChapterDialog = useCallback(() => setIsChapterDialogOpen(true), []);
-  const closeChapterDialog = useCallback(() => setIsChapterDialogOpen(false), []);
-
-  const selectChapter = useCallback(
-    (n: number) => {
-      if (typeof window === 'undefined') return;
-
-      // 更新 URL，useEffect 會自動同步到 state
-      const params = new URLSearchParams(window.location.search);
-      params.set('chapter', String(n));
-      router.replace(`${window.location.pathname}?${params.toString()}`);
-
-      setIsChapterDialogOpen(false);
-    },
-    [router]
-  );
-
-  // 移除 JSON 摺疊切換
-
   const dismissFlash = useCallback(() => setFlash(null), []);
 
   return {
@@ -369,7 +348,6 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
     systemDialog,
     systemChecklist,
     chapterNumber,
-    isChapterDialogOpen,
     isThinking,
     isCreatingStudent,
     isSummarizing,
@@ -384,8 +362,6 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
     sendMessage,
     generateSummary,
     clearChat,
-    closeChapterDialog,
-    selectChapter,
     dismissFlash,
   };
 }

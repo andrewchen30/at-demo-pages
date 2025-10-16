@@ -4,7 +4,7 @@ import { FormEvent, Suspense, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 
 import { useTrialLessonChat } from './aiChatInterface';
-import { CHAPTER_GOALS } from './constants';
+import { GUIDE_CONTENT } from '@/app/trialLesson/guideBook/guideContent';
 
 function SimClassTrialLessonContent() {
   const {
@@ -17,7 +17,6 @@ function SimClassTrialLessonContent() {
     systemDialog,
     systemChecklist,
     chapterNumber,
-    isChapterDialogOpen,
     isThinking,
     isCreatingStudent,
     isSummarizing,
@@ -32,8 +31,6 @@ function SimClassTrialLessonContent() {
     sendMessage,
     generateSummary,
     clearChat,
-    closeChapterDialog,
-    selectChapter,
     dismissFlash,
   } = useTrialLessonChat();
 
@@ -332,7 +329,7 @@ function SimClassTrialLessonContent() {
   // 前往下一個主題
   const handleNextChapter = useCallback(() => {
     const nextChapter = chapterNumber + 1;
-    if (CHAPTER_GOALS[nextChapter]) {
+    if (GUIDE_CONTENT[nextChapter]) {
       // 導航到教戰手冊頁面，並設定下一個章節
       window.location.href = '/trialLesson/guideBook?chapter=' + nextChapter;
     } else {
@@ -473,14 +470,14 @@ function SimClassTrialLessonContent() {
             {systemUserBrief.length > 0 && (
               <div className="bg-white border border-slate-200 rounded-xl p-5 mx-auto mb-5 max-w-[600px] w-full self-center">
                 <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-200">
-                  <h3 className="text-base font-semibold text-slate-800 m-0">學生資訊</h3>
+                  <h3 className="text-base font-semibold text-slate-800 m-0">學生背景資訊</h3>
                   <button
                     className="bg-slate-50 border border-slate-200 rounded-md px-3.5 py-1.5 text-[13px] font-medium text-slate-800 transition-all hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed"
                     onClick={startScriptwriter}
                     disabled={isCreatingStudent || isSummarizing || isThinking}
                     title="更換學生角色"
                   >
-                    更換
+                    換一個學生
                   </button>
                 </div>
                 <div className="text-sm leading-6 text-slate-800">
@@ -601,7 +598,7 @@ function SimClassTrialLessonContent() {
                 type="submit"
                 disabled={isCreatingStudent || isSummarizing || isThinking || workflowStep === 'idle'}
               >
-                {isThinking ? '發送中...' : '發送'}
+                {isThinking ? '發送中...' : '輸入訊息'}
               </button>
               <div className="relative">
                 <button
@@ -611,11 +608,11 @@ function SimClassTrialLessonContent() {
                   disabled={!canSummarize || isCreatingStudent || isSummarizing || isThinking}
                   onMouseEnter={() => setShowFeedbackTooltip(false)}
                 >
-                  {isSummarizing ? '產生中...' : '取得回饋'}
+                  {isSummarizing ? '思考中...' : '獲得建議'}
                 </button>
                 {showFeedbackTooltip && (
                   <div className="absolute bottom-full right-0 mb-3 px-4 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-sm font-semibold rounded-lg whitespace-nowrap shadow-xl animate-[bounce_2s_ease-in-out_infinite] pointer-events-none z-10">
-                    點擊取得回饋 👇
+                    想知道表現得如何？點「獲得建議」看看教練建議！
                     <div className="absolute top-full right-8 -mt-px border-[6px] border-transparent border-t-amber-500"></div>
                   </div>
                 )}
@@ -623,47 +620,6 @@ function SimClassTrialLessonContent() {
             </div>
           </form>
         </div>
-
-        {isChapterDialogOpen && (
-          <div
-            className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1000]"
-            role="dialog"
-            aria-modal="true"
-          >
-            <div className="bg-white rounded-xl shadow-2xl max-w-[500px] w-[90%] max-h-[80vh] overflow-hidden">
-              <div className="p-5 border-b border-slate-200 flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-slate-800 m-0">選擇章節</h3>
-                <button
-                  className="w-8 h-8 rounded-md hover:bg-slate-50 text-slate-500"
-                  onClick={closeChapterDialog}
-                  aria-label="關閉章節選擇"
-                >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <line x1="18" y1="6" x2="6" y2="18"></line>
-                    <line x1="6" y1="6" x2="18" y2="18"></line>
-                  </svg>
-                </button>
-              </div>
-              <div className="p-5">
-                <div className="flex flex-col gap-3">
-                  {chapterOptions.map((option) => (
-                    <button
-                      key={option.number}
-                      type="button"
-                      className={`p-4 border border-slate-200 rounded-lg cursor-pointer transition-all bg-white hover:border-blue-500 hover:bg-slate-50 ${
-                        option.selected ? 'border-blue-500 bg-blue-50' : ''
-                      }`}
-                      onClick={() => selectChapter(option.number)}
-                    >
-                      <div className="text-base font-semibold text-slate-800 mb-1">{option.title}</div>
-                      <div className="text-sm text-slate-500 leading-[1.4]">目標：{option.goal}</div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
       {isExperiencePopoutVisible && (
         <div className="fixed inset-0 flex items-center justify-center p-6 bg-slate-900/45 backdrop-blur-sm z-[1200]">
@@ -704,10 +660,16 @@ function SimClassTrialLessonContent() {
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-xl shadow-md">
                   🎓
                 </div>
-                <h2 className="text-xl font-bold text-slate-800">回饋紀錄</h2>
+                <div>
+                  <h2 className="text-xl font-bold text-slate-800">
+                    {checkAllJudgeSuccess(judgeResult)
+                      ? '做得很好！這個主題已經完美掌握了'
+                      : '你正在進步！來看看目前的表現吧'}
+                  </h2>
+                </div>
               </div>
               <button
-                className="w-9 h-9 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-800 transition-all flex items-center justify-center"
+                className="w-9 h-9 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-800 transition-all flex items-center justify-center flex-shrink-0"
                 onClick={closeCoachFeedbackPopout}
                 aria-label="關閉回饋紀錄"
               >
@@ -733,13 +695,18 @@ function SimClassTrialLessonContent() {
 
             {/* 按鈕區域 */}
             <div className="p-6 border-t border-slate-200 bg-slate-50 flex-shrink-0">
+              <p className="text-sm text-slate-600 leading-6 mb-4 text-center">
+                {checkAllJudgeSuccess(judgeResult)
+                  ? '下一個主題還有全新的挑戰等著你，快去看看吧！'
+                  : '接下來，你可以繼續和這位學生對話，也可以換一個學生重新練習'}
+              </p>
               {checkAllJudgeSuccess(judgeResult) ? (
                 <button
                   type="button"
                   className="w-full rounded-xl px-6 py-4 bg-gradient-to-br from-emerald-500 to-emerald-600 text-white text-base font-semibold shadow-lg transition hover:-translate-y-0.5 hover:brightness-105 active:translate-y-0"
                   onClick={handleNextChapter}
                 >
-                  🎉 前往下一個主題
+                  前往下一主題
                 </button>
               ) : (
                 <button
@@ -747,7 +714,7 @@ function SimClassTrialLessonContent() {
                   className="w-full rounded-xl px-6 py-4 bg-gradient-to-br from-blue-500 to-blue-600 text-white text-base font-semibold shadow-lg transition hover:-translate-y-0.5 hover:brightness-105 active:translate-y-0"
                   onClick={handleContinuePractice}
                 >
-                  💪 繼續練習
+                  繼續對話
                 </button>
               )}
             </div>

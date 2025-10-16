@@ -38,14 +38,13 @@ export interface UseTrialLessonChatResult {
   systemDialog: string[];
   systemChecklist: string[];
   chapterNumber: number;
-  isChapterDialogOpen: boolean;
   isThinking: boolean;
   isCreatingStudent: boolean;
   isSummarizing: boolean;
   flash: FlashMessage | null;
   statusText: string;
   canSummarize: boolean;
-  chapterInfo: { title: string; goal: string } | undefined;
+  chapterInfo: { title: string; goal: string; sidebarTitle: string } | undefined;
   chapterOptions: Array<{ number: number; title: string; goal: string; selected: boolean }>;
   chatInputRef: RefObject<HTMLTextAreaElement>;
   autoResizeTextarea: () => void;
@@ -56,7 +55,5 @@ export interface UseTrialLessonChatResult {
     coachResult: string;
   }>;
   clearChat: () => void;
-  closeChapterDialog: () => void;
-  selectChapter: (chapterNumber: number) => void;
   dismissFlash: () => void;
 }
