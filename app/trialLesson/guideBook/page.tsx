@@ -421,6 +421,20 @@ export default function GuideBookPage() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    // 初始化：從 URL query 讀取 chapter，若無則預設為 1 並寫回 URL
+    try {
+      const url = new URL(window.location.href);
+      const chapterParam = url.searchParams.get('chapter');
+      const parsed = chapterParam ? Number(chapterParam) : NaN;
+      const isValid = Number.isInteger(parsed) && parsed >= 1 && parsed <= Object.keys(CHAPTER_GOALS).length;
+      const initialChapter = isValid ? parsed : 1;
+      setSelectedChapter(initialChapter);
+      if (!isValid || chapterParam === null) {
+        url.searchParams.set('chapter', String(initialChapter));
+        window.history.replaceState(null, '', url.toString());
+      }
+    } catch {}
+
     const storedName = localStorage.getItem('teacherName');
     if (storedName) {
       setTeacherName(storedName);
@@ -429,6 +443,36 @@ export default function GuideBookPage() {
       setIsNameDialogOpen(true);
     }
   }, []);
+
+  // 監聽瀏覽器返回/前進，保持 state 與 URL 同步
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handler = () => {
+      try {
+        const url = new URL(window.location.href);
+        const chapterParam = url.searchParams.get('chapter');
+        const parsed = chapterParam ? Number(chapterParam) : NaN;
+        const isValid = Number.isInteger(parsed) && parsed >= 1 && parsed <= Object.keys(CHAPTER_GOALS).length;
+        setSelectedChapter(isValid ? parsed : 1);
+      } catch {}
+    };
+    window.addEventListener('popstate', handler);
+    return () => window.removeEventListener('popstate', handler);
+  }, []);
+
+  // 當 selectedChapter 改變時，將 chapter 寫入 URL（pushState 以便可返回）
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const url = new URL(window.location.href);
+      const currentParam = url.searchParams.get('chapter');
+      const nextValue = String(selectedChapter);
+      if (currentParam !== nextValue) {
+        url.searchParams.set('chapter', nextValue);
+        window.history.pushState(null, '', url.toString());
+      }
+    } catch {}
+  }, [selectedChapter]);
 
   const handleNameSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
