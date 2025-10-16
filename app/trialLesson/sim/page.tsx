@@ -398,7 +398,7 @@ function SimClassTrialLessonContent() {
                 </svg>
               </button>
             </div>
-            <div className="overflow-y-auto p-4 max-h-[280px]">
+            <div className="overflow-y-auto p-4 max-h-[336px]">
               {!systemMessage ? (
                 <div className="text-center text-slate-500 p-10">
                   <div className="text-3xl mb-3">📝</div>
