@@ -46,6 +46,7 @@ function SimClassTrialLessonContent() {
   const [isExperiencePopoutVisible, setIsExperiencePopoutVisible] = useState(true);
   const [isCoachFeedbackPopoutVisible, setIsCoachFeedbackPopoutVisible] = useState(false);
   const [showFeedbackTooltip, setShowFeedbackTooltip] = useState(false);
+  const [lastFeedbackMessageCount, setLastFeedbackMessageCount] = useState(0);
 
   // 生成 UUID
   const generateUUID = (): string => {
@@ -287,10 +288,13 @@ function SimClassTrialLessonContent() {
     // 計算老師發送的訊息數量（排除前情提要）
     const teacherMessages = chatHistory.slice(preludeCount).filter((msg) => msg.role === 'user');
 
-    if (teacherMessages.length > 3 && !coachResult && !showFeedbackTooltip) {
+    // 計算從上次取得回饋後的新訊息數
+    const newMessagesCount = teacherMessages.length - lastFeedbackMessageCount;
+
+    if (newMessagesCount >= 3 && !showFeedbackTooltip) {
       setShowFeedbackTooltip(true);
     }
-  }, [chatHistory, preludeCount, coachResult, showFeedbackTooltip]);
+  }, [chatHistory, preludeCount, lastFeedbackMessageCount, showFeedbackTooltip]);
 
   // 檢查 judgeResult 是否全部成功
   const checkAllJudgeSuccess = useCallback((judgeResultText: string): boolean => {
@@ -302,13 +306,18 @@ function SimClassTrialLessonContent() {
   // 處理教練總結按鈕
   const handleGenerateSummary = useCallback(async () => {
     setShowFeedbackTooltip(false); // 隱藏 tooltip
+
+    // 記錄當前老師訊息數量，作為下次計算的基準
+    const teacherMessages = chatHistory.slice(preludeCount).filter((msg) => msg.role === 'user');
+    setLastFeedbackMessageCount(teacherMessages.length);
+
     const result = await generateSummary();
     if (result) {
       setJudgeResult(result.judgeResult);
       setCoachResult(result.coachResult);
       setIsCoachFeedbackPopoutVisible(true);
     }
-  }, [generateSummary]);
+  }, [generateSummary, chatHistory, preludeCount]);
 
   // 關閉教練回饋 popout
   const closeCoachFeedbackPopout = useCallback(() => {
@@ -326,7 +335,7 @@ function SimClassTrialLessonContent() {
     if (CHAPTER_GOALS[nextChapter]) {
       // 導航到教戰手冊頁面，並設定下一個章節
       localStorage.setItem('selectedNumber', String(nextChapter));
-      window.location.href = '/trialLesson/guideBook';
+      window.location.href = '/trialLesson/guideBook?chapter=' + nextChapter;
     } else {
       // 已經是最後一章，返回教戰手冊首頁
       window.location.href = '/trialLesson/guideBook';
@@ -606,9 +615,9 @@ function SimClassTrialLessonContent() {
                   {isSummarizing ? '產生中...' : '取得回饋'}
                 </button>
                 {showFeedbackTooltip && (
-                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-slate-800 text-white text-xs rounded-lg whitespace-nowrap shadow-lg animate-[slideUp_0.3s_ease-out] pointer-events-none z-10">
-                    點擊取得回饋
-                    <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-px border-4 border-transparent border-t-slate-800"></div>
+                  <div className="absolute bottom-full right-0 mb-3 px-4 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-sm font-semibold rounded-lg whitespace-nowrap shadow-xl animate-[bounce_2s_ease-in-out_infinite] pointer-events-none z-10">
+                    點擊取得回饋 👇
+                    <div className="absolute top-full right-8 -mt-px border-[6px] border-transparent border-t-amber-500"></div>
                   </div>
                 )}
               </div>
