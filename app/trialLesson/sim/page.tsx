@@ -444,14 +444,14 @@ function SimClassTrialLessonContent() {
           </div>
 
           {/* 換一個學生挑戰按鈕 */}
-          <button
+          {/* <button
             type="button"
             className="w-full bg-white border border-slate-200 text-slate-800 font-semibold text-sm px-5 py-3 rounded-xl transition-all hover:bg-slate-50 hover:border-slate-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-slate-400 disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={handleChangeStudentClick}
             disabled={isCreatingStudent || isSummarizing || isThinking}
           >
             換一個學生挑戰
-          </button>
+          </button> */}
         </div>
 
         <div className="flex flex-col h-screen bg-slate-50">
@@ -606,7 +606,7 @@ function SimClassTrialLessonContent() {
           {/* 永久提示訊息 */}
           <div className="px-5 py-3 bg-white border-t border-slate-200">
             <div className="bg-[#333] text-white px-5 py-3 text-sm font-medium rounded-xl">
-              這是一個模擬體驗課，請將訊息內容視為課中對話過程，如果有需要分享影片或圖片，請以問字描述或以文字提供內容
+              這是一個模擬體驗課，請將訊息內容視為課中對話過程，如果有需要分享影片或圖片，請以文字描述或以文字提供內容。
             </div>
           </div>
 
