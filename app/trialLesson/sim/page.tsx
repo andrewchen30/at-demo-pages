@@ -602,7 +602,14 @@ function SimClassTrialLessonContent() {
             )}
           </div>
 
-          <form className="p-5 border-t border-slate-200 bg-white" onSubmit={handleSubmit}>
+          {/* 永久提示訊息 */}
+          <div className="px-5 py-3 bg-white border-t border-slate-200">
+            <div className="bg-[#333] text-white px-5 py-3 text-sm font-medium rounded-xl">
+              這是一個模擬體驗課，請將訊息內容視為課中對話過程，如果有需要分享影片或圖片，請以問字描述或以文字提供內容
+            </div>
+          </div>
+
+          <form className="p-5 pt-0 bg-white" onSubmit={handleSubmit}>
             <div className="flex gap-3 items-end">
               <textarea
                 ref={chatInputRef}
