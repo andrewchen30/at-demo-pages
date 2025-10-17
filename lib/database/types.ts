@@ -73,6 +73,16 @@ export interface DB {
    * 清空指定 Model 的所有資料（保留並重建表頭）
    */
   clearModel<T>(model: ModelDef<T>): Promise<void>;
+
+  /**
+   * 根據 id 刪除一列資料
+   */
+  deleteRowById<T>(model: ModelDef<T>, id: string): Promise<void>;
+
+  /**
+   * 根據 id 陣列批次刪除多列資料
+   */
+  deleteRowsByIds<T>(model: ModelDef<T>, ids: string[]): Promise<void>;
 }
 
 /**

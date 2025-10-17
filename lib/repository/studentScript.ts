@@ -25,4 +25,16 @@ export const AIGenStudentsRepo = {
       await db.clearModel(this.model);
     });
   },
+
+  async deleteById(id: string): Promise<void> {
+    return withDB(this.model, async (db: DB) => {
+      await db.deleteRowById(this.model, id);
+    });
+  },
+
+  async deleteByIds(ids: string[]): Promise<void> {
+    return withDB(this.model, async (db: DB) => {
+      await db.deleteRowsByIds(this.model, ids);
+    });
+  },
 };

@@ -394,6 +394,148 @@ export class GoogleSpreadsheet implements DB {
     });
   }
 
+  /**
+   * 根據 id 刪除一列資料
+   */
+  async deleteRowById<T>(model: ModelDef<T>, id: string): Promise<void> {
+    if (!this.sheetsClient) {
+      throw new Error('Not connected. Call connect() first.');
+    }
+
+    await this.retryOnError(async () => {
+      const idColumnIndex = model.columns.indexOf('id' as keyof T);
+      if (idColumnIndex === -1) {
+        throw new Error('Model does not have an id column');
+      }
+
+      const response = await this.sheetsClient!.spreadsheets.values.get({
+        spreadsheetId: this.spreadsheetId,
+        range: `${model.sheet}!A:ZZ`,
+      });
+
+      const rows = response.data.values;
+      if (!rows || rows.length <= 1) {
+        throw new Error(`No data found for id: ${id}`);
+      }
+
+      // 找到對應的列
+      let targetRowIndex = -1;
+      for (let i = 1; i < rows.length; i++) {
+        if (rows[i][idColumnIndex] === id) {
+          targetRowIndex = i;
+          break;
+        }
+      }
+
+      if (targetRowIndex === -1) {
+        throw new Error(`Row with id ${id} not found`);
+      }
+
+      // 獲取 sheetId
+      const meta = await this.sheetsClient!.spreadsheets.get({ spreadsheetId: this.spreadsheetId });
+      const target = meta.data.sheets?.find((s) => s.properties?.title === model.sheet);
+
+      if (!target?.properties?.sheetId) {
+        throw new Error(`Sheet ${model.sheet} not found`);
+      }
+
+      const sheetId = target.properties.sheetId;
+
+      // 刪除該列
+      await this.sheetsClient!.spreadsheets.batchUpdate({
+        spreadsheetId: this.spreadsheetId,
+        requestBody: {
+          requests: [
+            {
+              deleteDimension: {
+                range: {
+                  sheetId: sheetId,
+                  dimension: 'ROWS',
+                  startIndex: targetRowIndex,
+                  endIndex: targetRowIndex + 1,
+                },
+              },
+            },
+          ],
+        },
+      });
+    });
+  }
+
+  /**
+   * 根據 id 陣列批次刪除多列資料
+   */
+  async deleteRowsByIds<T>(model: ModelDef<T>, ids: string[]): Promise<void> {
+    if (!this.sheetsClient) {
+      throw new Error('Not connected. Call connect() first.');
+    }
+
+    if (ids.length === 0) {
+      return;
+    }
+
+    await this.retryOnError(async () => {
+      const idColumnIndex = model.columns.indexOf('id' as keyof T);
+      if (idColumnIndex === -1) {
+        throw new Error('Model does not have an id column');
+      }
+
+      const response = await this.sheetsClient!.spreadsheets.values.get({
+        spreadsheetId: this.spreadsheetId,
+        range: `${model.sheet}!A:ZZ`,
+      });
+
+      const rows = response.data.values;
+      if (!rows || rows.length <= 1) {
+        return;
+      }
+
+      // 找到所有需要刪除的列索引
+      const rowIndicesToDelete: number[] = [];
+      for (let i = 1; i < rows.length; i++) {
+        if (ids.includes(rows[i][idColumnIndex])) {
+          rowIndicesToDelete.push(i);
+        }
+      }
+
+      if (rowIndicesToDelete.length === 0) {
+        return;
+      }
+
+      // 獲取 sheetId
+      const meta = await this.sheetsClient!.spreadsheets.get({ spreadsheetId: this.spreadsheetId });
+      const target = meta.data.sheets?.find((s) => s.properties?.title === model.sheet);
+
+      if (!target?.properties?.sheetId) {
+        throw new Error(`Sheet ${model.sheet} not found`);
+      }
+
+      const sheetId = target.properties.sheetId;
+
+      // 從後往前刪除，避免索引變化
+      rowIndicesToDelete.sort((a, b) => b - a);
+
+      const deleteRequests = rowIndicesToDelete.map((rowIndex) => ({
+        deleteDimension: {
+          range: {
+            sheetId: sheetId,
+            dimension: 'ROWS',
+            startIndex: rowIndex,
+            endIndex: rowIndex + 1,
+          },
+        },
+      }));
+
+      // 批次刪除
+      await this.sheetsClient!.spreadsheets.batchUpdate({
+        spreadsheetId: this.spreadsheetId,
+        requestBody: {
+          requests: deleteRequests,
+        },
+      });
+    });
+  }
+
   // === 輔助方法 ===
 
   /**
