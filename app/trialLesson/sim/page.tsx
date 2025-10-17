@@ -68,6 +68,7 @@ function SimClassTrialLessonContent() {
     chatHistory,
     workflowStep,
     isCreatingStudent,
+    isThinking,
     isSummarizing,
     isJudging,
     latestJudgeResult,

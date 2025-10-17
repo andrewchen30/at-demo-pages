@@ -13,6 +13,7 @@ export interface UseChatActionsParams {
   chatHistory: ChatHistoryEntry[];
   workflowStep: WorkflowStep;
   isCreatingStudent: boolean;
+  isThinking: boolean;
   isSummarizing: boolean;
   isJudging: boolean;
   latestJudgeResult: JudgeResultData | null;
