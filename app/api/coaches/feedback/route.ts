@@ -222,7 +222,8 @@ export async function POST(request: Request) {
         chat_history: chatHistoryText,
         judge_output: judgeResult,
       },
-      messages
+      undefined
+      // messages
     );
 
     const coachFeedback = coachResponse.result.trim();

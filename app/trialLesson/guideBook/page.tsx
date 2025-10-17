@@ -201,7 +201,7 @@ function GuideBookContent() {
                 <h2 className="text-[26px] font-bold text-slate-800 m-0">
                 ❷ 觀看主題教學
                 </h2>
-                <p className="text-[16px] text-slate-600 leading-[1.6] m-0">主題{selectedChapter}：{currentContent.sidebarTitle}</p>
+                <p className="text-[16px] text-slate-600 leading-[1.6] m-0">主題{selectedChapter}：{currentContent.sidebarTitle} - {currentContent.goal}</p>
               </header>
 
               {/* YouTube 影片 */}

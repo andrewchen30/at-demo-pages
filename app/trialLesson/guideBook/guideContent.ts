@@ -65,7 +65,7 @@ export const GUIDE_CONTENT: Record<number, GuideContent> = {
   },
   3: {
     title: '示範教學內容',
-    sidebarTitle: '讓學生體驗到「問題能夠被解決」',
+    sidebarTitle: '示範教學內容',
     goal: '讓學生體驗「問題能被解決」',
     videoUrl: 'https://drive.google.com/file/d/1VVhACurnfRlqdvgwKMdKwv9U6-OSl8DU/preview',
     summary: '透過一小段示範教學，讓學生親身感受上課方法對自己是有幫助的。',
@@ -90,7 +90,7 @@ export const GUIDE_CONTENT: Record<number, GuideContent> = {
   },
   4: {
     title: '規劃學習計畫',
-    sidebarTitle: '把需求拆成階段，讓學生看見路線圖',
+    sidebarTitle: '規劃學習計畫',
     goal: '讓學生知道可以怎麼開始、可能多久會有效果',
     videoUrl: 'https://drive.google.com/file/d/1JsAaiquaK3sMFT1Hd90iqsP-bLr_MUaD/preview',
     summary: '透過一小段示範教學，讓學生親身感受上課方法對他自己是有幫助的。',
@@ -117,7 +117,7 @@ export const GUIDE_CONTENT: Record<number, GuideContent> = {
   },
   5: {
     title: '解決學生疑慮',
-    sidebarTitle: '主動確認並協助學生放心開始學習',
+    sidebarTitle: '解決學生疑慮',
     goal: '幫助學生放心做下一步決定',
     videoUrl: 'https://drive.google.com/file/d/15cr64ds9tcFmHVu1VClZH_rVZiURn3ni/preview',
     summary: '把握面對面的時間，透過確認與回應，幫助學生解決顧慮，提升展開學習旅程的信心。',

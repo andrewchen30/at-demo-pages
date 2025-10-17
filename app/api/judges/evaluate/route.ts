@@ -207,7 +207,8 @@ export async function POST(request: Request) {
         chat_history: chatHistoryText,
         check_list: checkList,
       },
-      messages
+      undefined
+      // messages
     );
 
     const judgeResult = judgeResponse.result.trim();
