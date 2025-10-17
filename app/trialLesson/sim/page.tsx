@@ -3,7 +3,12 @@
 import { FormEvent, Suspense, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 
-import { useTrialLessonChat } from './aiChatInterface';
+import { useChapterNavigation } from './hooks/useChapterNavigation';
+import { useChatState } from './hooks/useChatState';
+import { useFlashMessage } from './hooks/useFlashMessage';
+import { useScriptWriter } from './hooks/useScriptWriter';
+import { useJudgeEvaluation } from './hooks/useJudgeEvaluation';
+import { useChatActions } from './hooks/useChatActions';
 import { GUIDE_CONTENT } from '@/app/trialLesson/guideBook/guideContent';
 import {
   getMessagesForUIChat,
@@ -14,38 +19,78 @@ import {
 import { checkAllJudgeSuccess, formatJudgeResultForDisplay, getJudgeStats, type JudgeResultData } from './judgeParser';
 
 function SimClassTrialLessonContent() {
+  // 1. 獨立的 hooks
+  const { chapterNumber, chapterInfo } = useChapterNavigation();
   const {
-    workflowStep,
     chatHistory,
     preludeCount,
+    workflowStep,
+    connectionStatus,
+    setChatHistory,
+    setPreludeCount,
+    setWorkflowStep,
+    setConnectionStatus,
+    clearChatHistory,
+  } = useChatState();
+  const { flash, showFlash, dismissFlash } = useFlashMessage();
+
+  // 2. 依賴其他 hooks 的 hooks
+  const {
+    scriptwriterResponse,
+    isCreatingStudent,
     systemMessage,
     systemUserBrief,
     systemDialog,
     systemChecklist,
+    startScriptwriter,
+    clearScriptWriter,
+  } = useScriptWriter({
     chapterNumber,
-    isThinking,
+    setChatHistory,
+    setPreludeCount,
+    setWorkflowStep,
+    showFlash,
+  });
+
+  const { isJudging, latestJudgeResult, callJudgeAPI, clearJudgeState } = useJudgeEvaluation({
+    scriptwriterResponse,
+    chapterNumber,
+    chatHistory,
+  });
+
+  // 3. useChatActions 需要管理自己的 isThinking 和 isSummarizing 狀態
+  const [isThinking, setIsThinking] = useState(false);
+  const [isSummarizing, setIsSummarizing] = useState(false);
+
+  const { canSummarize, chatInputRef, autoResizeTextarea, sendMessage, generateSummary } = useChatActions({
+    scriptwriterResponse,
+    chapterNumber,
+    chatHistory,
+    workflowStep,
     isCreatingStudent,
     isSummarizing,
     isJudging,
     latestJudgeResult,
-    flash,
-    canSummarize,
-    chapterInfo,
-    chatInputRef,
-    autoResizeTextarea,
-    startScriptwriter,
-    sendMessage,
-    generateSummary,
-    clearChat,
-    dismissFlash,
-  } = useTrialLessonChat();
+    setChatHistory,
+    setConnectionStatus,
+    setIsThinking,
+    setIsSummarizing,
+    callJudgeAPI,
+    showFlash,
+  });
+
+  // 4. 組合多個 hooks 的清理函數
+  const clearChat = useCallback(() => {
+    clearChatHistory();
+    clearScriptWriter();
+    clearJudgeState();
+  }, [clearChatHistory, clearScriptWriter, clearJudgeState]);
 
   const [teacherName, setTeacherName] = useState('');
   const [chatLogId, setChatLogId] = useState('');
   const [chatLogCreated, setChatLogCreated] = useState(false);
   const [judgeResult, setJudgeResult] = useState<JudgeResultData | null>(null);
   const [coachResult, setCoachResult] = useState<string>('');
-  const [isChecklistVisible, setIsChecklistVisible] = useState(true);
   const [isExperiencePopoutVisible, setIsExperiencePopoutVisible] = useState(true);
   const [isCoachFeedbackPopoutVisible, setIsCoachFeedbackPopoutVisible] = useState(false);
   const [showFeedbackTooltip, setShowFeedbackTooltip] = useState(false);
@@ -337,25 +382,6 @@ function SimClassTrialLessonContent() {
                 <div className="text-base font-semibold text-slate-800">重點提示</div>
                 <div className="text-xs text-slate-500">{chapterInfo?.title ?? `章節 ${chapterNumber}`}</div>
               </div>
-              <button
-                className="bg-white border border-slate-200 rounded-lg w-9 h-9 inline-flex items-center justify-center cursor-pointer text-slate-500 transition-all hover:bg-slate-50 hover:border-slate-300 hover:text-slate-800 flex-shrink-0"
-                title={isChecklistVisible ? '隱藏重點提示' : '顯示重點提示'}
-                onClick={() => setIsChecklistVisible(!isChecklistVisible)}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  {isChecklistVisible ? (
-                    <>
-                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                      <circle cx="12" cy="12" r="3"></circle>
-                    </>
-                  ) : (
-                    <>
-                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
-                      <line x1="1" y1="1" x2="23" y2="23"></line>
-                    </>
-                  )}
-                </svg>
-              </button>
             </div>
             <div className="overflow-y-auto p-4 max-h-[336px]">
               {!systemMessage ? (
@@ -364,19 +390,13 @@ function SimClassTrialLessonContent() {
                   <div className="text-[15px] font-semibold mb-1">等待編劇產生重點提示</div>
                   <div className="text-sm">點擊「更換」開始</div>
                 </div>
-              ) : isChecklistVisible ? (
+              ) : (
                 <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
                   <div className="text-sm leading-6 text-slate-800 whitespace-pre-wrap px-4">
                     {systemChecklist.map((item, index) => (
                       <li key={index}>{item}</li>
                     ))}
                   </div>
-                </div>
-              ) : (
-                <div className="text-center text-slate-500 p-10">
-                  <div className="text-3xl mb-3">👁️</div>
-                  <div className="text-[15px] font-semibold mb-1">重點提示已隱藏</div>
-                  <div className="text-sm">點擊右上角按鈕顯示</div>
                 </div>
               )}
             </div>
@@ -496,7 +516,7 @@ function SimClassTrialLessonContent() {
                 {/* 正式分隔線：前情提要與後續對話 */}
                 {preludeCount > 0 && (
                   <div
-                    className="flex items-center gap-3 my-4 text-slate-500 text-xs"
+                    className="flex items-center gap-3 my-4 text-slate-600 text-sm font-medium"
                     role="separator"
                     aria-label="前情提要分隔線"
                   >
@@ -696,7 +716,7 @@ function SimClassTrialLessonContent() {
               <p className="text-sm text-slate-600 leading-6 mb-4 text-center">
                 {checkAllJudgeSuccess(judgeResult)
                   ? '下一個主題還有全新的挑戰等著你，快去看看吧！'
-                  : '接下來，你可以繼續和這位學生對話，也可以換一個學生重新練習'}
+                  : '接下來，你可以繼續和這位學生對話'}
               </p>
               {checkAllJudgeSuccess(judgeResult) ? (
                 <button
