@@ -1,16 +1,15 @@
 import { NextResponse } from 'next/server';
 
-import { coachRole } from '@/lib/aiCharacter';
+import { judgeRole } from '@/lib/aiCharacter';
 import { getCheckListForAI } from '@/lib/aiCharacter/director/utils';
 
-type FeedbackRequestBody = {
+type EvaluateRequestBody = {
   chatHistory?: unknown;
   variables?: unknown;
   input?: unknown;
   chapter?: unknown;
   part?: unknown;
   partN?: unknown;
-  judgeResult?: unknown;
 };
 
 type OpenAIMessage = {
@@ -18,17 +17,14 @@ type OpenAIMessage = {
   content?: unknown;
 };
 
-type FeedbackSuccessResponse = {
+type EvaluateSuccessResponse = {
   judgeResult: string;
-  coachFeedback: string;
-  result: string;
-  raw: {
-    judge: unknown;
-    coach: unknown;
+  raw?: {
+    judge?: unknown;
   };
 };
 
-type FeedbackErrorResponse = {
+type EvaluateErrorResponse = {
   error: {
     message: string;
   };
@@ -121,9 +117,9 @@ function stringFromChatHistoryArray(history: unknown): string | undefined {
 }
 
 function extractChatHistory(
-  body: FeedbackRequestBody,
+  body: EvaluateRequestBody,
   variables: Record<string, unknown>
-): { text: string; messages: OpenAIMessage[] } | FeedbackErrorResponse {
+): { text: string; messages: OpenAIMessage[] } | EvaluateErrorResponse {
   const possibleMessages = Array.isArray(body.input) ? (body.input as OpenAIMessage[]) : [];
   const fromVariables =
     typeof variables.chat_history === 'string'
@@ -149,9 +145,9 @@ function extractChatHistory(
 }
 
 function extractCheckList(
-  body: FeedbackRequestBody,
+  body: EvaluateRequestBody,
   variables: Record<string, unknown>
-): { chapter?: number; checkList: string } | FeedbackErrorResponse {
+): { chapter?: number; checkList: string } | EvaluateErrorResponse {
   const chapterCandidate =
     normalizeChapter(variables.chapter) ??
     normalizeChapter(variables.part) ??
@@ -183,9 +179,9 @@ function extractCheckList(
 }
 
 export async function POST(request: Request) {
-  let body: FeedbackRequestBody;
+  let body: EvaluateRequestBody;
   try {
-    body = (await request.json()) as FeedbackRequestBody;
+    body = (await request.json()) as EvaluateRequestBody;
   } catch {
     return NextResponse.json({ error: { message: '請提供有效的 JSON 內容。' } }, { status: 400 });
   }
@@ -202,45 +198,30 @@ export async function POST(request: Request) {
   }
 
   const { text: chatHistoryText, messages } = chatHistoryResult;
-
-  // 從 request body 取得 judge 結果
-  let judgeResult: string;
-  if (typeof body.judgeResult === 'string' && body.judgeResult.trim().length > 0) {
-    judgeResult = body.judgeResult.trim();
-  } else if (typeof variables.judge_result === 'string' && variables.judge_result.trim().length > 0) {
-    judgeResult = variables.judge_result.trim();
-  } else if (typeof variables.judgeResult === 'string' && variables.judgeResult.trim().length > 0) {
-    judgeResult = variables.judgeResult.trim();
-  } else {
-    return NextResponse.json({ error: { message: '請提供有效的 judgeResult。' } }, { status: 400 });
-  }
+  const { checkList } = checkListResult;
 
   try {
-    const coachResponse = await coachRole.ask(
+    const judgeResponse = await judgeRole.ask(
       '',
       {
         chat_history: chatHistoryText,
-        judge_output: judgeResult,
+        check_list: checkList,
       },
       messages
     );
 
-    const coachFeedback = coachResponse.result.trim();
+    const judgeResult = judgeResponse.result.trim();
 
-    const response: FeedbackSuccessResponse = {
+    // 只返回解析好的 judgeResult，避免在 response 中重複包含相同內容
+    // raw 數據已經包含在 judgeResult 中，不需要再返回完整的原始回應
+    const response: EvaluateSuccessResponse = {
       judgeResult,
-      coachFeedback,
-      result: coachFeedback,
-      raw: {
-        judge: null,
-        coach: coachResponse.raw,
-      },
     };
 
     return NextResponse.json(response);
   } catch (error) {
-    const message = error instanceof Error ? error.message : '教練回饋產生失敗，請稍後再試。';
-    const errorResponse: FeedbackErrorResponse = { error: { message } };
+    const message = error instanceof Error ? error.message : '評估失敗，請稍後再試。';
+    const errorResponse: EvaluateErrorResponse = { error: { message } };
     return NextResponse.json(errorResponse, { status: 500 });
   }
 }

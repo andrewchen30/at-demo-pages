@@ -11,6 +11,7 @@ import {
   getMessagesForLog,
   generateMessageId,
 } from './messageUtils/index';
+import { checkAllJudgeSuccess, formatJudgeResultForDisplay, getJudgeStats, type JudgeResultData } from './judgeParser';
 
 function SimClassTrialLessonContent() {
   const {
@@ -25,6 +26,8 @@ function SimClassTrialLessonContent() {
     isThinking,
     isCreatingStudent,
     isSummarizing,
+    isJudging,
+    latestJudgeResult,
     flash,
     canSummarize,
     chapterInfo,
@@ -40,7 +43,7 @@ function SimClassTrialLessonContent() {
   const [teacherName, setTeacherName] = useState('');
   const [chatLogId, setChatLogId] = useState('');
   const [chatLogCreated, setChatLogCreated] = useState(false);
-  const [judgeResult, setJudgeResult] = useState<string>('');
+  const [judgeResult, setJudgeResult] = useState<JudgeResultData | null>(null);
   const [coachResult, setCoachResult] = useState<string>('');
   const [isChecklistVisible, setIsChecklistVisible] = useState(true);
   const [isExperiencePopoutVisible, setIsExperiencePopoutVisible] = useState(true);
@@ -87,10 +90,10 @@ function SimClassTrialLessonContent() {
     }
 
     // Judge Result（如果有的話）
-    if (!!judgeResult) {
+    if (judgeResult) {
       sections.push('');
       sections.push('=== 最終裁判結果 ===');
-      sections.push(judgeResult);
+      sections.push(formatJudgeResultForDisplay(judgeResult));
     }
 
     return sections.join('\n');
@@ -256,13 +259,6 @@ function SimClassTrialLessonContent() {
     }
   }, [chatHistory, preludeCount, lastFeedbackMessageCount, showFeedbackTooltip]);
 
-  // 檢查 judgeResult 是否全部成功
-  const checkAllJudgeSuccess = useCallback((judgeResultText: string): boolean => {
-    if (!judgeResultText) return false;
-
-    return !judgeResultText.includes('✘');
-  }, []);
-
   // 處理教練總結按鈕
   const handleGenerateSummary = useCallback(async () => {
     setShowFeedbackTooltip(false); // 隱藏 tooltip
@@ -276,6 +272,9 @@ function SimClassTrialLessonContent() {
       setJudgeResult(result.judgeResult);
       setCoachResult(result.coachResult);
       setIsCoachFeedbackPopoutVisible(true);
+    } else {
+      // 如果沒有結果，不顯示 popout
+      console.warn('無法取得教練回饋');
     }
   }, [generateSummary, chatHistory, preludeCount]);
 
@@ -583,7 +582,7 @@ function SimClassTrialLessonContent() {
                   disabled={!canSummarize || isCreatingStudent || isSummarizing || isThinking}
                   onMouseEnter={() => setShowFeedbackTooltip(false)}
                 >
-                  {isSummarizing ? '思考中...' : '獲得建議'}
+                  {isSummarizing ? (isJudging ? '評估中...' : '分析中...') : '獲得建議'}
                 </button>
                 {showFeedbackTooltip && (
                   <div className="absolute bottom-full right-0 mb-3 px-4 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-sm font-semibold rounded-lg whitespace-nowrap shadow-xl animate-[bounce_2s_ease-in-out_infinite] pointer-events-none z-10">

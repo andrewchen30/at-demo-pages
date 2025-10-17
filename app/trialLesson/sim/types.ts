@@ -1,5 +1,6 @@
 import type { RefObject } from 'react';
 import type { DirectorInput } from '@/lib/aiCharacter/student/types';
+import type { JudgeResultData } from './judgeParser';
 
 export type BotType = 'student' | 'coach';
 export type WorkflowStep = 'idle' | 'scriptwriter' | 'student';
@@ -47,6 +48,8 @@ export interface UseTrialLessonChatResult {
   isThinking: boolean;
   isCreatingStudent: boolean;
   isSummarizing: boolean;
+  isJudging: boolean;
+  latestJudgeResult: JudgeResultData | null;
   flash: FlashMessage | null;
   statusText: string;
   canSummarize: boolean;
@@ -56,10 +59,13 @@ export interface UseTrialLessonChatResult {
   autoResizeTextarea: () => void;
   startScriptwriter: () => Promise<void>;
   sendMessage: () => Promise<void>;
-  generateSummary: () => Promise<{
-    judgeResult: string;
-    coachResult: string;
-  }>;
+  generateSummary: () => Promise<
+    | {
+        judgeResult: JudgeResultData;
+        coachResult: string;
+      }
+    | undefined
+  >;
   clearChat: () => void;
   dismissFlash: () => void;
 }

@@ -23,6 +23,7 @@ import type {
 } from './types';
 import { GUIDE_CONTENT } from '@/app/trialLesson/guideBook/guideContent';
 import { createMessage, getMessagesForAIStudent, getMessagesForAICoach } from './messageUtils/index';
+import { parseJudgeResult, type JudgeResultData } from './judgeParser';
 
 export function useTrialLessonChat(): UseTrialLessonChatResult {
   const router = useRouter();
@@ -48,8 +49,12 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
   const [isThinking, setIsThinking] = useState(false);
   const [isCreatingStudent, setIsCreatingStudent] = useState(false);
   const [isSummarizing, setIsSummarizing] = useState(false);
+  const [isJudging, setIsJudging] = useState(false);
+  const [latestJudgeResult, setLatestJudgeResult] = useState<JudgeResultData | null>(null);
 
   const [flash, setFlash] = useState<FlashMessage | null>(null);
+
+  const judgeAbortControllerRef = useRef<AbortController | null>(null);
   // 移除 scriptwriterJson 對外回傳
 
   const chatInputRef = useRef<HTMLTextAreaElement | null>(null);
@@ -166,8 +171,79 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
     [scriptwriterResponse, chapterNumber, chatHistory]
   );
 
+  const callJudgeAPI = useCallback(async (): Promise<JudgeResultData | null> => {
+    // 取消舊的 judge 請求
+    if (judgeAbortControllerRef.current) {
+      judgeAbortControllerRef.current.abort();
+    }
+
+    // 建立新的 AbortController
+    const abortController = new AbortController();
+    judgeAbortControllerRef.current = abortController;
+
+    const script = scriptwriterResponse ?? {};
+    const variables = {
+      ...getStudentAIParams(script, chapterNumber),
+      chat_history: getMessagesForAICoach(chatHistory),
+      chapter: chapterNumber,
+    };
+
+    const messages = getMessagesForAIStudent(chatHistory);
+    const preparedInput = messages;
+    const body = { variables, input: preparedInput, chapter: chapterNumber };
+
+    setIsJudging(true);
+
+    try {
+      const resp = await fetch('/api/judges/evaluate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+        signal: abortController.signal,
+      });
+
+      if (!resp.ok) {
+        let message = resp.statusText;
+        try {
+          const err = await resp.json();
+          message = err?.error?.message || err?.message || message;
+        } catch {
+          // ignore
+        }
+        throw new Error(`Judge API 錯誤: ${resp.status} - ${message}`);
+      }
+
+      const data = await resp.json();
+      const judgeResultString = data.judgeResult ?? '';
+
+      // 解析 judge 結果為結構化數據
+      const judgeResult = parseJudgeResult(judgeResultString);
+
+      setLatestJudgeResult(judgeResult);
+      return judgeResult;
+    } catch (error) {
+      // 如果是取消請求，不顯示錯誤
+      if (error instanceof Error && error.name === 'AbortError') {
+        return null;
+      }
+
+      console.error('背景 Judge 評估失敗:', error);
+      // 背景請求失敗不顯示 flash，因為不影響主流程
+      return null;
+    } finally {
+      setIsJudging(false);
+      if (judgeAbortControllerRef.current === abortController) {
+        judgeAbortControllerRef.current = null;
+      }
+    }
+  }, [scriptwriterResponse, chapterNumber, chatHistory]);
+
   const callOpenAI = useCallback(
-    async (botType: BotType = 'student', message?: string): Promise<{ result: string; judgeResult?: string }> => {
+    async (
+      botType: BotType = 'student',
+      message?: string,
+      judgeResultParam?: JudgeResultData
+    ): Promise<{ result: string; judgeResult?: string }> => {
       const botEndpointMap: Record<BotType, string> = {
         student: '/api/students/chat',
         coach: '/api/coaches/feedback',
@@ -192,7 +268,10 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
         preparedInput = [{ role: 'user', content: [{ type: 'input_text', text: '' }] }];
       }
 
-      const body = { variables, input: preparedInput };
+      const body =
+        botType === 'coach' && judgeResultParam
+          ? { variables, input: preparedInput, judgeResult: JSON.stringify(judgeResultParam) }
+          : { variables, input: preparedInput };
 
       const resp = await fetch(url, {
         method: 'POST',
@@ -276,6 +355,9 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
       const response = await callOpenAI('student', message);
       setChatHistory((prev) => [...prev, createMessage('student', response.result)]);
       setConnectionStatus('connected');
+
+      // 學生回覆後，在背景自動觸發 judge 評估
+      callJudgeAPI();
     } catch (e) {
       const text = e instanceof Error ? e.message : '未知錯誤';
       setChatHistory((prev) => [...prev, createMessage('student', `錯誤: ${text}`)]);
@@ -283,35 +365,53 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
     } finally {
       setIsThinking(false);
     }
-  }, [autoResizeTextarea, callOpenAI]);
+  }, [autoResizeTextarea, callOpenAI, callJudgeAPI]);
 
-  const generateSummary = useCallback(async (): Promise<{
-    judgeResult: string;
-    coachResult: string;
-  }> => {
+  const generateSummary = useCallback(async (): Promise<
+    | {
+        judgeResult: JudgeResultData;
+        coachResult: string;
+      }
+    | undefined
+  > => {
     if (chatHistory.length === 0) {
       setFlash({ type: 'error', message: '沒有對話記錄可以總結' });
-      return;
+      return undefined;
     }
     setIsSummarizing(true);
     try {
-      const response = await callOpenAI('coach');
+      // 等待背景 judge 完成（如果正在進行中）或使用已完成的結果
+      let judgeResult = latestJudgeResult;
+
+      if (!judgeResult || isJudging) {
+        // 如果沒有 judge 結果或正在進行中，等待完成
+        judgeResult = await callJudgeAPI();
+
+        // 如果還是沒有結果（例如被取消或失敗），拋出錯誤
+        if (!judgeResult) {
+          throw new Error('無法取得評估結果，請稍後再試');
+        }
+      }
+
+      // 使用 judge 結果呼叫 coach API
+      const response = await callOpenAI('coach', undefined, judgeResult);
 
       // 將教練回饋添加到聊天記錄中，以便能夠同步到 Google Spreadsheet
       const coachMessage = `教練總結\n${response.result}`;
       setChatHistory((prev) => [...prev, createMessage('coach', coachMessage)]);
 
       return {
-        judgeResult: response.judgeResult,
+        judgeResult: judgeResult,
         coachResult: response.result,
       };
     } catch (e) {
       const text = e instanceof Error ? e.message : '未知錯誤';
       setFlash({ type: 'error', message: `教練 Bot 錯誤: ${text}` });
+      return undefined;
     } finally {
       setIsSummarizing(false);
     }
-  }, [callOpenAI, chatHistory.length]);
+  }, [callOpenAI, callJudgeAPI, chatHistory.length, latestJudgeResult, isJudging]);
 
   const clearChat = useCallback(() => {
     setChatHistory([]);
@@ -322,6 +422,14 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
     setSystemDialog([]);
     setSystemChecklist([]);
 
+    // 清除 judge 狀態
+    setLatestJudgeResult(null);
+    setIsJudging(false);
+    if (judgeAbortControllerRef.current) {
+      judgeAbortControllerRef.current.abort();
+      judgeAbortControllerRef.current = null;
+    }
+
     setScriptwriterResponse(null);
     // scriptwriterJson 已移除
   }, []);
@@ -329,6 +437,15 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
   // 移除 export/import 相關功能（已不再使用）
 
   const dismissFlash = useCallback(() => setFlash(null), []);
+
+  // Cleanup effect: 取消進行中的 judge 請求
+  useEffect(() => {
+    return () => {
+      if (judgeAbortControllerRef.current) {
+        judgeAbortControllerRef.current.abort();
+      }
+    };
+  }, []);
 
   return {
     workflowStep,
@@ -344,6 +461,8 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
     isThinking,
     isCreatingStudent,
     isSummarizing,
+    isJudging,
+    latestJudgeResult,
     flash,
     statusText,
     canSummarize,
