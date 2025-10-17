@@ -16,15 +16,13 @@ import type { DirectorInput } from '@/lib/aiCharacter/student/types';
 import type {
   BotType,
   WorkflowStep,
-  MessageRole,
   ConnectionStatus,
-  OpenAIMessageContent,
-  OpenAIChatMessage,
   ChatHistoryEntry,
   FlashMessage,
   UseTrialLessonChatResult,
 } from './types';
 import { GUIDE_CONTENT } from '@/app/trialLesson/guideBook/guideContent';
+import { createMessage, getMessagesForAIStudent, getMessagesForAICoach } from './messageUtils/index';
 
 export function useTrialLessonChat(): UseTrialLessonChatResult {
   const router = useRouter();
@@ -98,8 +96,17 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
       if (prev.length > 0) return prev;
       const scripted = getScriptedChatHistory(scriptwriterResponse, chapterNumber);
       if (!Array.isArray(scripted) || scripted.length === 0) return prev;
-      setPreludeCount(scripted.length);
-      return [...scripted];
+
+      // 將舊格式轉換為新的 UnifiedMessage 格式
+      // 舊格式中 user = 老師, assistant = 學生
+      // 保留原始角色以便 UI 正確顯示，標記為腳本訊息 (isScript: true)
+      const convertedScripted = scripted.map((msg: any) => {
+        const role = msg.role === 'user' ? 'teacher' : 'student';
+        return createMessage(role, msg.content || msg.text, true);
+      });
+
+      setPreludeCount(convertedScripted.length);
+      return [...convertedScripted];
     });
   }, [scriptwriterResponse, chapterNumber]);
 
@@ -137,33 +144,6 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
     el.style.height = Math.min(el.scrollHeight, 120) + 'px';
   }, []);
 
-  const getChatMessages = useCallback((): OpenAIChatMessage[] => {
-    // 過濾掉 coach 訊息，因為 OpenAI API 不支援這個角色
-    return chatHistory
-      .filter((msg) => msg.role !== 'coach')
-      .map((msg) => ({
-        role: msg.role as 'user' | 'assistant',
-        content: [{ type: msg.role === 'user' ? 'input_text' : 'output_text', text: msg.content }],
-      }));
-  }, [chatHistory]);
-
-  const appendUserMessage = useCallback((messages: OpenAIChatMessage[], message: string): OpenAIChatMessage[] => {
-    return [
-      ...messages,
-      {
-        role: 'user',
-        content: [{ type: 'input_text', text: message }],
-      },
-    ];
-  }, []);
-
-  const getChatMessagesText = useCallback((): string => {
-    return chatHistory
-      .filter((m) => m.role !== 'coach') // 過濾掉教練訊息，只包含老師和學生的對話
-      .map((m) => `${m.role === 'user' ? '老師' : '學生'}: ${m.content}`)
-      .join('\n');
-  }, [chatHistory]);
-
   const getVariables = useCallback(
     (botType: BotType = 'student'): Record<string, unknown> => {
       const script = scriptwriterResponse ?? {};
@@ -177,20 +157,17 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
         case 'coach':
           return {
             ...getCoachAIParams(script, chapterNumber),
-            chat_history: getChatMessagesText(),
+            chat_history: getMessagesForAICoach(chatHistory),
           } as Record<string, unknown>;
         default:
           return {};
       }
     },
-    [scriptwriterResponse, chapterNumber, getChatMessagesText]
+    [scriptwriterResponse, chapterNumber, chatHistory]
   );
 
   const callOpenAI = useCallback(
-    async (
-      botType: BotType = 'student',
-      input?: string | OpenAIChatMessage[]
-    ): Promise<{ result: string; judgeResult?: string }> => {
+    async (botType: BotType = 'student', message?: string): Promise<{ result: string; judgeResult?: string }> => {
       const botEndpointMap: Record<BotType, string> = {
         student: '/api/students/chat',
         coach: '/api/coaches/feedback',
@@ -198,13 +175,21 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
       const url = botEndpointMap[botType];
       const variables = getVariables(botType);
 
-      let preparedInput: OpenAIChatMessage[];
-      if (!input) {
-        preparedInput = [{ role: 'user', content: [{ type: 'input_text', text: '' }] }];
-      } else if (typeof input === 'string') {
-        preparedInput = [{ role: 'user', content: [{ type: 'input_text', text: input }] }];
+      let preparedInput;
+      if (botType === 'student') {
+        // 使用 getMessagesForAIStudent 取得對話歷史
+        const messages = getMessagesForAIStudent(chatHistory);
+        // 如果有新訊息，附加到尾端
+        if (message) {
+          messages.push({
+            role: 'user',
+            content: [{ type: 'input_text', text: message }],
+          });
+        }
+        preparedInput = messages;
       } else {
-        preparedInput = input;
+        // coach 不需要 input，只需要 variables
+        preparedInput = [{ role: 'user', content: [{ type: 'input_text', text: '' }] }];
       }
 
       const body = { variables, input: preparedInput };
@@ -230,7 +215,7 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
         judgeResult: data.judgeResult,
       };
     },
-    [getVariables]
+    [getVariables, chatHistory]
   );
 
   const startScriptwriter = useCallback(async () => {
@@ -280,9 +265,7 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
     const message = (el?.value || '').trim();
     if (!message) return;
 
-    const chatMessage = getChatMessages();
-
-    setChatHistory((prev) => [...prev, { role: 'user', content: message }]);
+    setChatHistory((prev) => [...prev, createMessage('teacher', message)]);
     if (el) {
       el.value = '';
       autoResizeTextarea();
@@ -290,17 +273,17 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
     setIsThinking(true);
     setConnectionStatus('thinking');
     try {
-      const response = await callOpenAI('student', appendUserMessage(chatMessage, message));
-      setChatHistory((prev) => [...prev, { role: 'assistant', content: response.result }]);
+      const response = await callOpenAI('student', message);
+      setChatHistory((prev) => [...prev, createMessage('student', response.result)]);
       setConnectionStatus('connected');
     } catch (e) {
       const text = e instanceof Error ? e.message : '未知錯誤';
-      setChatHistory((prev) => [...prev, { role: 'assistant', content: `錯誤: ${text}` }]);
+      setChatHistory((prev) => [...prev, createMessage('student', `錯誤: ${text}`)]);
       setConnectionStatus('disconnected');
     } finally {
       setIsThinking(false);
     }
-  }, [autoResizeTextarea, callOpenAI, getChatMessages, appendUserMessage]);
+  }, [autoResizeTextarea, callOpenAI]);
 
   const generateSummary = useCallback(async (): Promise<{
     judgeResult: string;
@@ -316,7 +299,7 @@ export function useTrialLessonChat(): UseTrialLessonChatResult {
 
       // 將教練回饋添加到聊天記錄中，以便能夠同步到 Google Spreadsheet
       const coachMessage = `教練總結\n${response.result}`;
-      setChatHistory((prev) => [...prev, { role: 'coach', content: coachMessage }]);
+      setChatHistory((prev) => [...prev, createMessage('coach', coachMessage)]);
 
       return {
         judgeResult: response.judgeResult,

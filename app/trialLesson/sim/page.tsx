@@ -5,6 +5,12 @@ import Link from 'next/link';
 
 import { useTrialLessonChat } from './aiChatInterface';
 import { GUIDE_CONTENT } from '@/app/trialLesson/guideBook/guideContent';
+import {
+  getMessagesForUIChat,
+  getMessagesForUICoach,
+  getMessagesForLog,
+  generateMessageId,
+} from './messageUtils/index';
 
 function SimClassTrialLessonContent() {
   const {
@@ -41,34 +47,6 @@ function SimClassTrialLessonContent() {
   const [isCoachFeedbackPopoutVisible, setIsCoachFeedbackPopoutVisible] = useState(false);
   const [showFeedbackTooltip, setShowFeedbackTooltip] = useState(false);
   const [lastFeedbackMessageCount, setLastFeedbackMessageCount] = useState(0);
-
-  // 生成 UUID
-  const generateUUID = (): string => {
-    if (typeof window !== 'undefined' && window.crypto && window.crypto.randomUUID) {
-      return window.crypto.randomUUID();
-    }
-    // Fallback for older browsers
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-      const r = (Math.random() * 16) | 0;
-      const v = c === 'x' ? r : (r & 0x3) | 0x8;
-      return v.toString(16);
-    });
-  };
-
-  // 格式化日期時間為 YYYY-MM-DD-HH-mm-ss (使用 +8 時區)
-  const formatDateTime = (date: Date): string => {
-    // 轉換為 +8 時區（台北時區）
-    const utcTime = date.getTime() + date.getTimezoneOffset() * 60000;
-    const taipei = new Date(utcTime + 8 * 3600000);
-
-    const year = taipei.getFullYear();
-    const month = String(taipei.getMonth() + 1).padStart(2, '0');
-    const day = String(taipei.getDate()).padStart(2, '0');
-    const hours = String(taipei.getHours()).padStart(2, '0');
-    const minutes = String(taipei.getMinutes()).padStart(2, '0');
-    const seconds = String(taipei.getSeconds()).padStart(2, '0');
-    return `${year}/${month}/${day} ${hours}:${minutes}:${seconds}`;
-  };
 
   // 格式化系統提示為純文字
   const formatSystemPrompt = useCallback((): string => {
@@ -118,51 +96,22 @@ function SimClassTrialLessonContent() {
     return sections.join('\n');
   }, [chapterInfo, chapterNumber, systemUserBrief, systemDialog, systemChecklist, judgeResult]);
 
-  // 格式化對話記錄
-  const formatChatHistory = useCallback((history: typeof chatHistory): string => {
-    const baseTime = new Date();
-    const lines: string[] = [];
-
-    history.forEach((msg, index) => {
-      // 為每則訊息添加索引對應的秒數差異，讓時間戳記有所區別
-      const msgTime = new Date(baseTime.getTime() + index * 1000);
-      const timestamp = formatDateTime(msgTime);
-
-      // 根據訊息角色決定角色名稱
-      let role: string;
-      if (msg.role === 'user') {
-        role = '老師';
-      } else if (msg.role === 'coach') {
-        role = '教練';
-      } else {
-        role = '學生';
-      }
-
-      // 將訊息內容中的換行改為分號
-      const content = msg.content.replace(/\n/g, ';');
-
-      // 如果是教練回饋，前後加上分隔線（獨立的行）
-      if (msg.role === 'coach') {
-        lines.push('=====');
-        lines.push(`[${role}] (${timestamp}): ${content}`);
-        lines.push('=====');
-      } else {
-        lines.push(`[${role}] (${timestamp}): ${content}`);
-      }
-    });
-
-    return lines.join('\n');
-  }, []);
-
   // 建立 ChatLog 記錄
   const createChatLog = useCallback(
     async (teacherName: string, chatLogId: string) => {
       try {
-        const formattedChatHistory = formatChatHistory(chatHistory);
+        // 只記錄前情提要之後的訊息
+        const messagesAfterPrelude = chatHistory.slice(preludeCount);
+        const formattedChatHistory = getMessagesForLog(messagesAfterPrelude);
         const formattedSystemPrompt = formatSystemPrompt();
 
         console.log('建立 ChatLog - 對話記錄預覽 (前 200 字):', formattedChatHistory.substring(0, 200));
-        console.log('建立 ChatLog - 訊息總數:', chatHistory.length);
+
+        // 計算記錄的訊息數量（排除前情提要）
+        const loggedMessages = messagesAfterPrelude.filter(
+          (msg) => msg.role === 'teacher' || msg.role === 'student' || msg.role === 'coach'
+        );
+        console.log('建立 ChatLog - 訊息總數:', loggedMessages.length);
 
         const response = await fetch('/api/chat-logs', {
           method: 'POST',
@@ -173,7 +122,7 @@ function SimClassTrialLessonContent() {
             chat_log_id: chatLogId,
             teacher_name: teacherName,
             chat_history: formattedChatHistory,
-            chat_count: chatHistory.length,
+            chat_count: loggedMessages.length,
             background_info: formattedSystemPrompt,
           }),
         });
@@ -189,18 +138,25 @@ function SimClassTrialLessonContent() {
         console.error('建立 ChatLog 記錄時發生錯誤:', error);
       }
     },
-    [chatHistory, formatChatHistory, formatSystemPrompt]
+    [chatHistory, preludeCount, formatSystemPrompt]
   );
 
   // 更新 ChatLog 記錄
   const updateChatLog = useCallback(
     async (chatLogId: string) => {
       try {
-        const formattedChatHistory = formatChatHistory(chatHistory);
+        // 只記錄前情提要之後的訊息
+        const messagesAfterPrelude = chatHistory.slice(preludeCount);
+        const formattedChatHistory = getMessagesForLog(messagesAfterPrelude);
         const formattedSystemPrompt = formatSystemPrompt();
 
         console.log('更新 ChatLog - 對話記錄預覽 (前 200 字):', formattedChatHistory.substring(0, 200));
-        console.log('更新 ChatLog - 訊息總數:', chatHistory.length);
+
+        // 計算記錄的訊息數量（排除前情提要）
+        const loggedMessages = messagesAfterPrelude.filter(
+          (msg) => msg.role === 'teacher' || msg.role === 'student' || msg.role === 'coach'
+        );
+        console.log('更新 ChatLog - 訊息總數:', loggedMessages.length);
 
         const response = await fetch('/api/chat-logs', {
           method: 'PATCH',
@@ -210,7 +166,7 @@ function SimClassTrialLessonContent() {
           body: JSON.stringify({
             chat_log_id: chatLogId,
             chat_history: formattedChatHistory,
-            chat_count: chatHistory.length,
+            chat_count: loggedMessages.length,
             background_info: formattedSystemPrompt,
           }),
         });
@@ -225,13 +181,13 @@ function SimClassTrialLessonContent() {
         console.error('更新 ChatLog 記錄時發生錯誤:', error);
       }
     },
-    [chatHistory, formatChatHistory, formatSystemPrompt]
+    [chatHistory, preludeCount, formatSystemPrompt]
   );
 
   // 初始化：生成 chat_log_id 和檢查老師名字
   useEffect(() => {
     // 每次進入頁面時生成新的 chat_log_id
-    const newChatLogId = generateUUID();
+    const newChatLogId = generateMessageId();
     setChatLogId(newChatLogId);
     console.log('生成新的 chat_log_id:', newChatLogId);
 
@@ -258,28 +214,28 @@ function SimClassTrialLessonContent() {
       // 1. 有老師名字
       // 2. 有 chat_log_id
       // 3. chatHistory 長度超過前情提要的數量（表示有新的對話）
-      // 4. 最後一則訊息是 assistant（確保 AI 已完成回覆）
+      // 4. 最後一則訊息是 student（確保 AI 已完成回覆）
       if (
         teacherName &&
         chatLogId &&
         chatHistory.length > preludeCount &&
-        chatHistory[chatHistory.length - 1]?.role === 'assistant'
+        chatHistory[chatHistory.length - 1]?.role === 'student'
       ) {
-        // 確保前情提要之後至少有一對新的對話（user -> assistant）
+        // 確保前情提要之後至少有一對新的對話（teacher -> student）
         const newMessages = chatHistory.slice(preludeCount);
-        const hasNewUserMessage = newMessages.some((msg) => msg.role === 'user');
-        const hasNewAssistantMessage = newMessages.some((msg) => msg.role === 'assistant');
+        const hasNewTeacherMessage = newMessages.some((msg) => msg.role === 'teacher');
+        const hasNewStudentMessage = newMessages.some((msg) => msg.role === 'student');
 
-        if (hasNewUserMessage && hasNewAssistantMessage) {
+        if (hasNewTeacherMessage && hasNewStudentMessage) {
           console.log('偵測到老師第一次新對話完成，建立 ChatLog 記錄');
           console.log('對話總數:', chatHistory.length, '前情提要數:', preludeCount);
           createChatLog(teacherName, chatLogId);
         }
       }
     } else {
-      // 如果已建立 ChatLog，在有新的 assistant 或 coach 訊息時更新
+      // 如果已建立 ChatLog，在有新的 student 或 coach 訊息時更新
       const lastMessage = chatHistory[chatHistory.length - 1];
-      if (chatLogId && lastMessage && (lastMessage.role === 'assistant' || lastMessage.role === 'coach')) {
+      if (chatLogId && lastMessage && (lastMessage.role === 'student' || lastMessage.role === 'coach')) {
         console.log('更新 ChatLog 記錄，最新訊息角色:', lastMessage.role);
         console.log('對話總數:', chatHistory.length);
         updateChatLog(chatLogId);
@@ -290,7 +246,7 @@ function SimClassTrialLessonContent() {
   // 監聽老師發送的訊息數量，超過 3 句時顯示 tooltip
   useEffect(() => {
     // 計算老師發送的訊息數量（排除前情提要）
-    const teacherMessages = chatHistory.slice(preludeCount).filter((msg) => msg.role === 'user');
+    const teacherMessages = chatHistory.slice(preludeCount).filter((msg) => msg.role === 'teacher');
 
     // 計算從上次取得回饋後的新訊息數
     const newMessagesCount = teacherMessages.length - lastFeedbackMessageCount;
@@ -312,7 +268,7 @@ function SimClassTrialLessonContent() {
     setShowFeedbackTooltip(false); // 隱藏 tooltip
 
     // 記錄當前老師訊息數量，作為下次計算的基準
-    const teacherMessages = chatHistory.slice(preludeCount).filter((msg) => msg.role === 'user');
+    const teacherMessages = chatHistory.slice(preludeCount).filter((msg) => msg.role === 'teacher');
     setLastFeedbackMessageCount(teacherMessages.length);
 
     const result = await generateSummary();
@@ -366,7 +322,7 @@ function SimClassTrialLessonContent() {
 
           {/* 回到選單按鈕 */}
           <Link
-            href="/trialLesson/guideBook"
+            href={`/trialLesson/guideBook?chapter=${chapterNumber}`}
             className="flex items-center gap-2 px-4 py-3 bg-white border border-slate-200 rounded-lg text-slate-800 text-sm font-medium transition-all cursor-pointer hover:bg-slate-50 hover:border-slate-300"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -518,20 +474,20 @@ function SimClassTrialLessonContent() {
                     <div
                       key={`prelude-${index}`}
                       className={`flex gap-3 max-w-[80%] ${
-                        message.role === 'user' ? 'self-end flex-row-reverse' : 'self-start'
+                        message.role === 'teacher' ? 'self-end flex-row-reverse' : 'self-start'
                       }`}
                     >
                       <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold bg-emerald-500 text-white flex-shrink-0">
-                        {message.role === 'user' ? '你' : '生'}
+                        {message.role === 'teacher' ? '你' : '生'}
                       </div>
                       <div
                         className={`rounded-xl border px-4 py-3 leading-6 ${
-                          message.role === 'user'
+                          message.role === 'teacher'
                             ? 'bg-emerald-500 text-white border-emerald-300/30'
                             : 'bg-white text-slate-800 border-slate-200'
                         }`}
                       >
-                        {message.content.split('\n').map((line, lineIndex) => (
+                        {message.text.split('\n').map((line, lineIndex) => (
                           <p key={lineIndex}>{line}</p>
                         ))}
                       </div>
@@ -559,24 +515,24 @@ function SimClassTrialLessonContent() {
                     <div
                       key={`chat-${index}`}
                       className={`flex gap-3 max-w-[80%] ${
-                        message.role === 'user' ? 'self-end flex-row-reverse' : 'self-start'
+                        message.role === 'teacher' ? 'self-end flex-row-reverse' : 'self-start'
                       }`}
                     >
                       <div
                         className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0 ${
-                          message.role === 'user' ? 'bg-emerald-500 text-white' : 'bg-blue-500 text-white'
+                          message.role === 'teacher' ? 'bg-emerald-500 text-white' : 'bg-blue-500 text-white'
                         }`}
                       >
-                        {message.role === 'user' ? '你' : '生'}
+                        {message.role === 'teacher' ? '你' : '生'}
                       </div>
                       <div
                         className={`rounded-xl border px-4 py-3 leading-6 ${
-                          message.role === 'user'
+                          message.role === 'teacher'
                             ? 'bg-emerald-500 text-white border-emerald-300/30'
                             : 'bg-white text-slate-800 border-slate-200'
                         }`}
                       >
-                        {message.content.split('\n').map((line, lineIndex) => (
+                        {message.text.split('\n').map((line, lineIndex) => (
                           <p key={lineIndex}>{line}</p>
                         ))}
                       </div>

@@ -3,8 +3,7 @@ import type { DirectorInput } from '@/lib/aiCharacter/student/types';
 
 export type BotType = 'student' | 'coach';
 export type WorkflowStep = 'idle' | 'scriptwriter' | 'student';
-export type MessageRole = 'user' | 'assistant' | 'coach';
-export type DisplayRole = MessageRole;
+export type MessageRole = 'teacher' | 'student' | 'coach' | 'judge' | 'director';
 export type ConnectionStatus = 'connected' | 'disconnected' | 'thinking';
 
 export interface OpenAIMessageContent {
@@ -17,10 +16,17 @@ export interface OpenAIChatMessage {
   content: OpenAIMessageContent[];
 }
 
-export interface ChatHistoryEntry {
-  role: MessageRole;
-  content: string;
+// 統一的訊息結構
+export interface UnifiedMessage {
+  id: string; // 訊息唯一識別碼
+  timestamp: Date; // 訊息建立的真實時間
+  role: MessageRole; // 語意化角色名稱
+  text: string; // 訊息內容
+  isScript: boolean; // 是否為腳本訊息（前情提要）
 }
+
+// 保留舊的型別作為相容性
+export type ChatHistoryEntry = UnifiedMessage;
 
 export interface FlashMessage {
   type: 'success' | 'error';
