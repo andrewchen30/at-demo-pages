@@ -95,6 +95,7 @@ function SimClassTrialLessonContent() {
   const [isCoachFeedbackPopoutVisible, setIsCoachFeedbackPopoutVisible] = useState(false);
   const [showFeedbackTooltip, setShowFeedbackTooltip] = useState(false);
   const [lastFeedbackMessageCount, setLastFeedbackMessageCount] = useState(0);
+  const [isChangeStudentDialogOpen, setIsChangeStudentDialogOpen] = useState(false);
 
   // 格式化系統提示為純文字
   const formatSystemPrompt = useCallback((): string => {
@@ -358,6 +359,21 @@ function SimClassTrialLessonContent() {
     }
   };
 
+  const handleChangeStudentClick = () => {
+    setIsChangeStudentDialogOpen(true);
+  };
+
+  const handleConfirmChangeStudent = () => {
+    setIsChangeStudentDialogOpen(false);
+    // 清除當前狀態並開始新的學生角色
+    clearChat();
+    startScriptwriter();
+  };
+
+  const handleCancelChangeStudent = () => {
+    setIsChangeStudentDialogOpen(false);
+  };
+
   return (
     <main className="min-h-screen bg-gradient-to-b from-slate-50 to-white text-slate-800 overflow-hidden">
       <div className="grid grid-cols-[440px_1fr] min-h-screen gap-px bg-slate-200 w-full max-w-none m-0 p-0">
@@ -425,6 +441,16 @@ function SimClassTrialLessonContent() {
               )}
             </div>
           </div>
+
+          {/* 換一個學生挑戰按鈕 */}
+          <button
+            type="button"
+            className="w-full bg-white border border-slate-200 text-slate-800 font-semibold text-sm px-5 py-3 rounded-xl transition-all hover:bg-slate-50 hover:border-slate-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-slate-400 disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={handleChangeStudentClick}
+            disabled={isCreatingStudent || isSummarizing || isThinking}
+          >
+            換一個學生挑戰
+          </button>
         </div>
 
         <div className="flex flex-col h-screen bg-slate-50">
@@ -455,7 +481,7 @@ function SimClassTrialLessonContent() {
                   <h3 className="text-base font-semibold text-slate-800 m-0">學生背景資訊</h3>
                   <button
                     className="bg-slate-50 border border-slate-200 rounded-md px-3.5 py-1.5 text-[13px] font-medium text-slate-800 transition-all hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                    onClick={startScriptwriter}
+                    onClick={handleChangeStudentClick}
                     disabled={isCreatingStudent || isSummarizing || isThinking}
                     title="更換學生角色"
                   >
@@ -735,6 +761,44 @@ function SimClassTrialLessonContent() {
                   繼續對話
                 </button>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isChangeStudentDialogOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1000]"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="bg-white rounded-xl shadow-2xl max-w-[500px] w-[90%] overflow-hidden">
+            <div className="p-5 border-b border-slate-200">
+              <h3 className="text-lg font-semibold text-slate-800 m-0">⚠️ 確認更換學生</h3>
+            </div>
+            <div className="p-5">
+              <div className="mb-6">
+                <p className="text-base text-slate-700 leading-7">
+                  更換學生將會清除目前的對話紀錄，並開始一個全新的學生角色模擬。
+                </p>
+                <p className="text-base text-slate-700 leading-7 mt-3">確定要繼續嗎？</p>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  className="flex-1 bg-white border-2 border-slate-300 text-slate-700 font-semibold px-4 py-3 rounded-lg text-sm transition-all hover:bg-slate-50 hover:border-slate-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-slate-400"
+                  onClick={handleCancelChangeStudent}
+                >
+                  繼續談話
+                </button>
+                <button
+                  type="button"
+                  className="flex-1 bg-gradient-to-b from-purple-500 to-purple-600 text-white font-semibold px-4 py-3 rounded-lg text-sm transition-all hover:from-purple-600 hover:to-purple-700 hover:shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-purple-400"
+                  onClick={handleConfirmChangeStudent}
+                >
+                  更換學生
+                </button>
+              </div>
             </div>
           </div>
         </div>
