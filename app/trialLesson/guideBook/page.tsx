@@ -146,7 +146,8 @@ function GuideBookContent() {
           {/* 左側側邊欄 */}
           <aside className="md:w-[320px] w-full bg-white md:border-r border-slate-200 md:sticky md:top-0 md:h-[calc(100vh-100px)] md:flex md:flex-col md:overflow-hidden">
             <div className="px-6 pt-8 pb-6 border-b border-slate-200">
-              <h2 className="text-[20px] font-bold text-slate-800 m-0">體驗課培訓主題</h2>
+              {/* <h2 className="text-[34px] font-bold text-slate-800 m-0">體驗課培訓</h2> */}
+              <div className="text-[26px] font-bold text-slate-800 m-0">❶ 選擇體驗課培訓主題</div>
             </div>
             <div className="p-4 flex md:flex-col flex-row gap-3 md:flex-1 md:overflow-y-auto overflow-x-auto">
               {Object.entries(GUIDE_CONTENT).map(([number, content]) => (
@@ -197,10 +198,10 @@ function GuideBookContent() {
             <div className="max-w-[900px] mx-auto p-12 md:p-8">
               {/* 大標題 */}
               <header className="mb-8">
-                <h1 className="text-[36px] font-bold text-slate-800 m-0 leading-[1.2] mb-3">
-                  主題 {selectedChapter} {currentContent.sidebarTitle}
-                </h1>
-                <p className="text-[18px] text-slate-600 leading-[1.6] m-0">{currentContent.goal}</p>
+                <h2 className="text-[26px] font-bold text-slate-800 m-0">
+                ❷ 觀看主題教學
+                </h2>
+                <p className="text-[16px] text-slate-600 leading-[1.6] m-0">主題{selectedChapter}：{currentContent.sidebarTitle} - {currentContent.goal}</p>
               </header>
 
               {/* YouTube 影片 */}
@@ -247,10 +248,10 @@ function GuideBookContent() {
               className="group inline-flex items-center justify-center gap-3 px-8 py-3 bg-gradient-to-b from-blue-600 to-blue-700 text-white text-base font-semibold rounded-full no-underline transition shadow-[0_8px_20px_rgba(37,99,235,0.35)] border border-white/20 hover:brightness-105 w-auto max-w-full"
               onClick={handlePracticeClick}
             >
-              <span className="whitespace-nowrap">模擬練習</span>
-              <span className="text-sm opacity-90 hidden md:inline">
+              <span className="whitespace-nowrap">❸ 完成課程，前往模擬練習</span>
+              {/* <span className="text-sm opacity-90 hidden md:inline">
                 主題 {selectedChapter} - {currentContent.sidebarTitle}
-              </span>
+              </span> */}
               <span className="text-[18px] font-bold transition-transform group-hover:translate-x-1.5">→</span>
             </Link>
           </div>
