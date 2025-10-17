@@ -3,7 +3,8 @@ export interface GuideContent {
   sidebarTitle: string;
   goal: string;
   videoUrl: string;
-  content: string;
+  summary: string;
+  checklistWithGuidience: string;
 }
 
 export const GUIDE_CONTENT: Record<number, GuideContent> = {
@@ -12,10 +13,8 @@ export const GUIDE_CONTENT: Record<number, GuideContent> = {
     sidebarTitle: '釐清學生需求',
     goal: '讓學生更清楚自己想學什麼、為什麼要學',
     videoUrl: 'https://drive.google.com/file/d/1aCPs8-zUsCneXU8ugOm3jtDwap7zLVl5/preview',
-    content: `
-
-總結：幫助學生釐清需求與痛點，學生會更清楚方向，老師也能設計更合適的課程。
-
+    summary: '幫助學生釐清需求與痛點，學生會更清楚方向，老師也能設計更合適的課程。',
+    checklistWithGuidience: `
 ### 我有確認學生想學什麼類型的英文嗎？
 例如：會話、考試、工作
 
@@ -41,9 +40,8 @@ export const GUIDE_CONTENT: Record<number, GuideContent> = {
     sidebarTitle: '分析學生程度',
     goal: '幫學生理解「現在」與「想達成」的程度',
     videoUrl: 'https://drive.google.com/file/d/10V3ApAMJga-hEJgOtiqmzoPE4uu7WsSo/preview',
-    content: `
-總結：協助學生比較現在與目標的落差，理解為什麼需要學習，以及該把重點放在哪裡。
-
+    summary: '協助學生比較現在與目標的落差，理解為什麼需要學習，以及該把重點放在哪裡。',
+    checklistWithGuidience: `
 ### 我有確認學生最想加強的能力嗎？
 例如：聽、說、讀、寫
 
@@ -70,9 +68,8 @@ export const GUIDE_CONTENT: Record<number, GuideContent> = {
     sidebarTitle: '讓學生體驗到「問題能夠被解決」',
     goal: '讓學生體驗「問題能被解決」',
     videoUrl: 'https://drive.google.com/file/d/1VVhACurnfRlqdvgwKMdKwv9U6-OSl8DU/preview',
-    content: `
-總結：透過一小段示範教學，讓學生親身感受上課方法對自己是有幫助的。
-
+    summary: '透過一小段示範教學，讓學生親身感受上課方法對自己是有幫助的。',
+    checklistWithGuidience: `
 ### 我有提供至少一種教材或方式，讓學生實際參與嗎？
 
 ### 我有鼓勵學生嘗試練習或回答嗎？
@@ -96,9 +93,8 @@ export const GUIDE_CONTENT: Record<number, GuideContent> = {
     sidebarTitle: '把需求拆成階段，讓學生看見路線圖',
     goal: '讓學生知道可以怎麼開始、可能多久會有效果',
     videoUrl: 'https://drive.google.com/file/d/1JsAaiquaK3sMFT1Hd90iqsP-bLr_MUaD/preview',
-    content: `
-總結：透過一小段示範教學，讓學生親身感受上課方法對他自己是有幫助的。
-
+    summary: '透過一小段示範教學，讓學生親身感受上課方法對他自己是有幫助的。',
+    checklistWithGuidience: `
 ### 我有分享過去的教學經驗或學生案例，讓學生覺得「這個老師有經驗，可以帶我成功」嗎？（非必要，但有的話更好）
 例如：
 「我之前帶過一個學生準備面試，大概一個月後，他就能很順地做完整的自我介紹了」
@@ -124,10 +120,8 @@ export const GUIDE_CONTENT: Record<number, GuideContent> = {
     sidebarTitle: '主動確認並協助學生放心開始學習',
     goal: '幫助學生放心做下一步決定',
     videoUrl: 'https://drive.google.com/file/d/15cr64ds9tcFmHVu1VClZH_rVZiURn3ni/preview',
-    content: `
-
-總結：把握面對面的時間，透過確認與回應，幫助學生解決顧慮，提升展開學習旅程的信心。
-
+    summary: '把握面對面的時間，透過確認與回應，幫助學生解決顧慮，提升展開學習旅程的信心。',
+    checklistWithGuidience: `
 ### 我有主動確認學生是否有顧慮或需要調整嗎？
 例如：
 「你覺得這樣的計畫能幫助到你嗎？還是你會想更快達成？」

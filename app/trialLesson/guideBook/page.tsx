@@ -214,9 +214,26 @@ function GuideBookContent() {
                 />
               </div>
 
-              {/* Markdown 內容 */}
+              {/* 總結區塊 */}
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-8 mb-8 border-2 border-blue-200 shadow-[0_4px_16px_rgba(59,130,246,0.15)]">
+                <div className="flex items-start gap-4">
+                  <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <span className="text-2xl">💡</span>
+                  </div>
+                  <div className="flex-1">
+                    <h2 className="text-[22px] font-bold text-blue-900 mb-3 m-0">本主題總結</h2>
+                    <p className="text-[17px] leading-[1.7] text-slate-800 m-0 font-medium">{currentContent.summary}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* 檢查清單區塊 */}
               <article className="bg-white rounded-2xl p-10 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
-                {renderMarkdown(currentContent.content)}
+                <div className="flex items-center gap-3 mb-8 pb-5 border-b-2 border-slate-200">
+                  <span className="text-3xl">📋</span>
+                  <h2 className="text-[26px] font-bold text-slate-800 m-0">重點提示檢查清單</h2>
+                </div>
+                {renderMarkdown(currentContent.checklistWithGuidience)}
               </article>
             </div>
           </div>
@@ -230,7 +247,7 @@ function GuideBookContent() {
               className="group inline-flex items-center justify-center gap-3 px-8 py-3 bg-gradient-to-b from-blue-600 to-blue-700 text-white text-base font-semibold rounded-full no-underline transition shadow-[0_8px_20px_rgba(37,99,235,0.35)] border border-white/20 hover:brightness-105 w-auto max-w-full"
               onClick={handlePracticeClick}
             >
-              <span className="whitespace-nowrap">立刻開始</span>
+              <span className="whitespace-nowrap">模擬練習</span>
               <span className="text-sm opacity-90 hidden md:inline">
                 主題 {selectedChapter} - {currentContent.sidebarTitle}
               </span>
