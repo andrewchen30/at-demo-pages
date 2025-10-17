@@ -633,7 +633,11 @@ function SimClassTrialLessonContent() {
                   type="button"
                   className="bg-gradient-to-b from-blue-500 to-blue-600 text-white px-5 py-3 rounded-xl text-sm font-medium transition-all min-w-[100px] hover:brightness-105 disabled:opacity-50 disabled:cursor-not-allowed"
                   onClick={handleGenerateSummary}
-                  disabled={!canSummarize || isCreatingStudent || isSummarizing || isThinking}
+                  disabled={!canSummarize || isCreatingStudent || isSummarizing || isThinking || 
+                    chatHistory
+                      .slice(preludeCount)
+                      .filter((message) => message.role !== 'coach').length == 0
+                  }
                   onMouseEnter={() => setShowFeedbackTooltip(false)}
                 >
                   {isSummarizing ? (isJudging ? '評估中...' : '分析中...') : '獲得建議'}
