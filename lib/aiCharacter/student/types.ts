@@ -14,3 +14,4 @@ export interface DirectorInput {
   persona?: PersonaEntry[];
   scripts?: ScriptEntry[];
 }
+
