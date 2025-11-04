@@ -62,3 +62,4 @@ export function getTeacherHintText(input: DirectorInput, partN: number): string 
     partN
   )}\n\n【檢查重點】\n${getCheckListForTeacher(partN)}`;
 }
+
