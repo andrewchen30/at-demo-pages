@@ -44,7 +44,6 @@ function fillTemplate(template: string, persona: PersonaEntry[]): string {
 }
 
 export function getUserBrief(input: DirectorInput, partN: number): string {
-
   const personaPart = (input.persona || []).filter((p) => p.index >= 0 && p.index < partN);
 
   const template = BRIEF_TEMPLATE[partN - 1] || [];
