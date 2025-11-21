@@ -16,6 +16,12 @@ const ADMIN_TOOLS = [
     accent: 'linear-gradient(90deg, #f59e0b, #d97706)',
   },
   {
+    href: '/admin/trial-class-analysis-result-parser',
+    title: '試聽課分析結果解析器',
+    description: '解析試聽課分析結果 CSV，以表格形式呈現各項能力評估結果，支援按教師篩選、顯示達成率統計。',
+    accent: 'linear-gradient(90deg, #3b82f6, #2563eb)',
+  },
+  {
     href: 'https://docs.google.com/spreadsheets/d/1zFuwHybj2ny4n8vVk7BlZJqUMUKCpxZ44GhqxQc_9N8/edit?gid=88030258#gid=88030258',
     title: 'Google Spreadsheet 資料庫入口',
     description: '開啟 Google Sheet 資料庫入口（管理資料與檢視表單）。',
